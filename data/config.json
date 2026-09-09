@@ -1,0 +1,60 @@
+{
+  "brand": "Tianying的巢",
+  "name": "Tianying",
+  "intro": "一个正在慢慢长大的个人小站。",
+  "motto": "月落乌啼霜满天",
+  "avatar": "assets/img/avatar.svg",
+  "background": "",
+  "github": "https://github.com/tianyingAquila",
+  "social": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/tianyingAquila",
+      "icon": "github"
+    },
+    {
+      "name": "邮箱",
+      "url": "mailto:tianyingden@163.com",
+      "icon": "mail"
+    }
+  ],
+  "music": {
+    "title": "未命名曲目",
+    "artist": "Tianying",
+    "src": "assets/music/track.wav",
+    "cover": "assets/img/music-cover.svg"
+  },
+  "projects": [
+    {
+      "title": "GitHub 主页",
+      "description": "我的代码和开源项目都放在这里。",
+      "url": "https://github.com/tianyingAquila",
+      "tags": [
+        "GitHub"
+      ]
+    },
+    {
+      "title": "天鹰个人网站",
+      "description": "你现在看到的这个网站。",
+      "url": "#",
+      "tags": [
+        "网站"
+      ]
+    }
+  ],
+  "gallery": [
+    {
+      "src": "assets/img/photo1.svg",
+      "caption": "示例照片 1"
+    },
+    {
+      "src": "assets/img/photo2.svg",
+      "caption": "示例照片 2"
+    },
+    {
+      "src": "assets/img/photo3.svg",
+      "caption": "示例照片 3"
+    }
+  ],
+  "icp": ""
+}

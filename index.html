@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tianying的巢</title>
+  <meta name="description" content="Tianying 的个人小站。">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-theme="dark">
+  <div class="bg" id="bg"></div>
+  <div class="bg-particles" id="bgParticles" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="site-brand">
+      <span class="brand-mark"></span>
+      <span id="brandText">Tianying的巢</span>
+    </div>
+    <button class="icon-button theme-toggle" id="themeToggle" type="button" aria-label="切换日间和夜间模式" title="切换日间和夜间模式">
+      <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path>
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"></path>
+      </svg>
+    </button>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <article class="card profile-card">
+        <img class="avatar" id="avatarImg" src="assets/img/avatar.svg" alt="头像">
+        <div class="profile-content">
+          <h1 id="nameText">Tianying</h1>
+          <p class="intro" id="introText">一个正在慢慢长大的个人小站。</p>
+          <div class="social-links" id="socialLinks"></div>
+        </div>
+      </article>
+
+      <article class="card music-card">
+        <div class="music-head">
+          <div class="record-wrap">
+            <img class="music-cover" id="musicCover" src="assets/img/music-cover.svg" alt="专辑封面">
+          </div>
+          <div class="music-meta">
+            <span class="music-source">LOCAL MUSIC</span>
+            <h2 id="musicTitle">未命名曲目</h2>
+            <p id="musicArtist">Tianying</p>
+          </div>
+        </div>
+        <div class="music-progress">
+          <span id="currentTime">00:00</span>
+          <input id="musicProgress" class="progress" type="range" min="0" max="100" value="0" aria-label="播放进度">
+          <span id="totalTime">00:00</span>
+        </div>
+        <div class="music-controls">
+          <button class="round-button" id="musicPrev" type="button" aria-label="上一首">&#9198;</button>
+          <button class="round-button play-button" id="musicPlay" type="button" aria-label="播放">&#9654;</button>
+          <button class="round-button" id="musicNext" type="button" aria-label="下一首">&#9197;</button>
+        </div>
+        <audio id="musicAudio" preload="metadata"></audio>
+      </article>
+    </section>
+
+    <section class="quote-block">
+      <span class="quote-deco" aria-hidden="true">❝</span>
+      <p class="motto" id="mottoText">月落乌啼霜满天</p>
+    </section>
+
+    <section class="content-section guestbook-section" id="guestbookSection">
+      <div class="section-heading">
+        <p class="eyebrow">GUESTBOOK</p>
+        <h2>留言板</h2>
+        <p class="section-note">说点什么吧，最长 20 个字，最多保留 5 条。</p>
+      </div>
+      <div class="message-list" id="messageList">
+        <p class="empty-hint">还没有留言，来做第一个吧。</p>
+      </div>
+      <form class="message-form" id="messageForm">
+        <div class="form-row">
+          <input id="guestName" name="name" type="text" maxlength="12" placeholder="昵称（可选）" autocomplete="nickname">
+          <input id="guestMessage" name="message" type="text" maxlength="20" placeholder="写一句不超过 20 个字的话…" required>
+          <button class="primary-button" type="submit">留言</button>
+        </div>
+        <div class="form-hint">
+          <span id="charCount">0 / 20</span>
+          <span id="messageStatus" role="status"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="content-section gallery-section" id="gallerySection">
+      <div class="section-heading">
+        <p class="eyebrow">PHOTO</p>
+        <h2>随手拍</h2>
+        <p class="section-note">几张照片，记录一些瞬间。</p>
+      </div>
+      <div class="gallery-grid" id="galleryGrid"></div>
+    </section>
+
+    <section class="content-section projects-section" id="projectsSection">
+      <div class="section-heading">
+        <p class="eyebrow">PROJECTS</p>
+        <h2>项目</h2>
+        <p class="section-note">写过的代码和正在做的事情。</p>
+      </div>
+      <div class="project-grid" id="projectGrid"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-status">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span>系统已稳定运行：<strong id="uptimeText">--</strong></span>
+    </div>
+    <div class="footer-time">
+      <span id="clockText">--:--:--</span>
+    </div>
+    <div class="footer-icp" id="icpText"></div>
+  </footer>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lightbox-close" id="lightboxClose" type="button" aria-label="关闭">×</button>
+    <img id="lightboxImg" src="" alt="照片大图">
+    <p id="lightboxCaption"></p>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
