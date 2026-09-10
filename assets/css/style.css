@@ -589,7 +589,12 @@ body[data-theme="light"] .form-row input::placeholder {
 }
 
 body[data-theme="light"] .eyebrow {
+  color: #4643cf;
   text-shadow: 0 1px 8px rgba(255, 255, 255, 0.85);
+}
+
+body[data-theme="light"] .music-source {
+  color: #555b77;
 }
 
 .help-tooltip {
@@ -800,21 +805,22 @@ body[data-theme="light"] .eyebrow {
   z-index: 3;
   width: 42px;
   height: 42px;
-  border: 1px solid var(--glass-border);
+  border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.8);
+  color: #2b2f4a;
   font-size: 26px;
   line-height: 1;
   cursor: pointer;
   transform: translateY(-50%);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   transition: background 0.18s ease, transform 0.18s ease;
 }
 
 .carousel-arrow:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .carousel-arrow.prev {
