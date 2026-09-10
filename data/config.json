@@ -3,7 +3,7 @@
   "name": "Tianying",
   "intro": "一个正在慢慢长大的个人小站。",
   "motto": "月落乌啼霜满天",
-  "avatar": "assets/img/avatar.svg",
+  "avatar": "assets/img/avatar.jpg",
   "background": "/assets/img/background.jpg",
   "github": "https://github.com/tianyingAquila",
   "social": [
@@ -19,10 +19,19 @@
     }
   ],
   "music": {
-    "title": "未命名曲目",
-    "artist": "Tianying",
-    "src": "assets/music/track.wav",
-    "cover": "assets/img/music-cover.svg"
+    "cover": "assets/img/music-cover.jpg",
+    "tracks": [
+      {
+        "title": "Ex-Otogibanashi",
+        "artist": "ryo (supercell) / 夏吉ゆうこ / 早見沙織",
+        "src": "assets/music/ex-otogibanashi.mp3"
+      },
+      {
+        "title": "ワールドイズマイン (かぐや&月見ヤチヨ ver.) [CPK! Remix]",
+        "artist": "ryo (supercell) / 夏吉ゆうこ / 早見沙織",
+        "src": "assets/music/world-is-mine-cpk-remix.mp3"
+      }
+    ]
   },
   "projects": [
     {

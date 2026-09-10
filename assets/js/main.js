@@ -14,10 +14,19 @@
       { name: "B站", url: "https://space.bilibili.com/385516184", icon: "bilibili" },
     ],
     music: {
-      title: "未命名曲目",
-      artist: "Tianying",
-      src: "assets/music/track.wav",
-      cover: "assets/img/music-cover.svg",
+      cover: "assets/img/music-cover.jpg",
+      tracks: [
+        {
+          title: "Ex-Otogibanashi",
+          artist: "ryo (supercell) / 夏吉ゆうこ / 早見沙織",
+          src: "assets/music/ex-otogibanashi.mp3",
+        },
+        {
+          title: "ワールドイズマイン (かぐや&月見ヤチヨ ver.) [CPK! Remix]",
+          artist: "ryo (supercell) / 夏吉ゆうこ / 早見沙織",
+          src: "assets/music/world-is-mine-cpk-remix.mp3",
+        },
+      ],
     },
     projects: [
       {
@@ -170,10 +179,40 @@
     const record = document.querySelector(".record-wrap");
     const progress = $("musicProgress");
 
-    audio.src = state.config.music.src || DEFAULT_CONFIG.music.src;
+    const musicConfig = state.config.music || {};
+    let musicIndex = 0;
+    let musicTracks = [];
+    if (Array.isArray(musicConfig.tracks) && musicConfig.tracks.length) {
+      musicTracks = musicConfig.tracks;
+    } else if (musicConfig.src) {
+      musicTracks = [
+        {
+          title: musicConfig.title || "未命名曲目",
+          artist: musicConfig.artist || "Tianying",
+          src: musicConfig.src,
+        },
+      ];
+    } else {
+      musicTracks = DEFAULT_CONFIG.music.tracks;
+    }
+
     cover.src = state.config.music.cover || DEFAULT_CONFIG.music.cover;
-    $("musicTitle").textContent = state.config.music.title || "未命名曲目";
-    $("musicArtist").textContent = state.config.music.artist || "Tianying";
+
+    function loadTrack(index) {
+      if (!musicTracks.length) {
+        return;
+      }
+      musicIndex = (index + musicTracks.length) % musicTracks.length;
+      const track = musicTracks[musicIndex];
+      const wasPlaying = !audio.paused;
+      audio.src = track.src || "";
+      $("musicTitle").textContent = track.title || "未命名曲目";
+      $("musicArtist").textContent = track.artist || "Tianying";
+      audio.load();
+      if (wasPlaying) {
+        audio.play().catch(() => {});
+      }
+    }
 
     function togglePlay() {
       if (audio.paused) {
@@ -210,23 +249,24 @@
     audio.addEventListener("play", updatePlayState);
     audio.addEventListener("pause", updatePlayState);
     audio.addEventListener("ended", () => {
-      audio.currentTime = 0;
-      updateProgress();
-      updatePlayState();
+      loadTrack(musicIndex + 1);
+      if (audio.paused) {
+        audio.play().catch(() => {});
+      }
     });
 
     playButton.addEventListener("click", togglePlay);
     $("musicPrev").addEventListener("click", () => {
-      audio.currentTime = 0;
-      if (audio.paused) {
+      if (audio.currentTime > 3) {
+        audio.currentTime = 0;
+      } else {
+        loadTrack(musicIndex - 1);
         audio.play().catch(() => {});
       }
     });
     $("musicNext").addEventListener("click", () => {
-      audio.currentTime = 0;
-      if (audio.paused) {
-        audio.play().catch(() => {});
-      }
+      loadTrack(musicIndex + 1);
+      audio.play().catch(() => {});
     });
     progress.addEventListener("input", () => {
       if (!Number.isFinite(audio.duration)) {
@@ -236,6 +276,8 @@
       audio.currentTime = (percent / 100) * audio.duration;
       progress.style.setProperty("--value", `${percent}%`);
     });
+
+    loadTrack(0);
   }
 
   function renderMessages() {
