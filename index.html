@@ -7,9 +7,10 @@
   <meta name="description" content="Tianying 的个人小站。">
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body data-theme="dark">
+<body data-theme="light">
   <div class="bg" id="bg"></div>
   <div class="bg-particles" id="bgParticles" aria-hidden="true"></div>
+  <div class="sakura" id="sakura" aria-hidden="true"></div>
 
   <header class="site-header">
     <div class="site-brand">
@@ -72,7 +73,11 @@
       <div class="section-heading">
         <p class="eyebrow">GUESTBOOK</p>
         <h2>留言板</h2>
-        <p class="section-note">说点什么吧，最长 20 个字，最多保留 5 条。</p>
+        <p class="section-note note-with-help">
+          <span>随意留言</span>
+          <button class="help-button" id="guestbookHelp" type="button" aria-label="查看留言规则">?</button>
+          <span class="help-tooltip" role="tooltip">最长 20 个字，最多保留 5 条</span>
+        </p>
       </div>
       <div class="message-list" id="messageList">
         <p class="empty-hint">还没有留言，来做第一个吧。</p>
@@ -93,10 +98,16 @@
     <section class="content-section gallery-section" id="gallerySection">
       <div class="section-heading">
         <p class="eyebrow">PHOTO</p>
-        <h2>随手拍</h2>
-        <p class="section-note">几张照片，记录一些瞬间。</p>
+        <h2>图片集</h2>
       </div>
-      <div class="gallery-grid" id="galleryGrid"></div>
+      <div class="gallery-carousel" id="galleryCarousel">
+        <button class="carousel-arrow prev" id="galleryPrev" type="button" aria-label="上一张">&#8249;</button>
+        <div class="carousel-viewport">
+          <div class="carousel-track" id="galleryTrack"></div>
+        </div>
+        <button class="carousel-arrow next" id="galleryNext" type="button" aria-label="下一张">&#8250;</button>
+        <div class="carousel-dots" id="galleryDots" aria-hidden="true"></div>
+      </div>
     </section>
 
     <section class="content-section projects-section" id="projectsSection">

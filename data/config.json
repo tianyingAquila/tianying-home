@@ -4,7 +4,7 @@
   "intro": "一个正在慢慢长大的个人小站。",
   "motto": "月落乌啼霜满天",
   "avatar": "assets/img/avatar.svg",
-  "background": "",
+  "background": "assets/img/background.jpg",
   "github": "https://github.com/tianyingAquila",
   "social": [
     {
@@ -13,9 +13,9 @@
       "icon": "github"
     },
     {
-      "name": "邮箱",
-      "url": "mailto:tianyingden@163.com",
-      "icon": "mail"
+      "name": "B站",
+      "url": "https://space.bilibili.com/385516184",
+      "icon": "bilibili"
     }
   ],
   "music": {
@@ -26,19 +26,20 @@
   },
   "projects": [
     {
-      "title": "GitHub 主页",
-      "description": "我的代码和开源项目都放在这里。",
-      "url": "https://github.com/tianyingAquila",
+      "title": "DeepSeek 余额悬浮小工具",
+      "description": "Windows 桌面上的 DeepSeek 余额悬浮小工具（可跟随 Codex 显隐）",
+      "url": "https://github.com/tianyingAquila/deepseek-balance-widget",
       "tags": [
-        "GitHub"
+        "PowerShell",
+        "Windows"
       ]
     },
     {
-      "title": "天鹰个人网站",
-      "description": "你现在看到的这个网站。",
-      "url": "https://github.com/tianyingAquila/tianying-home",
+      "title": "git-hello-world",
+      "description": "第一次 Git 尝试",
+      "url": "https://github.com/tianyingAquila/git-hello-world",
       "tags": [
-        "网站"
+        "Git"
       ]
     }
   ],

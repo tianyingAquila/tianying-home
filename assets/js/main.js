@@ -7,11 +7,11 @@
     intro: "一个正在慢慢长大的个人小站。",
     motto: "月落乌啼霜满天",
     avatar: "assets/img/avatar.svg",
-    background: "",
+    background: "assets/img/background.jpg",
     github: "https://github.com/tianyingAquila",
     social: [
       { name: "GitHub", url: "https://github.com/tianyingAquila", icon: "github" },
-      { name: "邮箱", url: "mailto:tianyingden@163.com", icon: "mail" },
+      { name: "B站", url: "https://space.bilibili.com/385516184", icon: "bilibili" },
     ],
     music: {
       title: "未命名曲目",
@@ -21,16 +21,16 @@
     },
     projects: [
       {
-        title: "GitHub 主页",
-        description: "我的代码和开源项目都放在这里。",
-        url: "https://github.com/tianyingAquila",
-        tags: ["GitHub"],
+        title: "DeepSeek 余额悬浮小工具",
+        description: "Windows 桌面上的 DeepSeek 余额悬浮小工具（可跟随 Codex 显隐）",
+        url: "https://github.com/tianyingAquila/deepseek-balance-widget",
+        tags: ["PowerShell", "Windows"],
       },
       {
-        title: "天鹰个人网站",
-        description: "你现在看到的这个网站。",
-        url: "#",
-        tags: ["网站"],
+        title: "git-hello-world",
+        description: "第一次 Git 尝试",
+        url: "https://github.com/tianyingAquila/git-hello-world",
+        tags: ["Git"],
       },
     ],
     gallery: [
@@ -116,7 +116,7 @@
   }
 
   function setupTheme() {
-    const saved = localStorage.getItem("tianying-theme") || "dark";
+    const saved = localStorage.getItem("tianying-theme") || "light";
     applyTheme(saved);
     $("themeToggle").addEventListener("click", () => {
       const next = document.body.dataset.theme === "dark" ? "light" : "dark";
@@ -290,6 +290,10 @@
     const count = $("charCount");
     const status = $("messageStatus");
 
+    $("guestbookHelp").addEventListener("click", () => {
+      $("guestbookHelp").classList.toggle("tooltip-open");
+    });
+
     messageInput.addEventListener("input", () => {
       count.textContent = `${messageInput.value.length} / 20`;
     });
@@ -327,33 +331,99 @@
     });
   }
 
+  let galleryTimer = null;
+  let galleryIndex = 0;
+
+  function stopGalleryAutoplay() {
+    if (galleryTimer) {
+      window.clearInterval(galleryTimer);
+      galleryTimer = null;
+    }
+  }
+
+  function startGalleryAutoplay() {
+    stopGalleryAutoplay();
+    galleryTimer = window.setInterval(() => {
+      const images = state.config.gallery || [];
+      if (images.length > 1) {
+        moveGallery((galleryIndex + 1) % images.length);
+      }
+    }, 4200);
+  }
+
+  function moveGallery(index) {
+    const images = state.config.gallery || [];
+    if (!images.length) {
+      return;
+    }
+    galleryIndex = (index + images.length) % images.length;
+    const track = $("galleryTrack");
+    track.style.transform = `translateX(-${galleryIndex * 100}%)`;
+    const dots = Array.from($("galleryDots").querySelectorAll(".carousel-dot"));
+    dots.forEach((dot, dotIndex) => {
+      dot.classList.toggle("active", dotIndex === galleryIndex);
+    });
+  }
+
+  function setupGalleryControls() {
+    $("galleryPrev").addEventListener("click", () => moveGallery(galleryIndex - 1));
+    $("galleryNext").addEventListener("click", () => moveGallery(galleryIndex + 1));
+    const carousel = $("galleryCarousel");
+    carousel.addEventListener("mouseenter", stopGalleryAutoplay);
+    carousel.addEventListener("mouseleave", startGalleryAutoplay);
+
+    let startX = 0;
+    carousel.addEventListener("touchstart", (event) => {
+      startX = event.touches[0].clientX;
+      stopGalleryAutoplay();
+    }, { passive: true });
+    carousel.addEventListener("touchend", (event) => {
+      const endX = event.changedTouches[0].clientX;
+      const diff = startX - endX;
+      if (Math.abs(diff) > 45) {
+        moveGallery(galleryIndex + (diff > 0 ? 1 : -1));
+      }
+      startGalleryAutoplay();
+    }, { passive: true });
+  }
+
   function renderGallery() {
-    const grid = $("galleryGrid");
-    grid.innerHTML = "";
+    const track = $("galleryTrack");
+    const dots = $("galleryDots");
+    track.innerHTML = "";
+    dots.innerHTML = "";
+    galleryIndex = 0;
     const images = state.config.gallery || [];
     if (!images.length) {
       const empty = document.createElement("p");
       empty.className = "empty-hint";
-      empty.textContent = "照片还没有放进来。";
-      grid.appendChild(empty);
+      empty.textContent = "图片还没有放进来。";
+      track.appendChild(empty);
       return;
     }
     images.forEach((image, index) => {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.className = "gallery-item";
-      item.setAttribute("aria-label", `查看照片：${image.caption || index + 1}`);
+      const slide = document.createElement("div");
+      slide.className = "gallery-slide";
       const img = document.createElement("img");
       img.src = image.src;
-      img.alt = image.caption || `照片 ${index + 1}`;
+      img.alt = image.caption || `图片 ${index + 1}`;
       img.loading = "lazy";
       const caption = document.createElement("p");
       caption.className = "gallery-caption";
       caption.textContent = image.caption || "";
-      item.append(img, caption);
-      item.addEventListener("click", () => openLightbox(index));
-      grid.appendChild(item);
+      slide.append(img, caption);
+      slide.addEventListener("click", () => openLightbox(index));
+      track.appendChild(slide);
+
+      const dot = document.createElement("button");
+      dot.type = "button";
+      dot.className = "carousel-dot";
+      dot.setAttribute("aria-label", `切换到第 ${index + 1} 张`);
+      dot.addEventListener("click", () => moveGallery(index));
+      dots.appendChild(dot);
     });
+    moveGallery(0);
+    startGalleryAutoplay();
   }
 
   function openLightbox(index) {
@@ -436,6 +506,20 @@
     }
   }
 
+  function setupSakura() {
+    const container = $("sakura");
+    const count = window.innerWidth < 620 ? 12 : 20;
+    for (let i = 0; i < count; i += 1) {
+      const petal = document.createElement("span");
+      petal.className = "petal";
+      petal.style.left = `${Math.random() * 100}%`;
+      petal.style.animationDuration = `${7 + Math.random() * 8}s`;
+      petal.style.animationDelay = `${Math.random() * 8}s`;
+      petal.style.transform = `scale(${0.65 + Math.random() * 0.7})`;
+      container.appendChild(petal);
+    }
+  }
+
   function setupClockAndUptime() {
     const clock = () => {
       $("clockText").textContent = new Date().toLocaleTimeString("zh-CN", { hour12: false });
@@ -458,8 +542,10 @@
   async function init() {
     setupTheme();
     setupParticles();
+    setupSakura();
     setupClockAndUptime();
     setupLightbox();
+    setupGalleryControls();
 
     try {
       state.config = await request("config");
