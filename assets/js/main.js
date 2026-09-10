@@ -190,19 +190,22 @@
       return;
     }
     const link = document.createElement("a");
-    link.className = "social-link";
+    link.className = "social-link steam-link";
     link.href = safeUrl(steam.url, "#");
-    link.textContent = "Steam";
     if (/^https?:/i.test(steam.url || "")) {
       link.target = "_blank";
       link.rel = "noopener noreferrer";
     }
+    const label = document.createElement("span");
+    label.className = "steam-label";
+    label.textContent = "Steam";
     const status = document.createElement("span");
     status.className = "steam-status";
     status.id = "steamStatus";
     status.textContent = "状态获取中…";
+    link.appendChild(label);
+    link.appendChild(status);
     $("socialLinks").appendChild(link);
-    $("socialLinks").appendChild(status);
   }
 
   async function loadSteamStatus() {
