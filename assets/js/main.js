@@ -515,7 +515,7 @@
       petal.style.left = `${Math.random() * 100}%`;
       petal.style.animationDuration = `${7 + Math.random() * 8}s`;
       petal.style.animationDelay = `${Math.random() * 8}s`;
-      petal.style.transform = `scale(${0.65 + Math.random() * 0.7})`;
+      petal.style.setProperty("--petal-scale", String(0.65 + Math.random() * 0.75));
       container.appendChild(petal);
     }
   }

@@ -13,6 +13,7 @@
   --accent-2: #f472b6;
   --accent-soft: rgba(109, 109, 246, 0.22);
   --danger: #fb7185;
+  --track: rgba(255, 255, 255, 0.15);
   --radius-lg: 24px;
   --radius-md: 16px;
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
@@ -24,15 +25,16 @@ body[data-theme="light"] {
   --bg-1: #f7f0fa;
   --bg-2: #fdeef7;
   --bg-3: #e6e9ff;
-  --glass: rgba(255, 255, 255, 0.5);
-  --glass-strong: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(60, 65, 105, 0.16);
+  --glass: rgba(255, 255, 255, 0.38);
+  --glass-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(60, 65, 105, 0.22);
   --text: #20233d;
   --muted: #5a6079;
   --muted-2: #7e849e;
   --accent: #5a56e8;
   --accent-2: #d94f9c;
   --accent-soft: rgba(90, 86, 232, 0.14);
+  --track: rgba(60, 65, 105, 0.18);
   --shadow: 0 24px 60px rgba(90, 95, 160, 0.18);
 }
 
@@ -84,7 +86,7 @@ a {
 }
 
 .bg.has-image {
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.38)), var(--bg-image);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.48)), var(--bg-image);
   background-size: cover, cover;
   background-position: center, center;
   background-repeat: no-repeat, no-repeat;
@@ -125,10 +127,10 @@ body[data-theme="light"] .sakura {
   width: 15px;
   height: 22px;
   border-radius: 70% 15% 70% 15%;
-  background: linear-gradient(135deg, #ffd7eb, #ffb8d9 55%, #f59bc9);
-  box-shadow: 0 0 12px rgba(255, 183, 216, 0.55);
+  background: linear-gradient(135deg, #ff9ecb, #e8579e 60%, #b93e78);
+  box-shadow: 0 0 10px rgba(214, 80, 145, 0.7);
   animation: petal-fall linear infinite;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 body[data-theme="light"] .motto,
@@ -136,24 +138,24 @@ body[data-theme="light"] .section-heading h2,
 body[data-theme="light"] .section-note,
 body[data-theme="light"] .profile-content h1,
 body[data-theme="light"] .music-meta h2 {
-  text-shadow: 0 1px 12px rgba(255, 255, 255, 0.78);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.92), 0 2px 14px rgba(255, 255, 255, 0.8);
 }
 
 @keyframes petal-fall {
   0% {
-    transform: translate3d(0, -4vh, 0) rotate(0deg);
+    transform: translate3d(0, -4vh, 0) rotate(0deg) scale(var(--petal-scale, 1));
   }
   25% {
-    transform: translate3d(-36px, 28vh, 0) rotate(95deg);
+    transform: translate3d(-36px, 28vh, 0) rotate(95deg) scale(var(--petal-scale, 1));
   }
   50% {
-    transform: translate3d(30px, 56vh, 0) rotate(190deg);
+    transform: translate3d(30px, 56vh, 0) rotate(190deg) scale(var(--petal-scale, 1));
   }
   75% {
-    transform: translate3d(-26px, 84vh, 0) rotate(285deg);
+    transform: translate3d(-26px, 84vh, 0) rotate(285deg) scale(var(--petal-scale, 1));
   }
   100% {
-    transform: translate3d(16px, 116vh, 0) rotate(380deg);
+    transform: translate3d(16px, 116vh, 0) rotate(380deg) scale(var(--petal-scale, 1));
   }
 }
 
@@ -165,6 +167,11 @@ body[data-theme="light"] .music-meta h2 {
   box-shadow: 0 0 12px rgba(173, 173, 255, 0.8);
   animation: float-up linear infinite;
   opacity: 0;
+}
+
+body[data-theme="light"] .particle {
+  background: rgba(90, 86, 232, 0.32);
+  box-shadow: 0 0 10px rgba(90, 86, 232, 0.4);
 }
 
 @keyframes float-up {
@@ -281,8 +288,8 @@ body[data-theme="light"] .icon-moon {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   background: var(--glass);
-  -webkit-backdrop-filter: blur(22px);
-  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   box-shadow: var(--shadow);
 }
 
@@ -446,7 +453,7 @@ body[data-theme="light"] .icon-moon {
   appearance: none;
   -webkit-appearance: none;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent) 0%, var(--accent) var(--value, 0%), rgba(255, 255, 255, 0.15) var(--value, 0%), rgba(255, 255, 255, 0.15) 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent) var(--value, 0%), var(--track) var(--value, 0%), var(--track) 100%);
   cursor: pointer;
 }
 
@@ -494,8 +501,14 @@ body[data-theme="light"] .icon-moon {
   padding: 22px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(255, 255, 255, 0.46);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   text-align: center;
+}
+
+body[data-theme="dark"] .quote-block {
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .quote-deco {
@@ -610,8 +623,8 @@ body[data-theme="light"] .icon-moon {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   background: var(--glass);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .message-avatar {
@@ -654,8 +667,8 @@ body[data-theme="light"] .icon-moon {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   background: var(--glass);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .form-row {
@@ -726,8 +739,8 @@ body[data-theme="light"] .icon-moon {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   background: var(--glass);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
 }
 
 .carousel-track {
@@ -810,6 +823,10 @@ body[data-theme="light"] .icon-moon {
   transition: width 0.2s ease, background 0.2s ease;
 }
 
+body[data-theme="light"] .carousel-dot {
+  background: rgba(96, 104, 140, 0.38);
+}
+
 .carousel-dot.active {
   width: 22px;
   border-radius: 999px;
@@ -828,8 +845,8 @@ body[data-theme="light"] .icon-moon {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   background: var(--glass);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
