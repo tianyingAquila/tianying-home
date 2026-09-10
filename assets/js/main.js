@@ -16,6 +16,10 @@
     avatar: "assets/img/avatar.svg",
     background: "/assets/img/background.jpg",
     github: "https://github.com/tianyingAquila",
+    steam: {
+      id: "76561199375770516",
+      url: "https://steamcommunity.com/profiles/76561199375770516/",
+    },
     social: [
       { name: "GitHub", url: "https://github.com/tianyingAquila", icon: "github" },
       { name: "B站", url: "https://space.bilibili.com/385516184", icon: "bilibili" },
@@ -171,11 +175,46 @@
       }
       $("socialLinks").appendChild(link);
     });
+    setupSteam();
     const icp = state.config.icp;
     if (icp) {
       $("icpText").innerHTML = `<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">${escapeHtml(icp)}</a>`;
     } else {
       $("icpText").textContent = "";
+    }
+  }
+
+  function setupSteam() {
+    const steam = state.config.steam;
+    if (!steam || !steam.url) {
+      return;
+    }
+    const link = document.createElement("a");
+    link.className = "social-link";
+    link.href = safeUrl(steam.url, "#");
+    link.textContent = "Steam";
+    if (/^https?:/i.test(steam.url || "")) {
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+    }
+    const status = document.createElement("span");
+    status.className = "steam-status";
+    status.id = "steamStatus";
+    status.textContent = "状态获取中…";
+    $("socialLinks").appendChild(link);
+    $("socialLinks").appendChild(status);
+  }
+
+  async function loadSteamStatus() {
+    const status = $("steamStatus");
+    if (!status) {
+      return;
+    }
+    try {
+      const data = await request("steam_status");
+      status.textContent = data.display || (data.online ? "在线" : "离线");
+    } catch (error) {
+      status.textContent = "状态暂不可用";
     }
   }
 
@@ -621,6 +660,7 @@
 
     renderBackground();
     renderProfile();
+    loadSteamStatus();
     setupMottoSwap();
     setupMusic();
     renderGallery();

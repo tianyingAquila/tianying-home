@@ -92,6 +92,10 @@ function default_config(): array
         'avatar' => 'assets/img/avatar.svg',
         'background' => '',
         'github' => 'https://github.com/tianyingAquila',
+        'steam' => [
+            'id' => '76561199375770516',
+            'url' => 'https://steamcommunity.com/profiles/76561199375770516/',
+        ],
         'social' => [
             ['name' => 'GitHub', 'url' => 'https://github.com/tianyingAquila', 'icon' => 'github'],
             ['name' => '邮箱', 'url' => 'mailto:tianyingden@163.com', 'icon' => 'mail'],
@@ -145,6 +149,72 @@ function current_config(): array
     return array_replace_recursive(default_config(), $config);
 }
 
+function fetch_url(string $url, int $timeout = 8): string
+{
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Tianying-Home; +https://github.com/tianyingAquila/tianying-home)',
+        ]);
+        $body = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+        return $body !== false && $code < 400 ? (string) $body : '';
+    }
+
+    $context = stream_context_create([
+        'http' => ['timeout' => $timeout, 'header' => "User-Agent: Mozilla/5.0\r\n"],
+        'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+    ]);
+    $body = @file_get_contents($url, false, $context);
+    return $body === false ? '' : (string) $body;
+}
+
+function parse_steam_status(string $xml): array
+{
+    $data = [
+        'available' => false,
+        'online' => false,
+        'display' => '状态暂不可用',
+        'gameName' => '',
+    ];
+
+    $previous = libxml_use_internal_errors(true);
+    $doc = simplexml_load_string($xml);
+    libxml_use_internal_errors($previous);
+    if ($doc === false || !isset($doc->profile)) {
+        return $data;
+    }
+
+    $profile = $doc->profile;
+    $onlineState = strtolower(trim((string) ($profile->onlineState ?? '')));
+    $stateMessage = trim((string) ($profile->stateMessage ?? ''));
+    $gameName = isset($profile->inGameInfo) ? trim((string) $profile->inGameInfo->gameName) : '';
+
+    $data['available'] = true;
+    $data['online'] = in_array($onlineState, ['online', 'in-game'], true) || $stateMessage === 'In-Game';
+    $data['gameName'] = $gameName;
+
+    if ($gameName !== '' && ($stateMessage === 'In-Game' || $onlineState === 'in-game')) {
+        $data['display'] = '正在游玩 ' . $gameName;
+    } elseif ($data['online']) {
+        $data['display'] = '在线';
+    } elseif (in_array($onlineState, ['away', 'snooze'], true)) {
+        $data['display'] = '离开';
+    } elseif ($onlineState === 'busy') {
+        $data['display'] = '忙碌';
+    } else {
+        $data['display'] = '离线';
+    }
+
+    return $data;
+}
+
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
@@ -165,6 +235,34 @@ switch ($action) {
                 'serverTime' => time(),
             ],
         ]);
+
+    case 'steam_status':
+        $steam = current_config()['steam'] ?? [];
+        $steamId = (string) ($steam['id'] ?? '');
+        if ($steamId === '') {
+            respond(['ok' => false, 'error' => '未配置 Steam ID'], 404);
+        }
+
+        $cacheFile = DATA_DIR . '/steam_status.json';
+        $cache = read_json($cacheFile, []);
+        if (($cache['steamId'] ?? '') === $steamId && ($cache['time'] ?? 0) > time() - 300) {
+            respond(['ok' => true, 'data' => $cache['data']]);
+        }
+
+        $xml = fetch_url('https://steamcommunity.com/profiles/' . rawurlencode($steamId) . '/?xml=1');
+        $data = $xml === '' ? [
+            'available' => false,
+            'online' => false,
+            'display' => '状态暂不可用',
+            'gameName' => '',
+        ] : parse_steam_status($xml);
+
+        write_json($cacheFile, [
+            'steamId' => $steamId,
+            'time' => time(),
+            'data' => $data,
+        ]);
+        respond(['ok' => true, 'data' => $data]);
 
     case 'message':
         if ($method !== 'POST') {

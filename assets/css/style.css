@@ -342,6 +342,12 @@ body[data-theme="light"] .icon-moon {
   font-size: 16px;
 }
 
+.sub-intro {
+  margin: -18px 0 20px;
+  color: var(--muted-2);
+  font-size: 13px;
+}
+
 .social-links {
   display: flex;
   flex-wrap: wrap;
@@ -367,6 +373,19 @@ body[data-theme="light"] .icon-moon {
   color: var(--text);
   border-color: var(--accent);
   transform: translateY(-2px);
+}
+
+.steam-status {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--accent-2);
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .contact-line {

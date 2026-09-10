@@ -13,6 +13,10 @@
   "avatar": "assets/img/avatar.jpg",
   "background": "/assets/img/background.jpg",
   "github": "https://github.com/tianyingAquila",
+  "steam": {
+    "id": "76561199375770516",
+    "url": "https://steamcommunity.com/profiles/76561199375770516/"
+  },
   "social": [
     {
       "name": "GitHub",
