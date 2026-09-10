@@ -407,7 +407,6 @@
       const img = document.createElement("img");
       img.src = image.src;
       img.alt = image.caption || `图片 ${index + 1}`;
-      img.loading = "lazy";
       const caption = document.createElement("p");
       caption.className = "gallery-caption";
       caption.textContent = image.caption || "";
