@@ -127,10 +127,10 @@ body[data-theme="light"] .sakura {
   width: 15px;
   height: 22px;
   border-radius: 70% 15% 70% 15%;
-  background: linear-gradient(135deg, #ffe0ef, #ffb6d1 55%, #f9a6c4);
-  box-shadow: 0 0 10px rgba(255, 150, 190, 0.5);
+  background: linear-gradient(135deg, #fff4f8, #ffd8e7 55%, #f7b7ce);
+  box-shadow: 0 0 10px rgba(255, 180, 205, 0.4);
   animation: petal-fall linear infinite;
-  opacity: 0.9;
+  opacity: 0.85;
 }
 
 body[data-theme="light"] .motto,
@@ -552,7 +552,7 @@ body[data-theme="dark"] .quote-block {
 .motto-swap:hover {
   color: var(--text);
   border-color: var(--accent);
-  transform: rotate(120deg);
+  transform: rotate(30deg);
 }
 
 .motto-swap svg {
