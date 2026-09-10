@@ -127,10 +127,10 @@ body[data-theme="light"] .sakura {
   width: 15px;
   height: 22px;
   border-radius: 70% 15% 70% 15%;
-  background: linear-gradient(135deg, #ff9ecb, #e8579e 60%, #b93e78);
-  box-shadow: 0 0 10px rgba(214, 80, 145, 0.7);
+  background: linear-gradient(135deg, #ffe0ef, #ffb6d1 55%, #f9a6c4);
+  box-shadow: 0 0 10px rgba(255, 150, 190, 0.5);
   animation: petal-fall linear infinite;
-  opacity: 0.95;
+  opacity: 0.9;
 }
 
 body[data-theme="light"] .motto,
@@ -369,6 +369,12 @@ body[data-theme="light"] .icon-moon {
   transform: translateY(-2px);
 }
 
+.contact-line {
+  margin: 10px 0 0;
+  color: var(--muted-2);
+  font-size: 13px;
+}
+
 .music-card {
   padding: 28px;
   min-height: 280px;
@@ -520,9 +526,41 @@ body[data-theme="dark"] .quote-block {
 
 .motto {
   margin: 0;
+  flex: 1;
+  text-align: center;
   font-family: var(--serif);
   font-size: clamp(20px, 3vw, 28px);
   letter-spacing: 0.06em;
+}
+
+.motto-swap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--muted);
+  cursor: pointer;
+  transition: transform 0.22s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.motto-swap:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  transform: rotate(120deg);
+}
+
+.motto-swap svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .content-section {
@@ -1073,8 +1111,7 @@ body[data-theme="light"] .carousel-dot {
   }
 
   .quote-block {
-    flex-direction: column;
-    gap: 4px;
+    gap: 10px;
   }
 
   .lightbox img {

@@ -4,8 +4,15 @@
   const DEFAULT_CONFIG = {
     brand: "Tianying的巢",
     name: "Tianying",
-    intro: "一个正在慢慢长大的个人小站。",
+    intro: "一个codex助力开发的个人小站",
     motto: "月落乌啼霜满天",
+    mottos: [
+      "月落乌啼霜满天",
+      "千里江陵一日还",
+      "莫使金樽空对月",
+      "云自无心水自闲",
+      "停车坐爱枫林晚",
+    ],
     avatar: "assets/img/avatar.svg",
     background: "/assets/img/background.jpg",
     github: "https://github.com/tianyingAquila",
@@ -170,6 +177,21 @@
     } else {
       $("icpText").textContent = "";
     }
+  }
+
+  function setupMottoSwap() {
+    const mottos =
+      Array.isArray(state.config.mottos) && state.config.mottos.length
+        ? state.config.mottos
+        : [state.config.motto || DEFAULT_CONFIG.motto];
+    let index = mottos.indexOf(state.config.motto || DEFAULT_CONFIG.motto);
+    if (index < 0) {
+      index = 0;
+    }
+    $("mottoSwap").addEventListener("click", () => {
+      index = (index + 1) % mottos.length;
+      $("mottoText").textContent = mottos[index];
+    });
   }
 
   function setupMusic() {
@@ -599,6 +621,7 @@
 
     renderBackground();
     renderProfile();
+    setupMottoSwap();
     setupMusic();
     renderGallery();
     renderProjects();
