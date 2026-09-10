@@ -7,7 +7,7 @@
     intro: "一个正在慢慢长大的个人小站。",
     motto: "月落乌啼霜满天",
     avatar: "assets/img/avatar.svg",
-    background: "assets/img/background.jpg",
+    background: "/assets/img/background.jpg",
     github: "https://github.com/tianyingAquila",
     social: [
       { name: "GitHub", url: "https://github.com/tianyingAquila", icon: "github" },
