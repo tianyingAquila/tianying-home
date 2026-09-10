@@ -2,3 +2,4 @@ uploads/*
 !uploads/.gitkeep
 data/started_at.txt
 *.log
+config.local.php

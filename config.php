@@ -1,8 +1,15 @@
 <?php
 declare(strict_types=1);
 
-// 网站后台登录密码。上线后建议改成你自己的密码。
-const ADMIN_PASSWORD = 'Tianying0';
+// 后台登录密码存放在同目录的 config.local.php 中，不提交到 Git。
+// 如果本地没有这个文件，就生成一个随机密码，避免使用固定默认密码。
+$localConfig = __DIR__ . '/config.local.php';
+if (is_file($localConfig)) {
+    require_once $localConfig;
+}
+if (!defined('ADMIN_PASSWORD') || ADMIN_PASSWORD === '') {
+    define('ADMIN_PASSWORD', bin2hex(random_bytes(24)));
+}
 
 // 允许上传的图片类型（扩展名）
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];

@@ -43,9 +43,9 @@
       },
     ],
     gallery: [
-      { src: "assets/img/photo1.svg", caption: "示例照片 1" },
-      { src: "assets/img/photo2.svg", caption: "示例照片 2" },
-      { src: "assets/img/photo3.svg", caption: "示例照片 3" },
+      { src: "assets/img/photo1.jpg", caption: "" },
+      { src: "assets/img/photo2.jpg", caption: "" },
+      { src: "assets/img/photo3.jpg", caption: "" },
     ],
     icp: "",
   };
@@ -449,10 +449,13 @@
       const img = document.createElement("img");
       img.src = image.src;
       img.alt = image.caption || `图片 ${index + 1}`;
-      const caption = document.createElement("p");
-      caption.className = "gallery-caption";
-      caption.textContent = image.caption || "";
-      slide.append(img, caption);
+      slide.appendChild(img);
+      if (image.caption) {
+        const caption = document.createElement("p");
+        caption.className = "gallery-caption";
+        caption.textContent = image.caption;
+        slide.appendChild(caption);
+      }
       slide.addEventListener("click", () => openLightbox(index));
       track.appendChild(slide);
 
