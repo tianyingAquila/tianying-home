@@ -38,6 +38,53 @@ function write_json(string $file, array $data): void
     );
 }
 
+function with_file_lock(string $file, callable $callback)
+{
+    $dir = dirname($file);
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    $fp = @fopen($file, 'c+');
+    if ($fp === false) {
+        return $callback(null);
+    }
+    if (!flock($fp, LOCK_EX)) {
+        fclose($fp);
+        return $callback(null);
+    }
+    try {
+        return $callback($fp);
+    } finally {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+    }
+}
+
+function read_json_from_handle($fp, array $default = []): array
+{
+    if (!is_resource($fp)) {
+        return $default;
+    }
+    rewind($fp);
+    $raw = stream_get_contents($fp);
+    if ($raw === false || $raw === '') {
+        return $default;
+    }
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : $default;
+}
+
+function write_json_to_handle($fp, array $data): void
+{
+    if (!is_resource($fp)) {
+        return;
+    }
+    rewind($fp);
+    ftruncate($fp, 0);
+    fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    fflush($fp);
+}
+
 function request_body(): array
 {
     $raw = file_get_contents('php://input');
@@ -226,7 +273,11 @@ switch ($action) {
         respond(['ok' => true, 'data' => read_json(messages_file(), [])]);
 
     case 'uptime':
-        $startedAt = (int) trim((string) @file_get_contents(DATA_DIR . '/started_at.txt'));
+        $startedFile = DATA_DIR . '/started_at.txt';
+        if (!is_file($startedFile)) {
+            @file_put_contents($startedFile, (string) time(), LOCK_EX);
+        }
+        $startedAt = (int) trim((string) @file_get_contents($startedFile));
         $seconds = $startedAt > 0 ? max(0, time() - $startedAt) : 0;
         respond([
             'ok' => true,
@@ -280,16 +331,25 @@ switch ($action) {
         if (function_exists('mb_strlen') && mb_strlen($name) > 12) {
             respond(['ok' => false, 'error' => '昵称不能超过 12 个字'], 400);
         }
-        $messages = read_json(messages_file(), []);
-        $message = [
-            'id' => bin2hex(random_bytes(6)),
-            'name' => $name,
-            'text' => $text,
-            'time' => time(),
-        ];
-        array_unshift($messages, $message);
-        $messages = array_slice($messages, 0, 5);
-        write_json(messages_file(), $messages);
+        $messages = with_file_lock(messages_file(), function ($fp) use ($text, $name) {
+            $messages = is_resource($fp)
+                ? read_json_from_handle($fp, [])
+                : read_json(messages_file(), []);
+            $message = [
+                'id' => bin2hex(random_bytes(6)),
+                'name' => $name,
+                'text' => $text,
+                'time' => time(),
+            ];
+            array_unshift($messages, $message);
+            $messages = array_slice($messages, 0, 5);
+            if (is_resource($fp)) {
+                write_json_to_handle($fp, $messages);
+            } else {
+                write_json(messages_file(), $messages);
+            }
+            return $messages;
+        });
         respond(['ok' => true, 'data' => $messages]);
 
     case 'admin_login':
@@ -479,11 +539,20 @@ switch ($action) {
         $body = request_body();
         require_admin($body);
         $id = (string) ($body['id'] ?? '');
-        $messages = read_json(messages_file(), []);
-        $messages = array_values(array_filter($messages, function ($item) use ($id) {
-            return ($item['id'] ?? '') !== $id;
-        }));
-        write_json(messages_file(), $messages);
+        $messages = with_file_lock(messages_file(), function ($fp) use ($id) {
+            $messages = is_resource($fp)
+                ? read_json_from_handle($fp, [])
+                : read_json(messages_file(), []);
+            $messages = array_values(array_filter($messages, function ($item) use ($id) {
+                return ($item['id'] ?? '') !== $id;
+            }));
+            if (is_resource($fp)) {
+                write_json_to_handle($fp, $messages);
+            } else {
+                write_json(messages_file(), $messages);
+            }
+            return $messages;
+        });
         respond(['ok' => true, 'data' => $messages]);
 
     default:
