@@ -6,13 +6,14 @@
 
    一条效果的结构：
    {
-     id:        唯一的字符串 id
-     name:      显示名
-     type:      "buff" | "debuff"
-     glyph:     图标名（radar / mist / expand / flagplus / headstart / shield / mineplus）
-     desc:      一句话说明，显示在左侧效果卡里
-     mineDelta: 可选，改变本局雷数（负面效果用，例如 +10、+15）
-     hooks: { ... }   见下面的钩子清单
+     id:          唯一的字符串 id
+     name:        显示名
+     type:        "buff" | "debuff"
+     glyph:       图标名
+     desc:        一句话说明，显示在左侧效果卡里
+     mineDelta:   可选，改变本局雷数（例如 +15）
+     bossTarget:  可选 { value, count }：开局布雷时保证有 count 个 ≥ value 的数字
+     hooks: { ... }
    }
 
    钩子（引擎在对应时机自动调用）：
@@ -25,30 +26,36 @@
      onGameEnd(ctx)        结算时
 
    ctx 提供的东西：
-     ctx.config               全局配置（棋盘大小、基础雷数、连锁上限…）
-     ctx.mines                本局雷数（已含负面效果加成）
-     ctx.newCells             本次新揭开的格子数组
-     ctx.newSafeCount         本次新揭开的“非雷”格子数量
-     ctx.revealedBefore       本次操作之前就已经揭开的格子
-     ctx.origin               本次操作的起点格子
-     ctx.depth                当前连锁深度
-     ctx.type                 本次钩子的类型字符串
-     ctx.flagCell / flagValue 插旗钩子里的格子与结果
-     ctx.hitCell              踩雷钩子里的那颗雷
-     ctx.cancelLoss(opts)     免死：取消这次失败（默认把雷盖回去并插旗）
-     ctx.isAdjacent(a, b)     两个格子是否相邻
-     ctx.cellKey(cell)        格子的稳定 key，可以做 Set / Map 的键
-     ctx.randomUnflaggedMine()          随机取一个还没插旗的雷（没有返回 null）
-     ctx.randomHiddenSafeCell(opts)     随机取一个还没揭开的非雷格
-                                        opts: { awayFrom: [cell], minGap: 5 }
-     ctx.wasFired(cell) / ctx.markFired(cell)   给“每个格子只触发一次”这类效果用
-     ctx.markMisted(cell)     把格子标记成被迷雾遮住（只影响显示）
-     ctx.bump(n)              给这张效果卡 +n 次触发
-     ctx.toast(text)          棋盘上飘一条小提示
-     ctx.queueFlag(cell, meta, depth)    排队自动插旗（会走连锁结算）
-     ctx.queueReveal(cell, meta, depth)  排队自动揭格（会走连锁结算）
-     ctx.state()              本效果本局专属的可变对象，每局自动清空
-     ctx.log(...)             输出到控制台，方便调试
+     ctx.config / ctx.cols / ctx.rows / ctx.mines
+     ctx.newCells / ctx.newSafeCount / ctx.revealedBefore / ctx.origin / ctx.depth / ctx.type / ctx.meta
+     ctx.effectDriven      本次揭格是不是效果自己触发的
+     ctx.flagCell / ctx.flagValue       插旗钩子
+     ctx.hitCell / ctx.cancelLoss(opts) 踩雷钩子（免死）
+     ctx.stats()           本局统计 { total, hidden, revealed, hiddenRatio, flags, mines }
+     ctx.revealedCells()   当前所有已揭开的格子
+     ctx.revealedNumbers() 当前所有已揭开的数字格（被迷雾/沙尘盖住的也算）
+     ctx.neighbors(cell)   周围 8 格
+     ctx.cellKey(cell)     格子的稳定 key
+     ctx.random() / ctx.int(n)          随机数
+     ctx.isAdjacent(a, b)
+     ctx.randomUnflaggedMine()          随机取一个还没插旗的雷
+     ctx.randomHiddenSafeCell(opts)     随机取一个还没揭开的非雷格（opts: awayFrom / minGap）
+     ctx.randomHiddenZeroCell()         随机取一个还没揭开的 0 格
+     ctx.randomRects(count, size)       随机取 count 个互不重叠的 size×size 区域
+     ctx.wasFired(cell) / ctx.markFired(cell)
+     ctx.markMisted(cell)
+     ctx.grantImmunity(n) / ctx.spendImmunity()   免疫层数（挡下一次负面触发）
+     ctx.bump(n)            给这张效果卡 +n 次触发
+     ctx.toast(text)        棋盘上飘一条小提示
+     ctx.shockwave(cell)    以某个格子为中心播一次冲击波动画
+     ctx.queueFlag(cell, meta, depth)            排队自动插旗
+     ctx.queueFlagBatch(cells, meta, depth)      排队批量插旗（算 1 个事件）
+     ctx.queueReveal(cell, meta, depth)          排队自动揭格
+     ctx.queueRevealBatch(cells, meta, depth)    排队批量揭格（算 1 个事件）
+     ctx.queueArea(rects, meta, depth)           排队区域开采：框选动画 → 区内雷插旗、安全格揭开
+     ctx.queueSand(cells, meta, depth)           排队把已揭开的数字格盖成沙尘
+     ctx.state()            本效果本局专属的可变对象，每局自动清空
+     ctx.log(...)           输出到控制台，方便调试
    ========================================================================== */
 
 (function () {
@@ -77,7 +84,6 @@
             }
             const target = ctx.randomUnflaggedMine();
             if (!target) {
-              // 没有可以标记的雷时不消耗发射机会，等以后有目标了再说。
               break;
             }
             ctx.markFired(two);
@@ -102,7 +108,6 @@
           }
           const target = ctx.randomHiddenSafeCell();
           if (!target) {
-            // 没有可以揭的格子时留着进度，下次揭开后再结算。
             return;
           }
           state.opened -= 9;
@@ -292,6 +297,160 @@
         },
       },
     },
+    {
+      id: "buff_sharp_eye",
+      name: "熟练的锐眼",
+      type: "buff",
+      glyph: "eye",
+      desc: "剩余未揭开格 ≤ 40% 时，每个新揭开的数字有 1/5 概率额外打开一片随机零区。",
+      hooks: {
+        onRevealDone(ctx) {
+          const stats = ctx.stats();
+          if (stats.hiddenRatio > ctx.config.sharpEyeThreshold) {
+            return;
+          }
+          const numbers = ctx.newCells.filter((cell) => !cell.mine && cell.value >= 1);
+          for (const cell of numbers) {
+            if (ctx.random() >= ctx.config.sharpEyeChance) {
+              continue;
+            }
+            const target = ctx.randomHiddenZeroCell();
+            if (!target) {
+              break;
+            }
+            ctx.bump();
+            ctx.toast("熟练的锐眼 · 额外扩散一片零区");
+            ctx.queueReveal(target, { effectId: "buff_sharp_eye" }, ctx.depth + 1);
+          }
+        },
+      },
+    },
+    {
+      id: "buff_tianxia",
+      name: "天下劫",
+      type: "buff",
+      glyph: "grid",
+      desc: "第一击后随机框选三片 3×3 区域：区内安全格全开、雷全部标记。",
+      hooks: {
+        onMinesPlaced(ctx) {
+          const state = ctx.state();
+          if (state.done) {
+            return;
+          }
+          state.done = true;
+          const rects = ctx.randomRects(3, 3);
+          if (!rects.length) {
+            return;
+          }
+          state.rects = rects;
+          ctx.bump();
+          ctx.toast("天下劫 · 框选三片区域");
+          ctx.queueArea(rects, { effectId: "buff_tianxia" }, ctx.depth + 1);
+        },
+      },
+    },
+    {
+      id: "buff_leyline",
+      name: "雷脉",
+      type: "buff",
+      glyph: "row",
+      desc: "第一击后，把首击所在的一整横排开采：安全格全开、雷全部标记。",
+      hooks: {
+        onMinesPlaced(ctx) {
+          const state = ctx.state();
+          if (state.done || !ctx.origin) {
+            return;
+          }
+          state.done = true;
+          ctx.bump();
+          ctx.toast("雷脉 · 开采首击横排");
+          ctx.queueArea([{ x0: 0, y0: ctx.origin.y, w: ctx.cols, h: 1 }], { effectId: "buff_leyline" }, ctx.depth + 1);
+        },
+      },
+    },
+    {
+      id: "buff_leyline2",
+      name: "雷脉Ⅱ",
+      type: "buff",
+      glyph: "cross",
+      desc: "第一击后，把首击所在的横排 + 竖排一起开采：安全格全开、雷全部标记。",
+      hooks: {
+        onMinesPlaced(ctx) {
+          const state = ctx.state();
+          if (state.done || !ctx.origin) {
+            return;
+          }
+          state.done = true;
+          ctx.bump();
+          ctx.toast("雷脉Ⅱ · 开采首击横排 + 竖排");
+          ctx.queueArea(
+            [
+              { x0: 0, y0: ctx.origin.y, w: ctx.cols, h: 1 },
+              { x0: ctx.origin.x, y0: 0, w: 1, h: ctx.rows },
+            ],
+            { effectId: "buff_leyline2" },
+            ctx.depth + 1
+          );
+        },
+      },
+    },
+    {
+      id: "buff_big_num",
+      name: "大数字的对策",
+      type: "buff",
+      glyph: "big",
+      desc: "每揭开一个 ≥4 的数字，获得 1 层免疫（可累计），挡住下一次负面效果触发。",
+      hooks: {
+        onRevealDone(ctx) {
+          const bigs = ctx.newCells.filter((cell) => !cell.mine && cell.value >= 4);
+          if (!bigs.length) {
+            return;
+          }
+          ctx.grantImmunity(bigs.length);
+          ctx.bump(bigs.length);
+          ctx.toast(`大数字的对策 · 免疫 +${bigs.length}`);
+        },
+      },
+    },
+    {
+      id: "buff_big_num2",
+      name: "大数字的对策Ⅱ",
+      type: "buff",
+      glyph: "wave",
+      desc: "每揭开一个 ≥5 的数字，播一次冲击波，并标记场上所有 ≥5 数字周围的雷。",
+      hooks: {
+        onRevealDone(ctx) {
+          const bigs = ctx.newCells.filter((cell) => !cell.mine && cell.value >= 5);
+          if (!bigs.length) {
+            return;
+          }
+          ctx.bump();
+          ctx.toast("大数字的对策Ⅱ · 冲击波标记");
+          ctx.shockwave(bigs[0]);
+          const targets = [];
+          const seen = new Set();
+          ctx.revealedCells().forEach((cell) => {
+            if (cell.mine || cell.value < 5) {
+              return;
+            }
+            ctx.neighbors(cell).forEach((n) => {
+              if (!n.mine || n.flagged || n.revealed) {
+                return;
+              }
+              const k = ctx.cellKey(n);
+              if (seen.has(k)) {
+                return;
+              }
+              seen.add(k);
+              targets.push(n);
+            });
+          });
+          if (targets.length) {
+            ctx.queueFlagBatch(targets, { effectId: "buff_big_num2" }, ctx.depth + 1);
+          }
+        },
+      },
+    },
   ];
 
   const debuffs = [
@@ -307,30 +466,106 @@
             if (cell.mine || cell.value < 1) {
               continue;
             }
-            if (Math.random() < ctx.config.mistChance) {
-              ctx.markMisted(cell);
-              ctx.bump();
+            if (Math.random() >= ctx.config.mistChance) {
+              continue;
             }
+            if (ctx.spendImmunity()) {
+              ctx.toast("免疫生效 · 挡下数字迷雾");
+              continue;
+            }
+            ctx.markMisted(cell);
+            ctx.bump();
           }
         },
       },
     },
     {
-      id: "debuff_mine10",
-      name: "雷区扩张 +10",
-      type: "debuff",
-      glyph: "mineplus",
-      desc: "本局雷的数量增加 10 颗（首击安全规则不变）。",
-      mineDelta: 10,
-      hooks: {},
-    },
-    {
-      id: "debuff_mine15",
-      name: "雷区扩张 +15",
+      id: "debuff_mine1",
+      name: "雷区扩张Ⅰ",
       type: "debuff",
       glyph: "mineplus",
       desc: "本局雷的数量增加 15 颗（首击安全规则不变）。",
       mineDelta: 15,
+      hooks: {},
+    },
+    {
+      id: "debuff_mine2",
+      name: "雷区扩张Ⅱ",
+      type: "debuff",
+      glyph: "mineplus",
+      desc: "本局雷的数量增加 25 颗（首击安全规则不变）。",
+      mineDelta: 25,
+      hooks: {},
+    },
+    {
+      id: "debuff_mine3",
+      name: "雷区扩张Ⅲ",
+      type: "debuff",
+      glyph: "mineplus",
+      desc: "本局雷的数量增加 35 颗（首击安全规则不变）。",
+      mineDelta: 35,
+      hooks: {},
+    },
+    {
+      id: "debuff_sand",
+      name: "沙尘漫天",
+      type: "debuff",
+      glyph: "sand",
+      desc: "每标记 10 个雷，随机把 3 个已显示的数字盖成沙子（被盖的格子可以重新点开）。",
+      hooks: {
+        onFlagChange(ctx) {
+          if (!ctx.flagValue || !ctx.flagCell.mine) {
+            return;
+          }
+          const state = ctx.state();
+          state.counted = state.counted || new Set();
+          const id = ctx.cellKey(ctx.flagCell);
+          if (state.counted.has(id)) {
+            return;
+          }
+          state.counted.add(id);
+          state.correct = (state.correct || 0) + 1;
+          if (state.correct < ctx.config.sandEvery) {
+            return;
+          }
+          const shown = ctx.revealedNumbers();
+          if (!shown.length) {
+            return;
+          }
+          state.correct -= ctx.config.sandEvery;
+          if (ctx.spendImmunity()) {
+            ctx.toast("免疫生效 · 挡下沙尘漫天");
+            return;
+          }
+          const pool = shown.slice();
+          const picks = [];
+          for (let i = 0; i < ctx.config.sandCount && pool.length; i += 1) {
+            picks.push(pool.splice(ctx.int(pool.length), 1)[0]);
+          }
+          ctx.bump();
+          ctx.toast(`沙尘漫天 · 盖住 ${picks.length} 个数字`);
+          ctx.queueSand(picks, { effectId: "debuff_sand" }, ctx.depth + 1);
+        },
+      },
+    },
+    {
+      id: "debuff_boss1",
+      name: "boss亦能存在Ⅰ",
+      type: "debuff",
+      glyph: "boss",
+      desc: "本局雷的数量增加 10 颗，并且开局保证场上至少有 5 个 ≥6 的大数字。",
+      mineDelta: 10,
+      bossTarget: { value: 6, count: 5 },
+      hooks: {},
+    },
+    {
+      id: "debuff_boss2",
+      name: "boss亦能存在Ⅱ",
+      type: "debuff",
+      glyph: "boss",
+      desc: "本局雷的数量增加 20 颗，并且开局保证场上至少有 5 个 ≥8 的大数字。",
+      mineDelta: 20,
+      bossTarget: { value: 8, count: 5 },
       hooks: {},
     },
   ];
@@ -340,9 +575,18 @@
       cols: 16,
       rows: 16,
       mines: 40,
-      maxChainEvents: 30,
-      maxChainDepth: 8,
+      sizes: {
+        small: { id: "small", label: "小", cols: 10, rows: 10, mines: 15 },
+        medium: { id: "medium", label: "中", cols: 16, rows: 16, mines: 40 },
+        large: { id: "large", label: "大", cols: 24, rows: 24, mines: 90 },
+      },
+      maxChainEvents: 45,
+      maxChainDepth: Infinity,
       mistChance: 0.1,
+      sharpEyeThreshold: 0.4,
+      sharpEyeChance: 0.2,
+      sandEvery: 10,
+      sandCount: 3,
     },
     tiers: {
       easy: { id: "easy", label: "简单", buffs: 4, debuffs: 1, desc: "正面多、负面少，玩起来轻松。" },

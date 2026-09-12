@@ -6,7 +6,7 @@
   <title>Tianying的巢</title>
   <meta name="description" content="Tianying 的个人小站。">
   <link rel="stylesheet" href="assets/css/style.css?v=7">
-  <link rel="stylesheet" href="assets/css/game.css?v=3">
+  <link rel="stylesheet" href="assets/css/game.css?v=4">
 </head>
 <body data-theme="light">
   <div class="bg" id="bg"></div>
@@ -20,11 +20,6 @@
     </div>
     <div class="header-actions">
       <button class="nav-button" id="gameEntry" type="button" aria-label="打开扫雷小游戏" aria-expanded="false" aria-controls="gamePanel">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="4.2"></circle>
-          <circle class="nav-mine-dot" cx="12" cy="12" r="1.5"></circle>
-          <path d="M12 3.6v3.2M12 17.2v3.2M3.6 12h3.2M17.2 12h3.2M6.1 6.1l2.3 2.3M15.6 15.6l2.3 2.3M17.9 6.1l-2.3 2.3M8.4 15.6l-2.3 2.3"></path>
-        </svg>
         <span class="nav-label">扫雷</span>
       </button>
       <button class="icon-button theme-toggle" id="themeToggle" type="button" aria-label="切换日间和夜间模式" title="切换日间和夜间模式">
@@ -200,6 +195,16 @@
               <p class="setup-note" id="tierNote"></p>
             </div>
 
+            <div class="setup-block">
+              <p class="setup-label">雷区大小</p>
+              <div class="segmented" id="sizeSwitch">
+                <button type="button" data-size="small">小 · 10×10</button>
+                <button type="button" data-size="medium" class="is-active">中 · 16×16</button>
+                <button type="button" data-size="large">大 · 24×24</button>
+              </div>
+              <p class="setup-note" id="sizeNote"></p>
+            </div>
+
             <div class="setup-block" id="freeBlock" hidden>
               <p class="setup-label">自己挑效果（可以全不选，等于纯扫雷）</p>
               <div class="fx-picker-group">
@@ -238,6 +243,7 @@
               <span class="hud-value" id="timerText">00:00</span>
             </div>
             <div class="hud-badge" id="modeBadge">难度 · 普通</div>
+            <div class="hud-badge is-immune" id="immuneBadge" hidden>免疫 ×0</div>
             <div class="hud-spacer"></div>
             <button class="hud-toggle" id="flagToggle" type="button" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 20V5" /><path d="M8 5.6h7.4l-1.5 3.2 1.5 3.2H8z" /></svg>
@@ -298,10 +304,20 @@
         <p class="result-status" id="resultStatus"></p>
       </div>
     </div>
+
+    <div class="game-confirm" id="sizeConfirm" hidden>
+      <div class="confirm-card" role="dialog" aria-modal="true" aria-label="更换雷区大小">
+        <p class="confirm-text">更大的游玩雷区建议到 PC 端获得最佳体验，是否依旧更换？</p>
+        <div class="confirm-actions">
+          <button class="game-button primary" id="sizeConfirmYes" type="button">依旧更换</button>
+          <button class="game-button ghost" id="sizeConfirmNo" type="button">取消</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <script src="assets/js/main.js?v=8"></script>
-  <script src="assets/js/game/effects.js?v=4"></script>
-  <script src="assets/js/game/minesweeper.js?v=4"></script>
+  <script src="assets/js/game/effects.js?v=5"></script>
+  <script src="assets/js/game/minesweeper.js?v=5"></script>
 </body>
 </html>

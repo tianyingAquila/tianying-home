@@ -1,10 +1,11 @@
 /* ==========================================================================
    技能扫雷
    --------------------------------------------------------------------------
-   - 16x16 / 40 雷，首击安全（首击格和它的 8 邻格不布雷，所以首击必为 0）
-     （负面效果可以增加本局雷数，首击安全规则不变）
+   - 三档雷区：小 10x10/15 雷、中 16x16/40 雷、大 24x24/90 雷（手机默认小）
+     首击安全（首击格和它的 8 邻格不布雷，所以首击必为 0），负面效果可以增加本局雷数
    - 一次玩家操作 = 一个事务：锁定输入 → 结算 → 播完所有连锁动画 → 解锁
-   - 单次事务最多 30 个连锁事件、8 层深度，超限只停止派发新事件
+   - 单次事务最多 45 个连锁事件（深度不设限），超限只停止派发新事件
+   - 全部雷都被插旗且旗数正好等于雷数时，自动光扫清场
    - 效果逻辑全部写在 assets/js/game/effects.js
    ========================================================================== */
 
@@ -12,7 +13,7 @@
   "use strict";
 
   const FALLBACK = {
-    config: { cols: 16, rows: 16, mines: 40, maxChainEvents: 30, maxChainDepth: 8, mistChance: 0.1 },
+    config: { cols: 16, rows: 16, mines: 40, maxChainEvents: 45, maxChainDepth: Infinity, mistChance: 0.1 },
     tiers: {
       easy: { id: "easy", label: "简单", buffs: 4, debuffs: 1, desc: "" },
       normal: { id: "normal", label: "普通", buffs: 3, debuffs: 2, desc: "" },
@@ -44,6 +45,22 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l6.2 2.3v5.5c0 3.6-2.5 6.8-6.2 8.6-3.7-1.8-6.2-5-6.2-8.6V5.9z"/><path d="M9 12.1l2.1 2.1 4-4.2"/></svg>',
     mineplus:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="4.4"/><path d="M11 3.6v2.4M11 16v2.4M3.6 11h2.4M16 11h2.4M5.8 5.8l1.7 1.7M14.5 14.5l1.7 1.7M16.2 5.8l-1.7 1.7M7.5 14.5l-1.7 1.7"/><path d="M18.4 18h4.2M20.5 15.9v4.2"/></svg>',
+    eye:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.6 12S6 5.8 12 5.8 21.4 12 21.4 12 18 18.2 12 18.2 2.6 12 2.6 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>',
+    grid:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.4" y="3.4" width="7.4" height="7.4" rx="1.6"/><rect x="13.2" y="3.4" width="7.4" height="7.4" rx="1.6" stroke-dasharray="2.6 2.2"/><rect x="3.4" y="13.2" width="7.4" height="7.4" rx="1.6" stroke-dasharray="2.6 2.2"/><rect x="13.2" y="13.2" width="7.4" height="7.4" rx="1.6"/></svg>',
+    row:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="8.6" width="5.2" height="6.8" rx="1.4"/><rect x="9.4" y="8.6" width="5.2" height="6.8" rx="1.4"/><rect x="16" y="8.6" width="5.2" height="6.8" rx="1.4"/><path d="M2.6 20.6h18.8"/></svg>',
+    cross:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2v17.6M3.2 12h17.6"/><rect x="9.4" y="9.4" width="5.2" height="5.2" rx="1.4"/><rect x="3.2" y="9.6" width="4" height="4.8" rx="1.2"/><rect x="16.8" y="9.6" width="4" height="4.8" rx="1.2"/><rect x="9.6" y="3.2" width="4.8" height="4" rx="1.2"/><rect x="9.6" y="16.8" width="4.8" height="4" rx="1.2"/></svg>',
+    big:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 4.8v14.4"/><path d="M12.6 4.8v9.6c0 3 2.2 4.8 5 4.8"/></svg>',
+    wave:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.6"/><path d="M6.6 17.4a7.6 7.6 0 0 1 0-10.8"/><path d="M17.4 6.6a7.6 7.6 0 0 1 0 10.8"/><path d="M3.8 20.2a11.4 11.4 0 0 1 0-16.4"/><path d="M20.2 3.8a11.4 11.4 0 0 1 0 16.4"/></svg>',
+    sand:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.4 15.6c1.6-1.4 2.6-1.4 4.2 0s2.6 1.4 4.2 0 2.6-1.4 4.2 0 2.6 1.4 4.2 0"/><path d="M4.4 19.4c1.6-1.4 2.6-1.4 4.2 0s2.6 1.4 4.2 0 2.6-1.4 4.2 0 2.6 1.4 4.2 0"/><circle cx="9.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="14" cy="4.8" r="0.9" fill="currentColor" stroke="none"/><circle cx="13.2" cy="9.2" r="1.3" fill="currentColor" stroke="none"/></svg>',
+    boss:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.2"/><path d="M12 2.6v3M12 18.4v3M2.6 12h3M18.4 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/><path d="M10.2 9.6h3.6M12 9.6v5"/></svg>',
     blank:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="4.5" width="15" height="15" rx="3" stroke-dasharray="3 3"/></svg>',
   };
@@ -52,6 +69,8 @@
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="glyph-flag" d="M8 20V4.8"/><path class="glyph-flag" d="M8 5.4h7.6l-1.6 3.4 1.6 3.4H8z"/></svg>';
   const MINE_SVG =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><circle class="glyph-mine" cx="12" cy="12" r="4.6" fill="currentColor" fill-opacity="0.22"/><path class="glyph-mine" d="M12 4.4v3M12 16.6v3M4.4 12h3M16.6 12h3M6.6 6.6l2.1 2.1M15.3 15.3l2.1 2.1M17.4 6.6l-2.1 2.1M8.7 15.3l-2.1 2.1"/></svg>';
+  const SAND_SVG =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="glyph-sand" d="M5 14.4c1.5-1.3 2.5-1.3 4 0s2.5 1.3 4 0 2.5-1.3 4 0 2.5 1.3 4 0"/><path class="glyph-sand" d="M5 18c1.5-1.3 2.5-1.3 4 0s2.5 1.3 4 0 2.5-1.3 4 0 2.5 1.3 4 0"/><circle class="glyph-sand" cx="10" cy="8.4" r="1" fill="currentColor" stroke="none"/><circle class="glyph-sand" cx="14.4" cy="6.8" r="0.8" fill="currentColor" stroke="none"/><circle class="glyph-sand" cx="13.6" cy="10.6" r="1.2" fill="currentColor" stroke="none"/></svg>';
 
   const el = {};
   const G = {
@@ -61,6 +80,11 @@
     cols: CFG.cols,
     rows: CFG.rows,
     mines: CFG.mines,
+    baseMines: CFG.mines,
+    sizeId: "medium",
+    immunity: 0,
+    bigNeed: null,
+    bigAchieved: 0,
     phase: "idle", // idle | dealing | playing | over
     placed: false,
     flags: 0,
@@ -155,6 +179,8 @@
     G.revealedSafe = 0;
     G.seq = 0;
     G.placed = false;
+    G.immunity = 0;
+    G.bigAchieved = 0;
     for (let y = 0; y < G.rows; y += 1) {
       for (let x = 0; x < G.cols; x += 1) {
         G.cells.push({
@@ -165,6 +191,7 @@
           revealed: false,
           flagged: false,
           misted: false,
+          sand: false,
           wrong: false,
           exploded: false,
           revealSeq: 0,
@@ -182,15 +209,76 @@
       neighbors(start).forEach((n) => safe.add(key(n)));
     }
     const pool = G.cells.filter((c) => !safe.has(key(c)));
-    shuffle(pool);
     const count = Math.min(G.mines, pool.length);
-    for (let i = 0; i < count; i += 1) {
-      pool[i].mine = true;
+    let clustered = false;
+    if (G.bigNeed && G.bigNeed.count > 0) {
+      clustered = placeBossClusters(pool, count, G.bigNeed);
+    }
+    if (!clustered) {
+      shuffle(pool);
+      for (let i = 0; i < count; i += 1) {
+        pool[i].mine = true;
+      }
     }
     G.cells.forEach((cell) => {
       cell.value = neighbors(cell).filter((n) => n.mine).length;
     });
     G.placed = true;
+    if (G.bigNeed) {
+      G.bigAchieved = G.cells.filter((c) => !c.mine && c.value >= G.bigNeed.value).length;
+      if (G.bigAchieved < G.bigNeed.count) {
+        console.warn(
+          `[扫雷] boss 大数字不足：需要 ${G.bigNeed.count} 个 ≥${G.bigNeed.value}，实际只有 ${G.bigAchieved} 个。`
+        );
+      }
+    }
+  }
+
+  // 构造式布雷（boss 类负面效果）：先围出若干「大数字」的簇，再把剩下的雷随机撒开。
+  // 锚点之间保持切比雪夫距离 ≥2，这样彼此不会占掉对方的邻居格。
+  function placeBossClusters(pool, count, need) {
+    const poolSet = new Set(pool.map((cell) => key(cell)));
+    const anchors = pool.filter((cell) => {
+      const ns = neighbors(cell);
+      return ns.length === 8 && ns.every((n) => poolSet.has(key(n)));
+    });
+    if (!anchors.length) {
+      return false;
+    }
+    const chosen = new Map();
+    const picked = [];
+    const ordered = anchors.slice().sort((a, b) => a.y - b.y || a.x - b.x);
+    for (const anchor of ordered) {
+      if (picked.length >= need.count) {
+        break;
+      }
+      const farEnough = picked.every(
+        (p) => Math.max(Math.abs(p.x - anchor.x), Math.abs(p.y - anchor.y)) >= 2
+      );
+      if (!farEnough) {
+        continue;
+      }
+      const add = neighbors(anchor).filter((n) => !chosen.has(key(n)));
+      if (chosen.size + add.length > count) {
+        continue;
+      }
+      add.forEach((n) => chosen.set(key(n), n));
+      picked.push(anchor);
+    }
+    if (!picked.length) {
+      return false;
+    }
+    chosen.forEach((cell) => {
+      cell.mine = true;
+    });
+    const anchorKeys = new Set(picked.map((cell) => key(cell)));
+    const rest = pool.filter((cell) => !chosen.has(key(cell)) && !anchorKeys.has(key(cell)));
+    shuffle(rest);
+    const remaining = count - chosen.size;
+    for (let i = 0; i < remaining && i < rest.length; i += 1) {
+      rest[i].mine = true;
+    }
+    return true;
   }
 
   function collectReveal(start) {
@@ -265,6 +353,7 @@
     const frag = document.createDocumentFragment();
     el.board.innerHTML = "";
     // 行和列都按配置写死成等分轨道，格子永远保持一样大，不会因为内容不同而变形。
+    el.board.dataset.size = G.sizeId;
     el.board.style.gridTemplateColumns = `repeat(${G.cols}, minmax(0, 1fr))`;
     el.board.style.gridTemplateRows = `repeat(${G.rows}, minmax(0, 1fr))`;
     G.cells.forEach((cell) => {
@@ -318,6 +407,9 @@
         return;
       }
       node.innerHTML = FLAG_SVG;
+    } else if (cell.sand) {
+      node.classList.add("is-sand");
+      node.innerHTML = SAND_SVG;
     } else if (cell.wrong) {
       node.classList.add("is-wrong");
     }
@@ -325,7 +417,17 @@
     node.setAttribute(
       "aria-label",
       `第 ${cell.y + 1} 行第 ${cell.x + 1} 列，${
-        cell.revealed ? (cell.mine ? "雷" : cell.value === 0 ? "空" : `数字 ${cell.value}`) : cell.flagged ? "已插旗" : "未揭开"
+        cell.revealed
+          ? cell.mine
+            ? "雷"
+            : cell.value === 0
+              ? "空"
+              : `数字 ${cell.value}`
+          : cell.flagged
+            ? "已插旗"
+            : cell.sand
+              ? "被沙尘盖住，可以再点开"
+              : "未揭开"
       }`
     );
   }
@@ -347,9 +449,31 @@
 
   function updateHud() {
     el.mineCount.textContent = String(Math.max(0, G.mines - G.flags));
+    const sizeLabel = sizeInfo().label;
     el.modeBadge.textContent =
-      G.mode === "free" ? (G.freeSelection.size ? `自由 · ${G.freeSelection.size} 个效果` : "自由 · 纯扫雷") : `难度 · ${TIERS[G.tier].label}`;
+      (G.mode === "free"
+        ? G.freeSelection.size
+          ? `自由 · ${G.freeSelection.size} 个效果`
+          : "自由 · 纯扫雷"
+        : `难度 · ${TIERS[G.tier].label}`) + ` · ${sizeLabel}`;
     el.modeBadge.classList.toggle("is-free", G.mode === "free");
+    if (el.immuneBadge) {
+      el.immuneBadge.hidden = G.immunity <= 0;
+      el.immuneBadge.textContent = `免疫 ×${G.immunity}`;
+    }
+  }
+
+  function sizeInfo() {
+    const sizes = CFG.sizes || {};
+    return sizes[G.sizeId] || { id: "medium", label: "中", cols: CFG.cols, rows: CFG.rows, mines: CFG.mines };
+  }
+
+  function applyBoardSize() {
+    const info = sizeInfo();
+    G.cols = info.cols;
+    G.rows = info.rows;
+    G.baseMines = info.mines;
+    return info;
   }
 
   function formatClock(ms, withTenth) {
@@ -555,6 +679,59 @@
     window.setTimeout(() => ring.remove(), 900);
   }
 
+  // 大数字对策Ⅱ的冲击波
+  function shockwaveAt(cell) {
+    const wrapRect = el.boardWrap.getBoundingClientRect();
+    const point = cellCenter(cell, wrapRect);
+    const wave = document.createElement("span");
+    wave.className = "shock-wave";
+    wave.style.left = `${point.x}px`;
+    wave.style.top = `${point.y}px`;
+    el.boardWrap.appendChild(wave);
+    window.setTimeout(() => wave.remove(), 1100);
+  }
+
+  // 天下劫 / 雷脉的框选动画：把一片区域圈出来再动手。
+  async function animateBoxSelect(cells) {
+    if (!cells.length) {
+      return;
+    }
+    const wrapRect = el.boardWrap.getBoundingClientRect();
+    const firstNode = G.nodes[key(cells[0])];
+    const cellSize = firstNode ? firstNode.getBoundingClientRect().width : 24;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    cells.forEach((cell) => {
+      const point = cellCenter(cell, wrapRect);
+      minX = Math.min(minX, point.x);
+      minY = Math.min(minY, point.y);
+      maxX = Math.max(maxX, point.x);
+      maxY = Math.max(maxY, point.y);
+    });
+    const pad = cellSize / 2 + 3;
+    const box = document.createElement("span");
+    box.className = "select-box";
+    box.style.left = `${minX - pad}px`;
+    box.style.top = `${minY - pad}px`;
+    box.style.width = `${maxX - minX + pad * 2}px`;
+    box.style.height = `${maxY - minY + pad * 2}px`;
+    el.boardWrap.appendChild(box);
+    await sleep(430);
+    box.classList.add("is-done");
+    window.setTimeout(() => box.remove(), 220);
+  }
+
+  // 全雷标记后的光扫
+  async function sweepBeam() {
+    const beam = document.createElement("span");
+    beam.className = "sweep-beam";
+    el.boardWrap.appendChild(beam);
+    await sleep(700);
+    window.setTimeout(() => beam.remove(), 500);
+  }
+
   // ------------------------------------------------------------ 效果与结算
 
   function activeEffect(id) {
@@ -595,6 +772,8 @@
     const base = {
       config: CFG,
       mines: G.mines,
+      cols: G.cols,
+      rows: G.rows,
       depth: option.depth || 0,
       newCells,
       newSafeCount: newCells.filter((cell) => !cell.mine).length,
@@ -604,8 +783,36 @@
       revealedBefore: option.revealedBefore || G.cells.filter((c) => c.revealed),
       origin: option.origin || null,
       isAdjacent,
+      random() {
+        return rnd();
+      },
+      int(n) {
+        return randInt(n);
+      },
       cellKey(cell) {
         return `${cell.x},${cell.y}`;
+      },
+      stats() {
+        const total = G.cols * G.rows;
+        const revealed = G.cells.filter((cell) => cell.revealed).length;
+        const hidden = total - revealed;
+        return {
+          total,
+          revealed,
+          hidden,
+          hiddenRatio: total ? hidden / total : 0,
+          flags: G.flags,
+          mines: G.mines,
+        };
+      },
+      revealedCells() {
+        return G.cells.filter((cell) => cell.revealed);
+      },
+      revealedNumbers() {
+        return G.cells.filter((cell) => cell.revealed && !cell.mine && cell.value >= 1);
+      },
+      neighbors(cell) {
+        return neighbors(cell);
       },
       // 每张效果卡在本局里的私有数据，换局自动清空。
       state() {
@@ -621,6 +828,34 @@
       randomUnflaggedMine() {
         const pool = G.cells.filter((c) => c.mine && !c.flagged && !G.reserved.has(key(c)));
         return pool.length ? pool[randInt(pool.length)] : null;
+      },
+      randomHiddenZeroCell() {
+        const pool = G.cells.filter(
+          (c) => !c.mine && !c.revealed && !c.flagged && c.value === 0 && !G.reserved.has(key(c))
+        );
+        return pool.length ? pool[randInt(pool.length)] : null;
+      },
+      randomRects(count, size) {
+        const out = [];
+        if (G.cols < size || G.rows < size) {
+          return out;
+        }
+        let guard = 0;
+        while (out.length < count && guard < 400) {
+          guard += 1;
+          const rect = { x0: randInt(G.cols - size + 1), y0: randInt(G.rows - size + 1), w: size, h: size };
+          const overlap = out.some(
+            (r) =>
+              rect.x0 < r.x0 + r.w &&
+              r.x0 < rect.x0 + rect.w &&
+              rect.y0 < r.y0 + r.h &&
+              r.y0 < rect.y0 + rect.h
+          );
+          if (!overlap) {
+            out.push(rect);
+          }
+        }
+        return out;
       },
       randomHiddenSafeCell(options) {
         const opts = options || {};
@@ -649,6 +884,21 @@
       markMisted(cell) {
         cell.misted = true;
       },
+      grantImmunity(amount) {
+        G.immunity += amount || 1;
+        updateHud();
+      },
+      spendImmunity() {
+        if (G.immunity <= 0) {
+          return false;
+        }
+        G.immunity -= 1;
+        updateHud();
+        return true;
+      },
+      shockwave(cell) {
+        shockwaveAt(cell);
+      },
       bump(amount) {
         bumpEffectCount(currentEffectId, amount || 1);
       },
@@ -658,8 +908,29 @@
       queueFlag(cell, meta, depth) {
         enqueueFromEffect({ type: "autoFlag", x: cell.x, y: cell.y, meta: meta || {} }, depth);
       },
+      queueFlagBatch(cells, meta, depth) {
+        enqueueFromEffect(
+          { type: "flagBatch", cells: (cells || []).map((c) => ({ x: c.x, y: c.y })), meta: meta || {} },
+          depth
+        );
+      },
       queueReveal(cell, meta, depth) {
         enqueueFromEffect({ type: "reveal", x: cell.x, y: cell.y, meta: meta || {} }, depth);
+      },
+      queueRevealBatch(cells, meta, depth) {
+        enqueueFromEffect(
+          { type: "revealBatch", cells: (cells || []).map((c) => ({ x: c.x, y: c.y })), meta: meta || {} },
+          depth
+        );
+      },
+      queueArea(rects, meta, depth) {
+        enqueueFromEffect({ type: "areaSweep", rects: rects || [], meta: meta || {} }, depth);
+      },
+      queueSand(cells, meta, depth) {
+        enqueueFromEffect(
+          { type: "sand", cells: (cells || []).map((c) => ({ x: c.x, y: c.y })), meta: meta || {} },
+          depth
+        );
       },
       log() {
         console.log("[扫雷效果]", ...arguments);
@@ -673,9 +944,8 @@
       return;
     }
     G.tx.truncated = true;
-    console.warn(
-      `[扫雷] 单次操作的连锁达到上限（${CFG.maxChainEvents} 个事件 / ${CFG.maxChainDepth} 层），已停止继续触发。`
-    );
+    const depthNote = Number.isFinite(CFG.maxChainDepth) ? ` / ${CFG.maxChainDepth} 层` : "";
+    console.warn(`[扫雷] 单次操作的连锁达到上限（${CFG.maxChainEvents} 个事件${depthNote}），已停止继续触发。`);
     const note = document.createElement("p");
     note.className = "fx-truncate-note";
     note.textContent = "连锁达到上限，已停止继续触发。";
@@ -699,6 +969,8 @@
     if (step.type === "autoFlag" || (step.type === "reveal" && step.meta && step.meta.effectId)) {
       // 同一批连锁里不要重复挑到同一个格子：排队时就先占位。
       G.reserved.add(step.y * G.cols + step.x);
+    } else if (Array.isArray(step.cells)) {
+      step.cells.forEach((p) => G.reserved.add(p.y * G.cols + p.x));
     }
     G.tx.events += 1;
     G.tx.queue.push(Object.assign({ depth }, step));
@@ -732,10 +1004,55 @@
       pulseEffectCard(meta.effectId);
       flashCell(start, "is-blessed");
     }
+    await commitRevealBatch(batch, { origin: start, depth: step.depth, type: "reveal", meta });
+  }
+
+  // 多个起点一起揭开（天下劫 / 雷脉 / 光扫都走这里）
+  async function stepRevealBatch(step) {
+    if (G.phase !== "playing") {
+      return;
+    }
+    const seeds = (step.cells || [])
+      .map((p) => at(p.x, p.y))
+      .filter((cell) => cell && !cell.mine && !cell.revealed && !cell.flagged);
+    if (!seeds.length) {
+      return;
+    }
+    const meta = step.meta || {};
+    if (meta.effectId) {
+      pulseEffectCard(meta.effectId);
+      seeds.forEach((cell) => flashCell(cell, "is-blessed"));
+    }
+    await commitRevealBatch(mergeReveals(seeds), { origin: seeds[0], depth: step.depth, type: "reveal", meta });
+  }
+
+  function mergeReveals(seeds) {
+    const merged = new Map();
+    seeds.forEach((seed) => {
+      collectReveal(seed).forEach((entry) => {
+        const k = key(entry.cell);
+        const prev = merged.get(k);
+        if (prev === undefined || entry.dist < prev) {
+          merged.set(k, entry.dist);
+        }
+      });
+    });
+    return Array.from(merged.entries())
+      .map(([k, dist]) => ({ cell: G.cells[k], dist }))
+      .sort((a, b) => a.dist - b.dist);
+  }
+
+  // 揭开一批格子并跑完所有钩子 / 动画 / 胜负判定
+  async function commitRevealBatch(batch, option) {
+    if (!batch.length || G.phase !== "playing") {
+      return "skip";
+    }
+    const opt = option || {};
     const before = G.cells.filter((c) => c.revealed);
     const newCells = [];
     batch.forEach((item) => {
       item.cell.revealed = true;
+      item.cell.sand = false;
       G.seq += 1;
       item.cell.revealSeq = G.seq;
       if (!item.cell.mine) {
@@ -744,9 +1061,15 @@
       newCells.push(item.cell);
     });
 
-    const ctx = makeCtx({ newCells, revealedBefore: before, origin: start, depth: step.depth, type: "reveal", meta });
+    const ctx = makeCtx({
+      newCells,
+      revealedBefore: before,
+      origin: opt.origin || null,
+      depth: opt.depth || 0,
+      type: opt.type || "reveal",
+      meta: opt.meta || {},
+    });
     runHooks("onRevealCommit", ctx);
-
     updateHud();
     await animateReveal(batch);
 
@@ -760,14 +1083,16 @@
     const hitCell = newCells.find((c) => c.mine);
     if (hitCell) {
       if (await resolveMineHit(ctx, hitCell)) {
-        return;
+        return "saved";
       }
       await runLoss(hitCell);
-      return;
+      return "lost";
     }
     if (G.revealedSafe >= totalSafe()) {
       await runWin();
+      return "won";
     }
+    return "ok";
   }
 
   async function stepChord(step) {
@@ -780,38 +1105,7 @@
       flashCell(cell, "is-hinting");
       return;
     }
-    const before = G.cells.filter((c) => c.revealed);
-    const newCells = [];
-    batch.forEach((item) => {
-      item.cell.revealed = true;
-      G.seq += 1;
-      item.cell.revealSeq = G.seq;
-      if (!item.cell.mine) {
-        G.revealedSafe += 1;
-      }
-      newCells.push(item.cell);
-    });
-    const ctx = makeCtx({ newCells, revealedBefore: before, origin: cell, depth: step.depth, type: "chord" });
-    runHooks("onRevealCommit", ctx);
-    updateHud();
-    await animateReveal(batch);
-    const misted = newCells.filter((c) => c.misted && !c.mine);
-    if (misted.length) {
-      await animateMist(misted);
-    }
-    runHooks("onRevealDone", ctx);
-
-    const hitCell = newCells.find((c) => c.mine);
-    if (hitCell) {
-      if (await resolveMineHit(ctx, hitCell)) {
-        return;
-      }
-      await runLoss(hitCell);
-      return;
-    }
-    if (G.revealedSafe >= totalSafe()) {
-      await runWin();
-    }
+    await commitRevealBatch(batch, { origin: cell, depth: step.depth, type: "chord", meta: step.meta || {} });
   }
 
   // 踩到雷：先给效果一次“免死”的机会；没有效果救场就正常失败。
@@ -907,15 +1201,175 @@
     runHooks("onFlagChange", makeCtx({ origin: cell, depth: step.depth, type: "autoFlag", flagCell: cell, flagValue: true }));
   }
 
+  // 批量插旗（天下劫 / 雷脉 / 大数字对策Ⅱ），整批只算 1 个连锁事件
+  async function flagCells(cells, meta, depth) {
+    const targets = (cells || []).filter((cell) => cell && cell.mine && !cell.flagged && !cell.revealed);
+    if (!targets.length || G.phase !== "playing") {
+      return;
+    }
+    const staggered = targets.length > 1;
+    const flaggedNow = [];
+    for (const cell of targets) {
+      if (G.phase !== "playing") {
+        return;
+      }
+      cell.flagged = true;
+      G.flags += 1;
+      paintCell(cell);
+      flashCell(cell, "is-flagging");
+      flaggedNow.push(cell);
+      if (staggered) {
+        updateHud();
+        await sleep(55);
+      }
+    }
+    updateHud();
+    if (meta && meta.effectId) {
+      pulseEffectCard(meta.effectId);
+    }
+    await sleep(staggered ? 130 : 60);
+    flaggedNow.forEach((cell) => {
+      runHooks(
+        "onFlagChange",
+        makeCtx({ origin: cell, depth: depth || 0, type: "autoFlag", flagCell: cell, flagValue: true })
+      );
+    });
+  }
+
+  async function stepFlagBatch(step) {
+    const cells = (step.cells || []).map((p) => at(p.x, p.y)).filter(Boolean);
+    await flagCells(cells, step.meta, step.depth);
+  }
+
+  // 区域开采：框选动画 → 区内雷插旗 → 区内安全格揭开
+  function cellsInRect(rect) {
+    const out = [];
+    for (let y = rect.y0; y < rect.y0 + rect.h; y += 1) {
+      for (let x = rect.x0; x < rect.x0 + rect.w; x += 1) {
+        const cell = at(x, y);
+        if (cell) {
+          out.push(cell);
+        }
+      }
+    }
+    return out;
+  }
+
+  async function stepAreaSweep(step) {
+    if (G.phase !== "playing") {
+      return;
+    }
+    const meta = step.meta || {};
+    for (const rect of step.rects || []) {
+      if (G.phase !== "playing") {
+        return;
+      }
+      const cells = cellsInRect(rect);
+      if (!cells.length) {
+        continue;
+      }
+      await animateBoxSelect(cells);
+      if (G.phase !== "playing") {
+        return;
+      }
+      const mines = cells.filter((cell) => cell.mine && !cell.flagged && !cell.revealed);
+      if (mines.length) {
+        await flagCells(mines, meta, step.depth);
+      }
+      if (G.phase !== "playing") {
+        return;
+      }
+      const safe = cells.filter((cell) => !cell.mine && !cell.revealed && !cell.flagged);
+      if (safe.length) {
+        const result = await commitRevealBatch(mergeReveals(safe), {
+          origin: safe[0],
+          depth: step.depth,
+          type: "reveal",
+          meta,
+        });
+        if (result === "lost" || result === "won" || result === "saved") {
+          return;
+        }
+      }
+    }
+  }
+
+  // 沙尘漫天：把已经显示的数字盖回未翻开状态（玩家可以再点开）
+  async function stepSand(step) {
+    const cells = (step.cells || [])
+      .map((p) => at(p.x, p.y))
+      .filter((cell) => cell && cell.revealed && !cell.mine);
+    if (!cells.length) {
+      return;
+    }
+    for (const cell of cells) {
+      if (G.phase !== "playing") {
+        return;
+      }
+      cell.revealed = false;
+      cell.sand = true;
+      cell.misted = false;
+      G.revealedSafe = Math.max(0, G.revealedSafe - 1);
+      paintCell(cell);
+      flashCell(cell, "is-sanding");
+      await sleep(170);
+    }
+    updateHud();
+    if (step.meta && step.meta.effectId) {
+      pulseEffectCard(step.meta.effectId);
+    }
+    await sleep(140);
+  }
+
+  // 全部雷都插了旗、且旗数正好等于雷数 → 光扫清场
+  function allMinesFlagged() {
+    if (!G.placed || G.phase !== "playing" || G.flags !== G.mines) {
+      return false;
+    }
+    return G.cells.every((cell) => !cell.mine || cell.flagged);
+  }
+
+  async function sweepOpen() {
+    const gen = G.gen;
+    showBoardToast("全雷标记完毕 · 自动清场", null);
+    await sweepBeam();
+    if (gen !== G.gen || G.phase !== "playing") {
+      return;
+    }
+    const targets = G.cells.filter((cell) => !cell.mine && !cell.revealed && !cell.flagged);
+    if (targets.length) {
+      const result = await commitRevealBatch(mergeReveals(targets), {
+        origin: targets[0],
+        depth: 0,
+        type: "sweep",
+        meta: { effectId: null },
+      });
+      if (result === "lost" || result === "won") {
+        return;
+      }
+    }
+    if (G.phase === "playing" && G.revealedSafe >= totalSafe()) {
+      await runWin();
+    }
+  }
+
   async function executeStep(step) {
     if (step.type === "reveal") {
       await stepReveal(step);
+    } else if (step.type === "revealBatch") {
+      await stepRevealBatch(step);
     } else if (step.type === "chord") {
       await stepChord(step);
     } else if (step.type === "toggleFlag") {
       await stepToggleFlag(step);
     } else if (step.type === "autoFlag") {
       await stepAutoFlag(step);
+    } else if (step.type === "flagBatch") {
+      await stepFlagBatch(step);
+    } else if (step.type === "areaSweep") {
+      await stepAreaSweep(step);
+    } else if (step.type === "sand") {
+      await stepSand(step);
     }
   }
 
@@ -944,6 +1398,12 @@
         await executeStep(step);
         if (G.phase !== "playing") {
           tx.queue.length = 0;
+          break;
+        }
+        if (allMinesFlagged()) {
+          tx.queue.length = 0;
+          await sweepOpen();
+          break;
         }
       }
     } catch (error) {
@@ -1177,7 +1637,10 @@
   async function startGame() {
     abortTransaction();
     G.phase = "dealing";
-    G.mines = CFG.mines;
+    applyBoardSize();
+    G.mines = G.baseMines;
+    G.bigNeed = null;
+    G.immunity = 0;
     hideResult();
     buildCells();
     buildBoardNodes();
@@ -1202,6 +1665,7 @@
     await dealEffectCards(effects);
 
     G.mines = minesForEffects(effects);
+    G.bigNeed = bigNeedForEffects(effects);
     G.phase = "playing";
     setLocked(false);
     updateHud();
@@ -1216,7 +1680,22 @@
 
   // 本局雷数 = 基础雷数 + 所有负面效果的加成（例如「雷区扩张 +10」）。
   function minesForEffects(effects) {
-    return CFG.mines + effects.reduce((sum, effect) => sum + (Number(effect.mineDelta) || 0), 0);
+    return G.baseMines + effects.reduce((sum, effect) => sum + (Number(effect.mineDelta) || 0), 0);
+  }
+
+  // boss 类负面效果的要求：至少 count 个 ≥ value 的数字，多个 boss 取最严格的那个。
+  function bigNeedForEffects(effects) {
+    let need = null;
+    effects.forEach((effect) => {
+      const target = effect.bossTarget;
+      if (!target) {
+        return;
+      }
+      if (!need || target.value > need.value) {
+        need = { value: target.value, count: Math.max(1, Number(target.count) || 1) };
+      }
+    });
+    return need;
   }
 
   function showResult(won) {
@@ -1232,7 +1711,7 @@
     el.resultTime.textContent = formatClock(ms, true);
     el.resultFlags.textContent = String(G.flags);
     el.resultMode.textContent =
-      G.mode === "free" ? "自由" : TIERS[G.tier].label;
+      (G.mode === "free" ? "自由" : TIERS[G.tier].label) + ` · ${sizeInfo().label}`;
     el.resultEffects.innerHTML = "";
     G.effects.forEach((effect) => {
       const chip = document.createElement("span");
@@ -1502,6 +1981,110 @@
     });
   }
 
+  // --------------------------------------------------------------- 雷区大小
+
+  const SIZE_STORE_KEY = "ms_size_id";
+  let pendingSize = null;
+
+  function sizeInfoById(id) {
+    return (CFG.sizes || {})[id] || null;
+  }
+
+  function isMobileView() {
+    if (G.forceMobile) {
+      return true;
+    }
+    return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 620px)").matches;
+  }
+
+  function defaultSizeId() {
+    try {
+      const saved = window.localStorage.getItem(SIZE_STORE_KEY);
+      if (saved && sizeInfoById(saved)) {
+        return saved;
+      }
+    } catch (error) {
+      // 隐私模式下 localStorage 可能不可用，按设备默认走
+    }
+    return isMobileView() ? "small" : "medium";
+  }
+
+  function syncSizeSwitch() {
+    if (!el.sizeSwitch) {
+      return;
+    }
+    el.sizeSwitch.querySelectorAll("button").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.dataset.size === G.sizeId);
+    });
+  }
+
+  function renderSizeNote() {
+    if (!el.sizeNote) {
+      return;
+    }
+    const info = sizeInfo();
+    el.sizeNote.textContent = `当前：${info.label} · ${info.cols}×${info.rows} · ${info.mines} 雷（切换后立刻开新局）`;
+  }
+
+  function setSize(id, options) {
+    const info = sizeInfoById(id);
+    if (!info) {
+      return;
+    }
+    G.sizeId = id;
+    try {
+      window.localStorage.setItem(SIZE_STORE_KEY, id);
+    } catch (error) {
+      // 存不了就算了
+    }
+    syncSizeSwitch();
+    renderSizeNote();
+    updateHud();
+    if (!options || options.restart !== false) {
+      startGame();
+    }
+  }
+
+  function requestSize(id) {
+    if (id === G.sizeId || !sizeInfoById(id)) {
+      return;
+    }
+    if (isMobileView() && id !== "small") {
+      pendingSize = id;
+      if (el.sizeConfirm) {
+        el.sizeConfirm.hidden = false;
+      }
+      return;
+    }
+    setSize(id);
+  }
+
+  function bindSize() {
+    if (!el.sizeSwitch) {
+      return;
+    }
+    el.sizeSwitch.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => requestSize(btn.dataset.size));
+    });
+    if (el.sizeConfirmYes) {
+      el.sizeConfirmYes.addEventListener("click", () => {
+        el.sizeConfirm.hidden = true;
+        const id = pendingSize;
+        pendingSize = null;
+        if (id) {
+          setSize(id);
+        }
+      });
+    }
+    if (el.sizeConfirmNo) {
+      el.sizeConfirmNo.addEventListener("click", () => {
+        el.sizeConfirm.hidden = true;
+        pendingSize = null;
+        syncSizeSwitch();
+      });
+    }
+  }
+
   function bindResult() {
     el.scoreForm.addEventListener("submit", saveScore);
     el.resultRestart.addEventListener("click", () => {
@@ -1630,6 +2213,7 @@
     el.statusText = document.getElementById("gameStatusText");
     el.lockText = document.getElementById("gameLockText");
     el.mineCount = document.getElementById("mineCount");
+    el.immuneBadge = document.getElementById("immuneBadge");
     el.timerText = document.getElementById("timerText");
     el.modeBadge = document.getElementById("modeBadge");
     el.flagToggle = document.getElementById("flagToggle");
@@ -1640,6 +2224,11 @@
     el.particles = document.getElementById("particleLayer");
     el.modeSwitch = document.getElementById("modeSwitch");
     el.tierSwitch = document.getElementById("tierSwitch");
+    el.sizeSwitch = document.getElementById("sizeSwitch");
+    el.sizeNote = document.getElementById("sizeNote");
+    el.sizeConfirm = document.getElementById("sizeConfirm");
+    el.sizeConfirmYes = document.getElementById("sizeConfirmYes");
+    el.sizeConfirmNo = document.getElementById("sizeConfirmNo");
     el.tierBlock = document.getElementById("tierBlock");
     el.tierNote = document.getElementById("tierNote");
     el.freeBlock = document.getElementById("freeBlock");
@@ -1673,15 +2262,18 @@
     if (!el.panel || !el.board) {
       return;
     }
-    G.cols = CFG.cols;
-    G.rows = CFG.rows;
+    G.sizeId = defaultSizeId();
+    applyBoardSize();
     buildCells();
     buildBoardNodes();
     buildFxPicker();
     bindBoard();
     bindSetup();
+    bindSize();
     bindResult();
     bindPanel();
+    syncSizeSwitch();
+    renderSizeNote();
     updateHud();
     el.tierNote.textContent = `${TIERS[G.tier].label}：${TIERS[G.tier].buffs} 个正面 + ${TIERS[G.tier].debuffs} 个负面。${TIERS[G.tier].desc}`;
     applyHash(true);
@@ -1703,6 +2295,13 @@
       },
       open: openPanel,
       close: closePanel,
+      setSize: (id) => setSize(id, { restart: true }),
+      setSizeId(id) {
+        G.sizeId = id;
+        syncSizeSwitch();
+      },
+      sweepOpen,
+      allMinesFlagged,
       reveal: (x, y) => runTransaction("reveal", { x, y }),
       flag: (x, y) => runTransaction("flag", { x, y }),
       chord: (x, y) => runTransaction("chord", { x, y }),

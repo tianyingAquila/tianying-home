@@ -18,23 +18,37 @@ body.game-open {
 .nav-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   height: 40px;
-  padding: 0 15px;
+  min-width: 86px;
+  padding: 0 24px;
   border-radius: 999px;
-  border: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text);
-  font-size: 14px;
-  letter-spacing: 0.02em;
+  border: 1px solid rgba(255, 150, 200, 0.75);
+  background: linear-gradient(135deg, #ffa1cd, #ff5fa8 62%, #ff4f9d);
+  color: #40071f;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  box-shadow: 0 8px 22px rgba(255, 79, 157, 0.38);
   cursor: pointer;
-  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+  animation: nav-glow 3.2s ease-in-out infinite;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
 }
 
 .nav-button:hover {
-  transform: translateY(-1px);
-  border-color: rgba(109, 109, 246, 0.65);
-  background: rgba(109, 109, 246, 0.16);
+  transform: translateY(-1px) scale(1.02);
+  filter: brightness(1.06);
+  box-shadow: 0 10px 26px rgba(255, 79, 157, 0.5);
+}
+
+.nav-button:active {
+  transform: translateY(0) scale(0.99);
+}
+
+@keyframes nav-glow {
+  0%, 100% { box-shadow: 0 8px 22px rgba(255, 79, 157, 0.34); }
+  50% { box-shadow: 0 10px 28px rgba(255, 79, 157, 0.58); }
 }
 
 .nav-button svg {
@@ -867,6 +881,76 @@ body[data-theme="light"] .num-8 { color: #334155; }
 
 /* ---------- 效果提示条 / 护盾圆环 ---------- */
 
+.hud-badge[hidden] {
+  display: none;
+}
+
+.hud-badge.is-immune {
+  border-color: rgba(125, 211, 252, 0.6);
+  background: rgba(56, 189, 248, 0.24);
+  color: #bae6fd;
+  font-weight: 600;
+}
+
+/* 天下劫 / 雷脉的框选 */
+.select-box {
+  position: absolute;
+  z-index: 6;
+  border: 2px solid rgba(125, 211, 252, 0.9);
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.12);
+  box-shadow: 0 0 22px rgba(56, 189, 248, 0.45), inset 0 0 18px rgba(56, 189, 248, 0.18);
+  pointer-events: none;
+  animation: box-select 0.43s ease both;
+}
+
+.select-box.is-done {
+  transition: opacity 0.2s ease;
+  opacity: 0;
+}
+
+/* 全雷标记后的光扫 */
+.sweep-beam {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 42px;
+  z-index: 9;
+  border-radius: 40px;
+  background: linear-gradient(90deg, rgba(186, 230, 253, 0), rgba(224, 242, 254, 0.95), rgba(186, 230, 253, 0));
+  filter: blur(2px);
+  pointer-events: none;
+  animation: sweep-run 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* 大数字对策Ⅱ的冲击波 */
+.shock-wave {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  border: 2px solid rgba(253, 224, 71, 0.85);
+  box-shadow: 0 0 26px rgba(250, 204, 21, 0.7);
+  pointer-events: none;
+  z-index: 7;
+  animation: shock-out 1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+.ms-cell.is-sand {
+  border-color: rgba(217, 180, 110, 0.55);
+  background: linear-gradient(160deg, rgba(196, 154, 84, 0.5), rgba(140, 106, 54, 0.42));
+  color: #f0d9a8;
+}
+
+.ms-cell.is-sand .glyph-sand {
+  stroke: #f2dcae;
+}
+
+.ms-cell.is-sanding {
+  animation: ms-sand 0.5s ease both;
+}
+
 .board-toasts {
   position: absolute;
   top: 2px;
@@ -916,6 +1000,71 @@ body[data-theme="light"] .num-8 { color: #334155; }
 }
 
 /* ---------- 结算层 ---------- */
+
+.game-board[data-size="small"] {
+  max-width: 520px;
+}
+
+.game-board[data-size="large"] {
+  max-width: 760px;
+}
+
+@supports (font-size: 1cqw) {
+  .game-board[data-size="small"] .ms-cell {
+    font-size: 4.4cqw;
+  }
+
+  .game-board[data-size="large"] .ms-cell {
+    font-size: 2.5cqw;
+  }
+}
+
+/* ---------- 更换雷区大小的确认弹窗 ---------- */
+
+.game-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(4, 6, 16, 0.58);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  animation: ms-fade 0.24s ease both;
+}
+
+.game-confirm[hidden] {
+  display: none;
+}
+
+.confirm-card {
+  width: min(360px, 100%);
+  padding: 22px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-strong);
+  box-shadow: var(--shadow);
+  text-align: center;
+  animation: ms-rise 0.32s cubic-bezier(0.22, 0.9, 0.24, 1) both;
+}
+
+.confirm-text {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.confirm-actions .game-button {
+  flex: 1 1 0;
+}
 
 .game-result {
   position: fixed;
@@ -1256,6 +1405,31 @@ body[data-theme="light"] .num-8 { color: #334155; }
   100% { transform: scale(4.4); opacity: 0; }
 }
 
+@keyframes ms-sand {
+  0% { transform: scale(1); filter: brightness(1); }
+  40% { transform: scale(0.9); filter: brightness(1.35) saturate(1.4); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes box-select {
+  0% { transform: scale(1.06); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes sweep-run {
+  0% { left: -8%; opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+@keyframes shock-out {
+  0% { transform: scale(0.5); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: scale(14); opacity: 0; }
+}
+
 @keyframes ms-blast {
   0% { transform: scale(0.7); filter: brightness(2.4); }
   60% { transform: scale(1.12); }
@@ -1381,8 +1555,10 @@ body[data-theme="light"] .num-8 { color: #334155; }
     justify-content: center;
   }
 
-  .nav-button .nav-label {
-    display: none;
+  .nav-button {
+    min-width: 74px;
+    padding: 0 16px;
+    font-size: 14px;
   }
 
   .game-hud {
