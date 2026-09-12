@@ -76,25 +76,62 @@ body.game-open {
   overscroll-behavior: contain;
   transform: translateX(100%);
   transition: transform 0.46s cubic-bezier(0.22, 0.9, 0.24, 1);
-  background:
+  background-image:
     radial-gradient(circle at 10% 6%, rgba(109, 109, 246, 0.3), transparent 42%),
     radial-gradient(circle at 88% 10%, rgba(244, 114, 182, 0.2), transparent 40%),
     radial-gradient(circle at 60% 96%, rgba(56, 189, 248, 0.16), transparent 44%),
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='78'%20height='78'%20viewBox='0%200%2078%2078'%3E%3Cg%20fill='none'%3E%3Cpath%20d='M0%2039%2039%200%2078%2039%2039%2078Z'%20stroke='%238fe3f2'%20stroke-opacity='0.16'%20stroke-width='3'%20style='filter:blur(1.2px)'/%3E%3Cpath%20d='M0%2039%2039%200%2078%2039%2039%2078Z'%20stroke='%238fe3f2'%20stroke-opacity='0.5'%20stroke-width='1'/%3E%3C/g%3E%3Cg%20fill='%23d6f7ff'%20fill-opacity='0.9'%3E%3Ccircle%20cx='39'%20cy='0'%20r='1.5'/%3E%3Ccircle%20cx='78'%20cy='39'%20r='1.5'/%3E%3Ccircle%20cx='39'%20cy='78'%20r='1.5'/%3E%3Ccircle%20cx='0'%20cy='39'%20r='1.5'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 52%, var(--bg-2) 100%);
+  background-size: auto, auto, auto, 78px 78px, auto;
+  background-position: center;
+}
+
+body[data-theme="light"] .game-panel {
+  background-image:
+    radial-gradient(circle at 10% 6%, rgba(109, 109, 246, 0.3), transparent 42%),
+    radial-gradient(circle at 88% 10%, rgba(244, 114, 182, 0.2), transparent 40%),
+    radial-gradient(circle at 60% 96%, rgba(56, 189, 248, 0.16), transparent 44%),
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='78'%20height='78'%20viewBox='0%200%2078%2078'%3E%3Cg%20fill='none'%3E%3Cpath%20d='M0%2039%2039%200%2078%2039%2039%2078Z'%20stroke='%23668fc9'%20stroke-opacity='0.14'%20stroke-width='3'%20style='filter:blur(1.2px)'/%3E%3Cpath%20d='M0%2039%2039%200%2078%2039%2039%2078Z'%20stroke='%23668fc9'%20stroke-opacity='0.3'%20stroke-width='1'/%3E%3C/g%3E%3Cg%20fill='%234f7cb8'%20fill-opacity='0.55'%3E%3Ccircle%20cx='39'%20cy='0'%20r='1.5'/%3E%3Ccircle%20cx='78'%20cy='39'%20r='1.5'/%3E%3Ccircle%20cx='39'%20cy='78'%20r='1.5'/%3E%3Ccircle%20cx='0'%20cy='39'%20r='1.5'/%3E%3C/g%3E%3C/svg%3E"),
     linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 52%, var(--bg-2) 100%);
 }
 
-.game-panel::before {
-  content: "";
+/* 上扫光束：只让"光束附近的网格线"发亮，并随距离渐隐 */
+.game-beam {
   position: fixed;
   inset: 0;
+  z-index: 0;
   pointer-events: none;
-  opacity: 0.5;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 46px 46px, 46px 46px;
-  mask-image: radial-gradient(circle at 50% 30%, rgba(0, 0, 0, 0.9), transparent 78%);
-  -webkit-mask-image: radial-gradient(circle at 50% 30%, rgba(0, 0, 0, 0.9), transparent 78%);
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='78'%20height='78'%20viewBox='0%200%2078%2078'%3E%3Cg%20fill='none'%3E%3Cpath%20d='M0%2039%2039%200%2078%2039%2039%2078Z'%20stroke='%23a9ecff'%20stroke-opacity='0.32'%20stroke-width='5'%20style='filter:blur(2px)'/%3E%3Cpath%20d='M0%2039%2039%200%2078%2039%2039%2078Z'%20stroke='%23e8fbff'%20stroke-opacity='0.95'%20stroke-width='1.5'/%3E%3C/g%3E%3Cg%20fill='%23ffffff'%20fill-opacity='0.95'%3E%3Ccircle%20cx='39'%20cy='0'%20r='2.2'/%3E%3Ccircle%20cx='78'%20cy='39'%20r='2.2'/%3E%3Ccircle%20cx='39'%20cy='78'%20r='2.2'/%3E%3Ccircle%20cx='0'%20cy='39'%20r='2.2'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 78px 78px;
+  background-position: center;
+  mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.88) 42%, #000 50%, rgba(0, 0, 0, 0.88) 58%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.88) 42%, #000 50%, rgba(0, 0, 0, 0.88) 58%, transparent 100%);
+  -webkit-mask-size: 100% 340px;
+  mask-size: 100% 340px;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center calc(100% + 180px);
+  mask-position: center calc(100% + 180px);
+  animation: game-beam-rise 7.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation-delay: 1.6s;
+  will-change: mask-position;
+}
+
+body[data-theme="light"] .game-beam {
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='78'%20height='78'%20viewBox='0%200%2078%2078'%3E%3Cg%20fill='none'%3E%3Cpath%20d='M0%2039%2039%200%2078%2039%2039%2078Z'%20stroke='%233a6fd8'%20stroke-opacity='0.28'%20stroke-width='5'%20style='filter:blur(2px)'/%3E%3Cpath%20d='M0%2039%2039%200%2078%2039%2039%2078Z'%20stroke='%23325ca8'%20stroke-opacity='0.85'%20stroke-width='1.5'/%3E%3C/g%3E%3Cg%20fill='%23294f94'%20fill-opacity='0.9'%3E%3Ccircle%20cx='39'%20cy='0'%20r='2.2'/%3E%3Ccircle%20cx='78'%20cy='39'%20r='2.2'/%3E%3Ccircle%20cx='39'%20cy='78'%20r='2.2'/%3E%3Ccircle%20cx='0'%20cy='39'%20r='2.2'/%3E%3C/g%3E%3C/svg%3E");
+  mix-blend-mode: normal;
+}
+
+@keyframes game-beam-rise {
+  0% {
+    -webkit-mask-position: center calc(100% + 180px);
+    mask-position: center calc(100% + 180px);
+  }
+  100% {
+    -webkit-mask-position: center calc(0% - 180px);
+    mask-position: center calc(0% - 180px);
+  }
 }
 
 .game-panel[hidden] {
@@ -111,6 +148,7 @@ body.game-open {
 
 .game-shell {
   position: relative;
+  z-index: 1;
   max-width: 1180px;
   margin: 0 auto;
   padding: 20px 24px 60px;
