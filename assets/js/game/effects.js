@@ -128,9 +128,9 @@
       mistChance: 0.1,
     },
     tiers: {
-      easy: { id: "easy", label: "简单", buffs: 3, debuffs: 1, desc: "多个正面效果，少量负面效果。" },
-      normal: { id: "normal", label: "普通", buffs: 2, debuffs: 2, desc: "正面和负面效果各占一半。" },
-      hard: { id: "hard", label: "困难", buffs: 1, debuffs: 3, desc: "少量正面效果，大量负面效果。" },
+      easy: { id: "easy", label: "简单", buffs: 4, debuffs: 1, desc: "正面多、负面少，玩起来轻松。" },
+      normal: { id: "normal", label: "普通", buffs: 3, debuffs: 2, desc: "正面比负面稍多，比较均衡。" },
+      hard: { id: "hard", label: "困难", buffs: 2, debuffs: 3, desc: "负面比正面多，难度偏高。" },
     },
     buffs,
     debuffs,

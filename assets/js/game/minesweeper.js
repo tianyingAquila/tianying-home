@@ -250,6 +250,9 @@
   function buildBoardNodes() {
     const frag = document.createDocumentFragment();
     el.board.innerHTML = "";
+    // 行和列都按配置写死成等分轨道，格子永远保持一样大，不会因为内容不同而变形。
+    el.board.style.gridTemplateColumns = `repeat(${G.cols}, minmax(0, 1fr))`;
+    el.board.style.gridTemplateRows = `repeat(${G.rows}, minmax(0, 1fr))`;
     G.cells.forEach((cell) => {
       const node = document.createElement("div");
       node.className = "ms-cell";
@@ -1150,7 +1153,8 @@
 
   async function saveScore(event) {
     event.preventDefault();
-    if (G.savedThisGame || !G.resultWon) {
+    // 只有难度模式的胜利才能上榜：自由模式、失败局、已保存过的都不允许。
+    if (G.mode !== "tier" || G.savedThisGame || !G.resultWon) {
       return;
     }
     const name = el.scoreName.value.trim() || "匿名玩家";
@@ -1163,6 +1167,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
+          mode: G.mode,
           timeMs: G.endedAt - G.startedAt,
           difficulty: G.tier,
           effects: G.effects.map((effect) => effect.id),

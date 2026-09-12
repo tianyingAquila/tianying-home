@@ -647,6 +647,7 @@ body.game-open {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
   container-type: inline-size;
   touch-action: manipulation;
+  grid-auto-rows: minmax(0, 1fr);
 }
 
 body[data-theme="light"] .game-board {
@@ -659,6 +660,7 @@ body[data-theme="light"] .game-board {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
@@ -951,6 +953,10 @@ body[data-theme="light"] .num-8 { color: #334155; }
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
+}
+
+.score-form[hidden] {
+  display: none;
 }
 
 .score-form input {

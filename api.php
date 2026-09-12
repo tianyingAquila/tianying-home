@@ -377,6 +377,10 @@ switch ($action) {
         if (!in_array($difficulty, ['easy', 'normal', 'hard'], true)) {
             respond(['ok' => false, 'error' => '难度不正确'], 400);
         }
+        // 只有难度模式的胜利可以进榜，自由模式一律不收。
+        if (($body['mode'] ?? '') !== 'tier') {
+            respond(['ok' => false, 'error' => '只有难度模式的成绩可以上榜'], 403);
+        }
         $rawEffects = $body['effects'] ?? [];
         if (!is_array($rawEffects)) {
             $rawEffects = [];

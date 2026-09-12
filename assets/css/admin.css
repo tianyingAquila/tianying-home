@@ -176,6 +176,10 @@ label {
   gap: 18px;
 }
 
+.admin-main[hidden] {
+  display: none;
+}
+
 .admin-section {
   padding: 22px;
 }
