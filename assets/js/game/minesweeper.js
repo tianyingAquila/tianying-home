@@ -1275,7 +1275,10 @@
       }
       G.scores = Array.isArray(data.data) ? data.data : [];
       renderScores();
-      el.scoreState.textContent = "";
+      if (G.scores.length) {
+        // 空榜单时保留 renderScores 写的提示语，不要清掉。
+        el.scoreState.textContent = "";
+      }
     } catch (error) {
       el.scoreState.textContent = "记录读取失败，稍后再试。";
     }
