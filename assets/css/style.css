@@ -132,6 +132,7 @@ body[data-theme="dark"] .bg.has-image {
   height: 250px;
   z-index: -2;
   pointer-events: none;
+  overflow: hidden;
   background: linear-gradient(
     180deg,
     transparent 0%,
@@ -144,6 +145,36 @@ body[data-theme="dark"] .bg.has-image {
   mix-blend-mode: screen;
   animation: bg-beam-rise 7.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   animation-delay: 1.6s;
+}
+
+/* 光束前缘加一条亮线，扫过时更明显 */
+.bg-beam::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: rgba(214, 247, 255, 0.85);
+  box-shadow: 0 0 18px rgba(143, 226, 246, 0.9);
+}
+
+/* 白天主题：改用正常的半透明蓝光，浅色底上也看得见 */
+body[data-theme="light"] .bg-beam {
+  mix-blend-mode: normal;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(105, 160, 235, 0.10) 38%,
+    rgba(148, 197, 255, 0.30) 50%,
+    rgba(105, 160, 235, 0.10) 62%,
+    transparent 100%
+  );
+}
+
+body[data-theme="light"] .bg-beam::after {
+  background: rgba(80, 140, 225, 0.7);
+  box-shadow: 0 0 16px rgba(120, 180, 250, 0.75);
 }
 
 @keyframes bg-beam-rise {
