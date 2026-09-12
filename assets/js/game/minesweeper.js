@@ -226,21 +226,28 @@
     });
     G.placed = true;
     if (G.bigNeeds.length) {
-      const want = G.bigNeeds.reduce((sum, need) => sum + need.count, 0);
-      const top = G.bigNeeds.reduce((max, need) => Math.max(max, need.value), 0);
-      G.bigAchieved = G.cells.filter((cell) => !cell.mine && cell.value >= top).length;
-      if (G.bigAchieved < want) {
-        console.warn(`[扫雷] boss 大数字不足：想要 ${want} 个 ≥${top}，实际只有 ${G.bigAchieved} 个（雷数不够时属正常）。`);
+      G.bigAchieved = G.bigNeeds.reduce((sum, need) => sum + need.count, 0);
+      const shortfall = G.bigNeeds
+        .map((need) => {
+          const have = G.cells.filter((cell) => !cell.mine && cell.value >= need.value).length;
+          return { need, have };
+        })
+        .filter((item) => item.have < item.need.count);
+      if (shortfall.length) {
+        console.warn(
+          "[扫雷] boss 大数字不足：" +
+            shortfall.map((s) => `要 ${s.need.count} 个 ≥${s.need.value}，实际 ${s.have} 个`).join("；") +
+            "（雷数不够时属正常）"
+        );
       }
     }
   }
 
-  // 构造式布雷（boss 类负面效果）：在**随机且分散**的位置围出若干「大数字」锚点
-  // （锚点周围 8 格全布雷 → 该格数字 = 8），剩下的雷再随机撒开。
+  // 构造式布雷（boss 类负面效果）：在**随机且分散**的位置围出若干「大数字」锚点，剩下的雷再随机撒开。
   //
-  // needs 是叠加后的需求列表：bossⅠ + bossⅡ 同时生效时 = 5 个 ≥6 且 5 个 ≥8，
-  // 也就是要 5 + 5 = 10 个锚点（不是只取更严格的那一个）。
-  //
+  // needs 是叠加后的需求列表。bossⅠ + bossⅡ 同时生效时 = 5 个 ≥6 且 5 个 ≥8：
+  //   · Ⅱ 的 5 个锚点：目标值 8（围满 8 颗雷）
+  //   · Ⅰ 的 5 个锚点：目标值在 6 / 7 / 8 里随机（只要 ≥6 就行，比围满省雷）
   // 锚点之间保持切比雪夫距离 ≥2，否则会互相抢邻居格导致数值不足。
   function placeBossClusters(pool, count, needs) {
     const poolSet = new Set(pool.map((cell) => key(cell)));
@@ -251,88 +258,33 @@
     if (!candidates.length) {
       return false;
     }
-    const target = needs.reduce((sum, need) => sum + need.count, 0);
-    const chosen = new Map(); // 已经决定要布雷的格子
-    const picked = []; // 锚点
-    const available = candidates.slice();
-
-    const extraCost = (cell) => neighbors(cell).filter((n) => !chosen.has(key(n))).length;
-    const farEnough = (cell) =>
-      picked.every((p) => Math.max(Math.abs(p.x - cell.x), Math.abs(p.y - cell.y)) >= 2);
-
-    // 第一轮：随机起点 + 每次挑「离已有锚点最远」的候选 → 大数字散布全图，且每局位置都不同。
-    // 给后面每个还没放的锚点预留 5 颗雷（共享柱时的最低开销），否则预算会被前面吃光。
-    for (;;) {
-      const left = target - picked.length;
-      if (left <= 0) {
-        break;
+    // 先摆要求高的（≥8 那批），再摆要求低的（6/7/8 随机那批），预算紧张时优先保住硬指标
+    const targets = [];
+    needs.forEach((need) => {
+      for (let i = 0; i < need.count; i += 1) {
+        targets.push(need.value >= 8 ? 8 : need.value + randInt(8 - need.value + 1));
       }
-      const reserve = (left - 1) * 5;
-      let bestIndex = -1;
-      let bestScore = -1;
-      for (let i = 0; i < available.length; i += 1) {
-        const cand = available[i];
-        if (!farEnough(cand)) {
-          continue;
+    });
+    targets.sort((a, b) => b - a);
+    // 雷够多时先追求「散布全图」；雷紧张时（小棋盘 + 多个 boss）改用「紧凑网格」，
+    // 因为共享邻居能省大量雷（同样 45 颗雷，紧凑排布能围出更多锚点）。
+    // 两套都算一遍，谁围出来的锚点多用谁（一样多就用分散的那套，更好看）。
+    const spreadPlan = planBossAnchors(candidates, targets, count, true);
+    let plan = spreadPlan;
+    if (spreadPlan.picked.length < targets.length) {
+      // 紧凑排布对"先放哪一颗"很敏感，多摇几次取锚点最多的那套
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        const compactPlan = planBossAnchors(candidates, targets, count, false);
+        if (compactPlan.picked.length > plan.picked.length) {
+          plan = compactPlan;
         }
-        const cost = extraCost(cand);
-        if (chosen.size + cost + reserve > count) {
-          continue;
-        }
-        const minDist = picked.length
-          ? picked.reduce(
-              (min, p) => Math.min(min, Math.max(Math.abs(p.x - cand.x), Math.abs(p.y - cand.y))),
-              Infinity
-            )
-          : 99;
-        const score = minDist + rnd() * 0.9; // 加一点随机，避免每局长得一样
-        if (score > bestScore) {
-          bestScore = score;
-          bestIndex = i;
+        if (plan.picked.length >= targets.length) {
+          break;
         }
       }
-      if (bestIndex < 0) {
-        break;
-      }
-      const anchor = available.splice(bestIndex, 1)[0];
-      neighbors(anchor).forEach((n) => chosen.set(key(n), n));
-      picked.push(anchor);
     }
-
-    // 第二轮：预算紧张时（小棋盘 + 多个 boss）改用「共享柱」把剩下的锚点补满，
-    // 优先挑额外花费最小的候选（能和已有雷簇共用一圈邻居），同价位再挑离得最远的，
-    // 避免所有锚点又挤成一团。
-    while (picked.length < target) {
-      let bestIndex = -1;
-      let bestScore = -Infinity;
-      for (let i = 0; i < available.length; i += 1) {
-        const cand = available[i];
-        if (!farEnough(cand)) {
-          continue;
-        }
-        const cost = extraCost(cand);
-        if (chosen.size + cost > count) {
-          continue;
-        }
-        const dist = picked.length
-          ? picked.reduce(
-              (min, p) => Math.min(min, Math.max(Math.abs(p.x - cand.x), Math.abs(p.y - cand.y))),
-              Infinity
-            )
-          : 99;
-        const score = -cost * 10 + dist + rnd() * 2;
-        if (score > bestScore) {
-          bestScore = score;
-          bestIndex = i;
-        }
-      }
-      if (bestIndex < 0) {
-        break;
-      }
-      const anchor = available.splice(bestIndex, 1)[0];
-      neighbors(anchor).forEach((n) => chosen.set(key(n), n));
-      picked.push(anchor);
-    }
+    const chosen = plan.chosen;
+    const picked = plan.picked;
 
     if (!picked.length) {
       return false;
@@ -340,15 +292,113 @@
     chosen.forEach((cell) => {
       cell.mine = true;
     });
-    const anchorKeys = new Set(picked.map((cell) => key(cell)));
+    const anchorKeys = new Set(picked.map((p) => key(p.cell)));
     const rest = pool.filter((cell) => !chosen.has(key(cell)) && !anchorKeys.has(key(cell)));
     shuffle(rest);
     const remaining = count - chosen.size;
     for (let i = 0; i < remaining && i < rest.length; i += 1) {
       rest[i].mine = true;
     }
-    G.bigAnchors = picked.map((cell) => ({ x: cell.x, y: cell.y }));
+    G.bigAnchors = picked.map((p) => ({ x: p.cell.x, y: p.cell.y, need: p.need }));
     return true;
+  }
+
+  // 尝试把所有目标锚点摆下去：spreadFirst = true 时先尽量分散，false 时直接紧凑排布。
+  // 返回 { chosen, picked }，picked.length 就是这套方案能围出的锚点数。
+  function planBossAnchors(candidates, targets, count, spreadFirst) {
+    const chosen = new Map();
+    const picked = [];
+    const available = candidates.slice();
+
+    // 这个锚点还差几颗雷才算达标（已经布好的邻居也算数）
+    const extraCost = (cell, target) => {
+      const ns = neighbors(cell);
+      const mined = ns.filter((n) => chosen.has(key(n))).length;
+      const fresh = ns.filter((n) => !chosen.has(key(n))).length;
+      return Math.min(Math.max(0, target - mined), fresh);
+    };
+    const commitAnchor = (cell, target) => {
+      const ns = neighbors(cell);
+      const mined = ns.filter((n) => chosen.has(key(n))).length;
+      const need = Math.max(0, target - mined);
+      const fresh = ns.filter((n) => !chosen.has(key(n)));
+      shuffle(fresh);
+      fresh.slice(0, need).forEach((n) => chosen.set(key(n), n));
+      picked.push({ cell, need: target });
+    };
+    const farEnough = (cell) =>
+      picked.every((p) => Math.max(Math.abs(p.cell.x - cell.x), Math.abs(p.cell.y - cell.y)) >= 2);
+    const distToPicked = (cell) =>
+      picked.length
+        ? picked.reduce(
+            (min, p) => Math.min(min, Math.max(Math.abs(p.cell.x - cell.x), Math.abs(p.cell.y - cell.y))),
+            Infinity
+          )
+        : 99;
+
+    let index = 0;
+    if (spreadFirst) {
+      // 第一轮：随机起点 + 每次挑「离已有锚点最远」的候选 → 大数字散布全图，每局位置都不同。
+      // 给后面每个还没放的锚点预留 5 颗雷，否则预算会被前面吃光。
+      while (index < targets.length) {
+        const reserve = (targets.length - index - 1) * 5;
+        let bestIndex = -1;
+        let bestScore = -1;
+        for (let i = 0; i < available.length; i += 1) {
+          const cand = available[i];
+          if (!farEnough(cand)) {
+            continue;
+          }
+          const cost = extraCost(cand, targets[index]);
+          if (chosen.size + cost + reserve > count) {
+            continue;
+          }
+          const score = distToPicked(cand) + rnd() * 0.9;
+          if (score > bestScore) {
+            bestScore = score;
+            bestIndex = i;
+          }
+        }
+        if (bestIndex < 0) {
+          break;
+        }
+        const anchor = available.splice(bestIndex, 1)[0];
+        commitAnchor(anchor, targets[index]);
+        index += 1;
+      }
+    }
+
+    // 收尾（或紧凑方案的主体）：每次挑额外花费最小的候选（能和已有雷簇共用一圈邻居）。
+    // 分散方案里同价位挑最远的（避免挤成一坨）；紧凑方案里同价位挑最近的（贴着已有簇长，
+    // 共享的邻居更多、更省雷，小棋盘才能把锚点都围出来）。
+    const distWeight = spreadFirst ? 1 : -0.5;
+    while (index < targets.length) {
+      let bestIndex = -1;
+      let bestScore = -Infinity;
+      for (let i = 0; i < available.length; i += 1) {
+        const cand = available[i];
+        if (!farEnough(cand)) {
+          continue;
+        }
+        const cost = extraCost(cand, targets[index]);
+        if (chosen.size + cost > count) {
+          continue;
+        }
+        const score = -cost * 10 + distToPicked(cand) * distWeight + rnd() * 2;
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = i;
+        }
+      }
+      if (bestIndex < 0) {
+        break;
+      }
+      const anchor = available.splice(bestIndex, 1)[0];
+      commitAnchor(anchor, targets[index]);
+      index += 1;
+    }
+
+    return { chosen, picked };
   }
 
   function collectReveal(start) {
@@ -518,7 +568,9 @@
   }
 
   function updateHud() {
-    el.mineCount.textContent = String(Math.max(0, G.mines - G.flags));
+    const left = G.mines - G.flags;
+    el.mineCount.textContent = String(left);
+    el.mineCount.classList.toggle("is-negative", left < 0);
     const sizeLabel = sizeInfo().label;
     el.modeBadge.textContent =
       (G.mode === "free"
@@ -750,6 +802,15 @@
   }
 
   // 大数字对策Ⅱ的冲击波
+  // 踩到雷时的全棋盘红光（免死护符救场时同样会闪，突出"护盾顶住了"）
+  function flashDanger() {
+    G.dangerFlashes = (G.dangerFlashes || 0) + 1;
+    const node = document.createElement("span");
+    node.className = "danger-flash";
+    el.boardWrap.appendChild(node);
+    window.setTimeout(() => node.remove(), 720);
+  }
+
   function shockwaveAt(cell) {
     const wrapRect = el.boardWrap.getBoundingClientRect();
     const point = cellCenter(cell, wrapRect);
@@ -1152,6 +1213,7 @@
 
     const hitCell = newCells.find((c) => c.mine);
     if (hitCell) {
+      flashDanger();
       if (await resolveMineHit(ctx, hitCell)) {
         return "saved";
       }
@@ -1236,10 +1298,7 @@
     if (!cell || cell.revealed || G.phase !== "playing") {
       return;
     }
-    if (!cell.flagged && G.flags >= G.mines) {
-      flashCell(cell, "is-hinting");
-      return;
-    }
+    // 允许插旗数超过雷数（剩余雷数会显示负数，方便玩家发现"多插了一面旗"）
     cell.flagged = !cell.flagged;
     G.flags += cell.flagged ? 1 : -1;
     paintCell(cell);
@@ -1391,9 +1450,10 @@
     await sleep(140);
   }
 
-  // 全部雷都插了旗、且旗数正好等于雷数 → 光扫清场
+  // 全部真雷都插了旗 → 光扫清场。
+  // 只看"真雷是否都被插旗"：多插的错误旗子不拦（想撤就撤，不想撤也能通关）。
   function allMinesFlagged() {
-    if (!G.placed || G.phase !== "playing" || G.flags !== G.mines) {
+    if (!G.placed || G.phase !== "playing" || G.flags < G.mines) {
       return false;
     }
     return G.cells.every((cell) => !cell.mine || cell.flagged);
