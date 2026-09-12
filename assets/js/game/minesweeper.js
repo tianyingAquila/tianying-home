@@ -83,7 +83,7 @@
     baseMines: CFG.mines,
     sizeId: "medium",
     immunity: 0,
-    bigNeed: null,
+    bigNeeds: [],
     bigAchieved: 0,
     phase: "idle", // idle | dealing | playing | over
     placed: false,
@@ -181,6 +181,7 @@
     G.placed = false;
     G.immunity = 0;
     G.bigAchieved = 0;
+    G.bigAnchors = [];
     for (let y = 0; y < G.rows; y += 1) {
       for (let x = 0; x < G.cols; x += 1) {
         G.cells.push({
@@ -211,8 +212,8 @@
     const pool = G.cells.filter((c) => !safe.has(key(c)));
     const count = Math.min(G.mines, pool.length);
     let clustered = false;
-    if (G.bigNeed && G.bigNeed.count > 0) {
-      clustered = placeBossClusters(pool, count, G.bigNeed);
+    if (G.bigNeeds.length) {
+      clustered = placeBossClusters(pool, count, G.bigNeeds);
     }
     if (!clustered) {
       shuffle(pool);
@@ -224,47 +225,115 @@
       cell.value = neighbors(cell).filter((n) => n.mine).length;
     });
     G.placed = true;
-    if (G.bigNeed) {
-      G.bigAchieved = G.cells.filter((c) => !c.mine && c.value >= G.bigNeed.value).length;
-      if (G.bigAchieved < G.bigNeed.count) {
-        console.warn(
-          `[扫雷] boss 大数字不足：需要 ${G.bigNeed.count} 个 ≥${G.bigNeed.value}，实际只有 ${G.bigAchieved} 个。`
-        );
+    if (G.bigNeeds.length) {
+      const want = G.bigNeeds.reduce((sum, need) => sum + need.count, 0);
+      const top = G.bigNeeds.reduce((max, need) => Math.max(max, need.value), 0);
+      G.bigAchieved = G.cells.filter((cell) => !cell.mine && cell.value >= top).length;
+      if (G.bigAchieved < want) {
+        console.warn(`[扫雷] boss 大数字不足：想要 ${want} 个 ≥${top}，实际只有 ${G.bigAchieved} 个（雷数不够时属正常）。`);
       }
     }
   }
 
-  // 构造式布雷（boss 类负面效果）：先围出若干「大数字」的簇，再把剩下的雷随机撒开。
-  // 锚点之间保持切比雪夫距离 ≥2，这样彼此不会占掉对方的邻居格。
-  function placeBossClusters(pool, count, need) {
+  // 构造式布雷（boss 类负面效果）：在**随机且分散**的位置围出若干「大数字」锚点
+  // （锚点周围 8 格全布雷 → 该格数字 = 8），剩下的雷再随机撒开。
+  //
+  // needs 是叠加后的需求列表：bossⅠ + bossⅡ 同时生效时 = 5 个 ≥6 且 5 个 ≥8，
+  // 也就是要 5 + 5 = 10 个锚点（不是只取更严格的那一个）。
+  //
+  // 锚点之间保持切比雪夫距离 ≥2，否则会互相抢邻居格导致数值不足。
+  function placeBossClusters(pool, count, needs) {
     const poolSet = new Set(pool.map((cell) => key(cell)));
-    const anchors = pool.filter((cell) => {
+    const candidates = pool.filter((cell) => {
       const ns = neighbors(cell);
       return ns.length === 8 && ns.every((n) => poolSet.has(key(n)));
     });
-    if (!anchors.length) {
+    if (!candidates.length) {
       return false;
     }
-    const chosen = new Map();
-    const picked = [];
-    const ordered = anchors.slice().sort((a, b) => a.y - b.y || a.x - b.x);
-    for (const anchor of ordered) {
-      if (picked.length >= need.count) {
+    const target = needs.reduce((sum, need) => sum + need.count, 0);
+    const chosen = new Map(); // 已经决定要布雷的格子
+    const picked = []; // 锚点
+    const available = candidates.slice();
+
+    const extraCost = (cell) => neighbors(cell).filter((n) => !chosen.has(key(n))).length;
+    const farEnough = (cell) =>
+      picked.every((p) => Math.max(Math.abs(p.x - cell.x), Math.abs(p.y - cell.y)) >= 2);
+
+    // 第一轮：随机起点 + 每次挑「离已有锚点最远」的候选 → 大数字散布全图，且每局位置都不同。
+    // 给后面每个还没放的锚点预留 5 颗雷（共享柱时的最低开销），否则预算会被前面吃光。
+    for (;;) {
+      const left = target - picked.length;
+      if (left <= 0) {
         break;
       }
-      const farEnough = picked.every(
-        (p) => Math.max(Math.abs(p.x - anchor.x), Math.abs(p.y - anchor.y)) >= 2
-      );
-      if (!farEnough) {
-        continue;
+      const reserve = (left - 1) * 5;
+      let bestIndex = -1;
+      let bestScore = -1;
+      for (let i = 0; i < available.length; i += 1) {
+        const cand = available[i];
+        if (!farEnough(cand)) {
+          continue;
+        }
+        const cost = extraCost(cand);
+        if (chosen.size + cost + reserve > count) {
+          continue;
+        }
+        const minDist = picked.length
+          ? picked.reduce(
+              (min, p) => Math.min(min, Math.max(Math.abs(p.x - cand.x), Math.abs(p.y - cand.y))),
+              Infinity
+            )
+          : 99;
+        const score = minDist + rnd() * 0.9; // 加一点随机，避免每局长得一样
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = i;
+        }
       }
-      const add = neighbors(anchor).filter((n) => !chosen.has(key(n)));
-      if (chosen.size + add.length > count) {
-        continue;
+      if (bestIndex < 0) {
+        break;
       }
-      add.forEach((n) => chosen.set(key(n), n));
+      const anchor = available.splice(bestIndex, 1)[0];
+      neighbors(anchor).forEach((n) => chosen.set(key(n), n));
       picked.push(anchor);
     }
+
+    // 第二轮：预算紧张时（小棋盘 + 多个 boss）改用「共享柱」把剩下的锚点补满，
+    // 优先挑额外花费最小的候选（能和已有雷簇共用一圈邻居），同价位再挑离得最远的，
+    // 避免所有锚点又挤成一团。
+    while (picked.length < target) {
+      let bestIndex = -1;
+      let bestScore = -Infinity;
+      for (let i = 0; i < available.length; i += 1) {
+        const cand = available[i];
+        if (!farEnough(cand)) {
+          continue;
+        }
+        const cost = extraCost(cand);
+        if (chosen.size + cost > count) {
+          continue;
+        }
+        const dist = picked.length
+          ? picked.reduce(
+              (min, p) => Math.min(min, Math.max(Math.abs(p.x - cand.x), Math.abs(p.y - cand.y))),
+              Infinity
+            )
+          : 99;
+        const score = -cost * 10 + dist + rnd() * 2;
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = i;
+        }
+      }
+      if (bestIndex < 0) {
+        break;
+      }
+      const anchor = available.splice(bestIndex, 1)[0];
+      neighbors(anchor).forEach((n) => chosen.set(key(n), n));
+      picked.push(anchor);
+    }
+
     if (!picked.length) {
       return false;
     }
@@ -278,6 +347,7 @@
     for (let i = 0; i < remaining && i < rest.length; i += 1) {
       rest[i].mine = true;
     }
+    G.bigAnchors = picked.map((cell) => ({ x: cell.x, y: cell.y }));
     return true;
   }
 
@@ -1639,7 +1709,7 @@
     G.phase = "dealing";
     applyBoardSize();
     G.mines = G.baseMines;
-    G.bigNeed = null;
+    G.bigNeeds = [];
     G.immunity = 0;
     hideResult();
     buildCells();
@@ -1665,7 +1735,7 @@
     await dealEffectCards(effects);
 
     G.mines = minesForEffects(effects);
-    G.bigNeed = bigNeedForEffects(effects);
+    G.bigNeeds = bigNeedsForEffects(effects);
     G.phase = "playing";
     setLocked(false);
     updateHud();
@@ -1683,19 +1753,20 @@
     return G.baseMines + effects.reduce((sum, effect) => sum + (Number(effect.mineDelta) || 0), 0);
   }
 
-  // boss 类负面效果的要求：至少 count 个 ≥ value 的数字，多个 boss 取最严格的那个。
-  function bigNeedForEffects(effects) {
-    let need = null;
+  // boss 类负面效果的要求：至少 count 个 ≥ value 的数字。
+  // 多个 boss 同时生效时**叠加**（Ⅰ + Ⅱ = 5 个 ≥6 且 5 个 ≥8，合计围 10 个锚点）。
+  function bigNeedsForEffects(effects) {
+    const needs = [];
     effects.forEach((effect) => {
       const target = effect.bossTarget;
       if (!target) {
         return;
       }
-      if (!need || target.value > need.value) {
-        need = { value: target.value, count: Math.max(1, Number(target.count) || 1) };
-      }
+      const value = Number(target.value) || 6;
+      const count = Math.max(1, Number(target.count) || 1);
+      needs.push({ value, count });
     });
-    return need;
+    return needs;
   }
 
   function showResult(won) {
