@@ -998,6 +998,80 @@ body[data-theme="light"] .num-8 { color: #334155; }
   animation: ms-sand 0.5s ease both;
 }
 
+/* 锁魂链：被锁住的格子不能点也不能标 */
+.ms-cell.is-locked {
+  cursor: not-allowed;
+  color: rgba(253, 224, 71, 0.9);
+  border-color: rgba(250, 204, 21, 0.42);
+  background:
+    repeating-linear-gradient(45deg, rgba(250, 204, 21, 0.16) 0 4px, rgba(15, 18, 36, 0.3) 4px 9px),
+    linear-gradient(160deg, rgba(120, 90, 20, 0.34), rgba(22, 18, 36, 0.55));
+  box-shadow: inset 0 0 10px rgba(250, 204, 21, 0.2);
+}
+
+body[data-theme="light"] .ms-cell.is-locked {
+  color: #b45309;
+  border-color: rgba(180, 83, 9, 0.42);
+  background:
+    repeating-linear-gradient(45deg, rgba(180, 83, 9, 0.16) 0 4px, rgba(255, 255, 255, 0.62) 4px 9px),
+    linear-gradient(160deg, rgba(253, 230, 138, 0.9), rgba(233, 213, 255, 0.62));
+  box-shadow: inset 0 0 10px rgba(180, 83, 9, 0.14);
+}
+
+.ms-cell.is-chaining {
+  animation: ms-chain-lock 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.ms-cell.is-unlocking {
+  animation: ms-chain-break 0.62s ease both;
+}
+
+.ms-cell.is-locked-hit {
+  animation: ms-locked-hit 0.4s ease;
+}
+
+.ms-cell.is-stolen {
+  animation: ms-stolen 0.55s ease both;
+}
+
+.ms-cell.is-meteor-hit {
+  animation: ms-meteor-hit 0.62s ease both;
+}
+
+/* 命数已到：多重流星打击 */
+.meteor-streak {
+  position: absolute;
+  width: 3px;
+  height: 78px;
+  margin: -78px 0 0 -1.5px;
+  border-radius: 999px;
+  transform-origin: 50% 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(253, 224, 71, 0) 0%,
+    rgba(253, 224, 71, 0.3) 42%,
+    rgba(255, 255, 255, 0.95) 84%,
+    rgba(255, 251, 235, 1) 100%
+  );
+  box-shadow: 0 0 18px rgba(250, 204, 21, 0.8);
+  pointer-events: none;
+  z-index: 7;
+  animation: meteor-fall 0.62s cubic-bezier(0.35, 0, 0.6, 1) both;
+}
+
+.meteor-impact {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border-radius: 50%;
+  border: 2px solid rgba(253, 224, 71, 0.9);
+  box-shadow: 0 0 26px rgba(250, 204, 21, 0.85), inset 0 0 12px rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  z-index: 8;
+  animation: meteor-impact 0.72s ease-out forwards;
+}
+
 .board-toasts {
   position: absolute;
   top: 2px;
@@ -1456,6 +1530,49 @@ body[data-theme="light"] .num-8 { color: #334155; }
   0% { transform: scale(1); filter: brightness(1); }
   40% { transform: scale(0.9); filter: brightness(1.35) saturate(1.4); }
   100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes ms-chain-lock {
+  0% { transform: scale(1.1) rotate(-3deg); filter: brightness(1.5); }
+  60% { transform: scale(0.95) rotate(2deg); }
+  100% { transform: scale(1) rotate(0); filter: brightness(1); }
+}
+
+@keyframes ms-chain-break {
+  0% { transform: scale(1); filter: brightness(1); }
+  40% { transform: scale(1.14); filter: brightness(1.9) saturate(1.4); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes ms-locked-hit {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes ms-stolen {
+  0% { transform: scale(1); opacity: 1; }
+  38% { transform: scale(0.84) rotate(-9deg); opacity: 0.3; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ms-meteor-hit {
+  0% { box-shadow: 0 0 0 rgba(250, 204, 21, 0); }
+  32% { box-shadow: 0 0 24px rgba(250, 204, 21, 0.75); }
+  100% { box-shadow: none; }
+}
+
+@keyframes meteor-fall {
+  0% { opacity: 0; transform: translate(-66px, -58px) rotate(20deg) scaleY(0.8); }
+  16% { opacity: 1; }
+  78% { opacity: 1; }
+  100% { opacity: 0; transform: translate(0, 0) rotate(20deg) scaleY(1); }
+}
+
+@keyframes meteor-impact {
+  0% { transform: scale(0.4); opacity: 1; }
+  68% { transform: scale(2.7); opacity: 0.36; }
+  100% { transform: scale(3.5); opacity: 0; }
 }
 
 @keyframes box-select {

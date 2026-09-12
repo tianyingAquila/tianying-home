@@ -61,6 +61,14 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.4 15.6c1.6-1.4 2.6-1.4 4.2 0s2.6 1.4 4.2 0 2.6-1.4 4.2 0 2.6 1.4 4.2 0"/><path d="M4.4 19.4c1.6-1.4 2.6-1.4 4.2 0s2.6 1.4 4.2 0 2.6-1.4 4.2 0 2.6 1.4 4.2 0"/><circle cx="9.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="14" cy="4.8" r="0.9" fill="currentColor" stroke="none"/><circle cx="13.2" cy="9.2" r="1.3" fill="currentColor" stroke="none"/></svg>',
     boss:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.2"/><path d="M12 2.6v3M12 18.4v3M2.6 12h3M18.4 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/><path d="M10.2 9.6h3.6M12 9.6v5"/></svg>',
+    chain:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.6 14.4 6.8 17.2a3.4 3.4 0 0 1-4.8-4.8l3.4-3.4a3.4 3.4 0 0 1 4.8 0"/><path d="M14.4 9.6l2.8-2.8a3.4 3.4 0 0 1 4.8 4.8l-3.4 3.4a3.4 3.4 0 0 1-4.8 0"/><path d="M9.8 14.2l4.4-4.4"/></svg>',
+    meteor:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.6 9.4 6 18"/><circle cx="16.4" cy="7.6" r="2.6"/><path d="M9.4 15.6l-3.8.8.8-3.8"/><path d="M12.4 18.6l-3.8.8.8-3.8"/></svg>',
+    steal:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.6 20.4V4.8"/><path d="M5.6 5.4h7l-1.5 3.2 1.5 3.2h-7z"/><circle cx="16.6" cy="15.4" r="3.6"/><path d="M15.2 13.9l2.8 3"/><path d="M19.2 12.8l1.6-1.6"/></svg>',
+    spark:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.4 3.4l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L4.1 9.7l4.6-1.7z"/><path d="M17.6 15.4l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9z"/></svg>',
     blank:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="4.5" width="15" height="15" rx="3" stroke-dasharray="3 3"/></svg>',
   };
@@ -69,6 +77,8 @@
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="glyph-flag" d="M8 20V4.8"/><path class="glyph-flag" d="M8 5.4h7.6l-1.6 3.4 1.6 3.4H8z"/></svg>';
   const MINE_SVG =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><circle class="glyph-mine" cx="12" cy="12" r="4.6" fill="currentColor" fill-opacity="0.22"/><path class="glyph-mine" d="M12 4.4v3M12 16.6v3M4.4 12h3M16.6 12h3M6.6 6.6l2.1 2.1M15.3 15.3l2.1 2.1M17.4 6.6l-2.1 2.1M8.7 15.3l-2.1 2.1"/></svg>';
+  const LOCK_SVG =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.6 10.4V8.4a3.4 3.4 0 0 1 6.8 0v2"/><rect x="6.4" y="10.4" width="11.2" height="8.6" rx="2.2"/><path d="M12 14.2v2.4"/></svg>';
   const el = {};
   const G = {
     gen: 0,
@@ -135,6 +145,17 @@
     return list;
   }
 
+  // 从一堆格子里随机抽不重复的 count 个（效果用，数量不够就有几个给几个）。
+  function takeRandom(pool, count) {
+    const bag = (pool || []).slice();
+    const out = [];
+    const need = Math.max(0, Number(count) || 0);
+    while (out.length < need && bag.length) {
+      out.push(bag.splice(randInt(bag.length), 1)[0]);
+    }
+    return out;
+  }
+
   function at(x, y) {
     if (x < 0 || y < 0 || x >= G.cols || y >= G.rows) {
       return null;
@@ -188,6 +209,7 @@
           value: 0,
           revealed: false,
           flagged: false,
+          locked: false,
           misted: false,
           sand: false,
           wrong: false,
@@ -407,7 +429,8 @@
       const item = queue[head];
       head += 1;
       const cell = item.cell;
-      if (cell.revealed || cell.flagged) {
+      // 锁魂链锁住的格子既不会被揭开，也不会让零点扩散穿过它。
+      if (cell.revealed || cell.flagged || cell.locked) {
         continue;
       }
       out.push(item);
@@ -415,7 +438,7 @@
         continue;
       }
       neighbors(cell).forEach((n) => {
-        if (n.revealed || n.flagged) {
+        if (n.revealed || n.flagged || n.locked) {
           return;
         }
         const k = key(n);
@@ -524,6 +547,9 @@
         return;
       }
       node.innerHTML = FLAG_SVG;
+    } else if (cell.locked) {
+      node.classList.add("is-locked");
+      node.innerHTML = LOCK_SVG;
     } else if (cell.wrong) {
       node.classList.add("is-wrong");
     }
@@ -539,7 +565,9 @@
               : `数字 ${cell.value}`
           : cell.flagged
             ? "已插旗"
-            : "未揭开"
+            : cell.locked
+              ? "被锁住"
+              : "未揭开"
       }`
     );
   }
@@ -855,6 +883,39 @@
     window.setTimeout(() => beam.remove(), 500);
   }
 
+  // 命数已到的多重流星打击：每颗流星斜着砸到目标格上，落点炸开一圈金光。
+  async function meteorStrike(cells) {
+    const wrapRect = el.boardWrap.getBoundingClientRect();
+    const list = cells.slice(0, 14);
+    let index = 0;
+    for (const cell of list) {
+      const gen = G.gen;
+      const point = cellCenter(cell, wrapRect);
+      const streak = document.createElement("span");
+      streak.className = "meteor-streak";
+      streak.style.left = `${point.x}px`;
+      streak.style.top = `${point.y}px`;
+      el.boardWrap.appendChild(streak);
+      const impactDelay = index * 90 + 470;
+      window.setTimeout(() => {
+        if (gen !== G.gen) {
+          return;
+        }
+        const ring = document.createElement("span");
+        ring.className = "meteor-impact";
+        ring.style.left = `${point.x}px`;
+        ring.style.top = `${point.y}px`;
+        el.boardWrap.appendChild(ring);
+        window.setTimeout(() => ring.remove(), 760);
+        flashCell(cell, "is-meteor-hit");
+      }, impactDelay);
+      window.setTimeout(() => streak.remove(), impactDelay + 420);
+      index += 1;
+      await sleep(90);
+    }
+    await sleep(700);
+  }
+
   // ------------------------------------------------------------ 效果与结算
 
   function activeEffect(id) {
@@ -949,12 +1010,21 @@
         return G.fxState[id];
       },
       randomUnflaggedMine() {
-        const pool = G.cells.filter((c) => c.mine && !c.flagged && !G.reserved.has(key(c)));
+        const pool = G.cells.filter((c) => c.mine && !c.flagged && !c.locked && !G.reserved.has(key(c)));
         return pool.length ? pool[randInt(pool.length)] : null;
+      },
+      randomFlaggedCell() {
+        const pool = G.cells.filter((c) => c.flagged && !G.reserved.has(key(c)));
+        return pool.length ? pool[randInt(pool.length)] : null;
+      },
+      // 随机取若干还没揭开的格子（含雷），锁魂链用。
+      randomHiddenCells(count) {
+        const pool = G.cells.filter((c) => !c.revealed && !c.flagged && !c.locked && !G.reserved.has(key(c)));
+        return takeRandom(pool, count);
       },
       randomHiddenZeroCell() {
         const pool = G.cells.filter(
-          (c) => !c.mine && !c.revealed && !c.flagged && c.value === 0 && !G.reserved.has(key(c))
+          (c) => !c.mine && !c.revealed && !c.flagged && !c.locked && c.value === 0 && !G.reserved.has(key(c))
         );
         return pool.length ? pool[randInt(pool.length)] : null;
       },
@@ -984,7 +1054,9 @@
         const opts = options || {};
         const avoid = opts.awayFrom || [];
         const gap = opts.minGap || 0;
-        const pool = G.cells.filter((c) => !c.mine && !c.revealed && !c.flagged && !G.reserved.has(key(c)));
+        const pool = G.cells.filter(
+          (c) => !c.mine && !c.revealed && !c.flagged && !c.locked && !G.reserved.has(key(c))
+        );
         if (!pool.length) {
           return null;
         }
@@ -997,6 +1069,29 @@
           }
         }
         return pool[randInt(pool.length)];
+      },
+      // 一次拿多个互不重复的隐藏安全格。
+      randomHiddenSafeCells(count, options) {
+        const picked = [];
+        const bag = G.cells.filter(
+          (c) => !c.mine && !c.revealed && !c.flagged && !c.locked && !G.reserved.has(key(c))
+        );
+        const opts = options || {};
+        const avoid = opts.awayFrom || [];
+        const gap = opts.minGap || 0;
+        let pool = bag;
+        if (gap > 0 && avoid.length) {
+          const spread = bag.filter((c) =>
+            avoid.every((other) => Math.max(Math.abs(other.x - c.x), Math.abs(other.y - c.y)) >= gap)
+          );
+          if (spread.length) {
+            pool = spread;
+          }
+        }
+        return takeRandom(pool, count);
+      },
+      lockedCells() {
+        return G.cells.filter((cell) => cell.locked);
       },
       wasFired(cell) {
         return G.fired.has(key(cell));
@@ -1055,6 +1150,27 @@
           depth
         );
       },
+      queueLock(cells, meta, depth) {
+        enqueueFromEffect(
+          { type: "lock", cells: (cells || []).map((c) => ({ x: c.x, y: c.y })), meta: meta || {} },
+          depth
+        );
+      },
+      queueUnlock(cells, meta, depth) {
+        enqueueFromEffect(
+          { type: "unlock", cells: (cells || []).map((c) => ({ x: c.x, y: c.y })), meta: meta || {} },
+          depth
+        );
+      },
+      queueUnflag(cell, meta, depth) {
+        enqueueFromEffect({ type: "unflag", x: cell.x, y: cell.y, meta: meta || {} }, depth);
+      },
+      queueMeteor(cells, meta, depth) {
+        enqueueFromEffect(
+          { type: "meteor", cells: (cells || []).map((c) => ({ x: c.x, y: c.y })), meta: meta || {} },
+          depth
+        );
+      },
       log() {
         console.log("[扫雷效果]", ...arguments);
       },
@@ -1092,7 +1208,7 @@
     if (step.type === "autoFlag" || (step.type === "reveal" && step.meta && step.meta.effectId)) {
       // 同一批连锁里不要重复挑到同一个格子：排队时就先占位。
       G.reserved.add(step.y * G.cols + step.x);
-    } else if (Array.isArray(step.cells)) {
+    } else if (Array.isArray(step.cells) && step.type !== "unlock" && step.type !== "unflag") {
       step.cells.forEach((p) => G.reserved.add(p.y * G.cols + p.x));
     }
     G.tx.events += 1;
@@ -1167,13 +1283,15 @@
 
   // 揭开一批格子并跑完所有钩子 / 动画 / 胜负判定
   async function commitRevealBatch(batch, option) {
-    if (!batch.length || G.phase !== "playing") {
+    // 锁魂链锁住的格子谁来都打不开（解锁之后才会重新参与揭格）。
+    const usable = (batch || []).filter((item) => item.cell && !item.cell.locked);
+    if (!usable.length || G.phase !== "playing") {
       return "skip";
     }
     const opt = option || {};
     const before = G.cells.filter((c) => c.revealed);
     const newCells = [];
-    batch.forEach((item) => {
+    usable.forEach((item) => {
       item.cell.revealed = true;
       item.cell.sand = false;
       G.seq += 1;
@@ -1194,7 +1312,7 @@
     });
     runHooks("onRevealCommit", ctx);
     updateHud();
-    await animateReveal(batch);
+    await animateReveal(usable);
 
     const misted = newCells.filter((c) => c.misted && !c.mine);
     if (misted.length) {
@@ -1302,7 +1420,7 @@
 
   async function stepAutoFlag(step) {
     const cell = at(step.x, step.y);
-    if (!cell || cell.flagged || !cell.mine || G.phase !== "playing") {
+    if (!cell || cell.flagged || cell.locked || !cell.mine || G.phase !== "playing") {
       return;
     }
     const meta = step.meta || {};
@@ -1324,7 +1442,9 @@
 
   // 批量插旗（天下劫 / 雷脉 / 大数字对策Ⅱ），整批只算 1 个连锁事件
   async function flagCells(cells, meta, depth) {
-    const targets = (cells || []).filter((cell) => cell && cell.mine && !cell.flagged && !cell.revealed);
+    const targets = (cells || []).filter(
+      (cell) => cell && cell.mine && !cell.flagged && !cell.revealed && !cell.locked
+    );
     if (!targets.length || G.phase !== "playing") {
       return;
     }
@@ -1400,7 +1520,7 @@
       if (G.phase !== "playing") {
         return;
       }
-      const safe = cells.filter((cell) => !cell.mine && !cell.revealed && !cell.flagged);
+      const safe = cells.filter((cell) => !cell.mine && !cell.revealed && !cell.flagged && !cell.locked);
       if (safe.length) {
         const result = await commitRevealBatch(mergeReveals(safe), {
           origin: safe[0],
@@ -1442,6 +1562,120 @@
     await sleep(140);
   }
 
+  // 锁魂链：锁住一批格子。被锁的格子不能点、不能标，也不会被其他效果选中。
+  async function stepLock(step) {
+    if (G.phase !== "playing") {
+      return;
+    }
+    const meta = step.meta || {};
+    const target = Math.max(0, Number(meta.count) || 0);
+    const picked = [];
+    const seen = new Set();
+    const tryLock = (cell) => {
+      if (!cell || seen.has(key(cell)) || cell.locked || cell.revealed || cell.flagged) {
+        return;
+      }
+      seen.add(key(cell));
+      cell.locked = true;
+      paintCell(cell);
+      flashCell(cell, "is-chaining");
+      picked.push(cell);
+    };
+    (step.cells || []).map((p) => at(p.x, p.y)).forEach(tryLock);
+    // 首击那片区域可能已经把原本挑中的格子掀开了，这里按需要补足锁的数量。
+    let guard = 0;
+    while (target && picked.length < target && guard < 400) {
+      guard += 1;
+      const pool = G.cells.filter((c) => !c.revealed && !c.flagged && !c.locked && !seen.has(key(c)));
+      if (!pool.length) {
+        break;
+      }
+      tryLock(pool[randInt(pool.length)]);
+    }
+    if (!picked.length) {
+      return;
+    }
+    if (meta.effectId) {
+      pulseEffectCard(meta.effectId);
+      showBoardToast(`锁魂链 · 锁住 ${picked.length} 格`, meta.effectId);
+    }
+    updateHud();
+    await sleep(260);
+  }
+
+  // 锁魂链解除：正确插旗达到一半时整条锁链断掉。
+  async function stepUnlock(step) {
+    const listed = (step.cells || []).map((p) => at(p.x, p.y)).filter(Boolean);
+    const targets = (listed.length ? listed : G.cells).filter((cell) => cell && cell.locked);
+    if (!targets.length || G.phase !== "playing") {
+      return;
+    }
+    const meta = step.meta || {};
+    if (meta.effectId) {
+      pulseEffectCard(meta.effectId);
+      showBoardToast("锁魂链 · 锁链断裂", meta.effectId);
+    }
+    for (const cell of targets) {
+      if (G.phase !== "playing") {
+        return;
+      }
+      cell.locked = false;
+      paintCell(cell);
+      flashCell(cell, "is-unlocking");
+      await sleep(45);
+    }
+    await sleep(180);
+  }
+
+  // 鬼手神偷：偷偷取消一个格子的插旗。
+  async function stepUnflag(step) {
+    const cell = at(step.x, step.y);
+    if (!cell || !cell.flagged || G.phase !== "playing") {
+      return;
+    }
+    cell.flagged = false;
+    cell.wrong = false;
+    G.flags -= 1;
+    paintCell(cell);
+    flashCell(cell, "is-stolen");
+    updateHud();
+    if (step.meta && step.meta.effectId) {
+      pulseEffectCard(step.meta.effectId);
+    }
+    await sleep(200);
+    runHooks(
+      "onFlagChange",
+      makeCtx({ origin: cell, depth: step.depth, type: "stolenFlag", flagCell: cell, flagValue: false })
+    );
+  }
+
+  // 命数已到：流星砸完之后掀开这批安全格。
+  async function stepMeteor(step) {
+    const targets = (step.cells || [])
+      .map((p) => at(p.x, p.y))
+      .filter((cell) => cell && !cell.mine && !cell.revealed && !cell.flagged && !cell.locked);
+    if (!targets.length || G.phase !== "playing") {
+      return;
+    }
+    const meta = step.meta || {};
+    if (meta.effectId) {
+      pulseEffectCard(meta.effectId);
+    }
+    await meteorStrike(targets);
+    if (G.phase !== "playing") {
+      return;
+    }
+    const result = await commitRevealBatch(mergeReveals(targets), {
+      origin: targets[0],
+      depth: step.depth,
+      type: "reveal",
+      meta,
+    });
+    if (result === "lost" || result === "won" || result === "saved") {
+      return;
+    }
+  }
+
   // 光扫清场：必须旗数正好等于雷数，而且每颗真雷都被插旗。
   // 一面不能错、不能多、也不能少，否则不触发（防止开局乱插旗直接通关）。
   function allMinesFlagged() {
@@ -1453,6 +1687,14 @@
 
   async function sweepOpen() {
     const gen = G.gen;
+    // 全雷都标好了：就算锁魂链还剩几格没解，也一并解开再清场，避免卡住胜负判定。
+    const stillLocked = G.cells.filter((cell) => cell.locked);
+    if (stillLocked.length) {
+      stillLocked.forEach((cell) => {
+        cell.locked = false;
+        paintCell(cell);
+      });
+    }
     showBoardToast("全雷标记完毕 · 自动清场", null);
     await sweepBeam();
     if (gen !== G.gen || G.phase !== "playing") {
@@ -1492,6 +1734,14 @@
       await stepAreaSweep(step);
     } else if (step.type === "sand") {
       await stepSand(step);
+    } else if (step.type === "lock") {
+      await stepLock(step);
+    } else if (step.type === "unlock") {
+      await stepUnlock(step);
+    } else if (step.type === "unflag") {
+      await stepUnflag(step);
+    } else if (step.type === "meteor") {
+      await stepMeteor(step);
     }
   }
 
@@ -1499,8 +1749,24 @@
     if (G.tx || G.phase !== "playing") {
       return;
     }
+    // 锁魂链锁住的格子：点也不给点，右键插旗、双击、长按全部无效。
+    const guardCell = at(payload.x, payload.y);
+    if (guardCell && guardCell.locked) {
+      flashCell(guardCell, "is-locked-hit");
+      showBoardToast("锁魂链 · 这个格子被锁住了", "debuff_chain");
+      return;
+    }
     G.reserved = new Set();
-    const tx = { token: G.txSeq + 1, events: 0, depth: 0, queue: [], truncated: false };
+    const tx = {
+      token: G.txSeq + 1,
+      events: 0,
+      depth: 0,
+      queue: [],
+      truncated: false,
+      kind,
+      // 「每次操作都有概率」的效果要等这一次操作彻底结算完再掷骰子。
+      procPending: kind === "reveal" || kind === "flag",
+    };
     G.txSeq = tx.token;
     G.tx = tx;
     setLocked(true);
@@ -1512,9 +1778,21 @@
       } else if (kind === "flag") {
         tx.queue.push({ type: "toggleFlag", x: payload.x, y: payload.y, depth: 0 });
       }
-      while (tx.queue.length) {
+      while (tx.queue.length || tx.procPending) {
         if (G.txSeq !== tx.token) {
           break;
+        }
+        if (!tx.queue.length) {
+          tx.procPending = false;
+          runHooks("onPlayerAction", makeCtx({ depth: 0, type: tx.kind }));
+          if (G.phase !== "playing") {
+            break;
+          }
+          if (allMinesFlagged()) {
+            await sweepOpen();
+            break;
+          }
+          continue;
         }
         const step = tx.queue.shift();
         await executeStep(step);
