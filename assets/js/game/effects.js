@@ -95,10 +95,6 @@
       desc: "每累计揭开 9 个格子，额外自动揭开 1 个安全格。",
       hooks: {
         onRevealDone(ctx) {
-          if (ctx.effectDriven) {
-            // 效果自己开的格子不再计入下一次进度，避免连锁失控。
-            return;
-          }
           const state = ctx.state();
           state.opened = (state.opened || 0) + ctx.newSafeCount;
           if (state.opened < 9) {
@@ -124,10 +120,6 @@
       desc: "每累计揭开 12 个格子，额外自动揭开 2 个安全格。",
       hooks: {
         onRevealDone(ctx) {
-          if (ctx.effectDriven) {
-            // 效果自己开的格子不再计入下一次进度，避免连锁失控。
-            return;
-          }
           const state = ctx.state();
           state.opened = (state.opened || 0) + ctx.newSafeCount;
           if (state.opened < 12) {
@@ -156,10 +148,10 @@
       name: "五雷回响",
       type: "buff",
       glyph: "flagplus",
-      desc: "每亲手正确标记 5 个雷，额外随机标记 1 个雷（自动插的旗不算）。",
+      desc: "每正确标记 5 个雷，额外随机标记 1 个雷（自己插的和效果自动插的都算）。",
       hooks: {
         onFlagChange(ctx) {
-          if (ctx.type !== "flag" || !ctx.flagValue || !ctx.flagCell.mine) {
+          if (!ctx.flagValue || !ctx.flagCell.mine) {
             return;
           }
           const state = ctx.state();
@@ -189,10 +181,10 @@
       name: "八雷回响",
       type: "buff",
       glyph: "flagplus",
-      desc: "每亲手正确标记 8 个雷，额外随机标记 2 个雷（自动插的旗不算）。",
+      desc: "每正确标记 8 个雷，额外随机标记 2 个雷（自己插的和效果自动插的都算）。",
       hooks: {
         onFlagChange(ctx) {
-          if (ctx.type !== "flag" || !ctx.flagValue || !ctx.flagCell.mine) {
+          if (!ctx.flagValue || !ctx.flagCell.mine) {
             return;
           }
           const state = ctx.state();
