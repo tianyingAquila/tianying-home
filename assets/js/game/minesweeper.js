@@ -4,7 +4,7 @@
    - 三档雷区：小 10x10/15 雷、中 16x16/40 雷、大 24x24/90 雷（手机默认小）
      首击安全（首击格和它的 8 邻格不布雷，所以首击必为 0），负面效果可以增加本局雷数
    - 一次玩家操作 = 一个事务：锁定输入 → 结算 → 播完所有连锁动画 → 解锁
-   - 单次事务最多 45 个连锁事件（深度不设限），超限只停止派发新事件
+   - 单次事务最多 500 个连锁事件（深度不设限），超限只停止派发新事件
    - 全部雷都被插旗且旗数正好等于雷数时，自动光扫清场
    - 效果逻辑全部写在 assets/js/game/effects.js
    ========================================================================== */
@@ -13,7 +13,7 @@
   "use strict";
 
   const FALLBACK = {
-    config: { cols: 16, rows: 16, mines: 40, maxChainEvents: 45, maxChainDepth: Infinity, mistChance: 0.1 },
+    config: { cols: 16, rows: 16, mines: 40, maxChainEvents: 500, maxChainDepth: Infinity, mistChance: 0.1 },
     tiers: {
       easy: { id: "easy", label: "简单", buffs: 4, debuffs: 1, desc: "" },
       normal: { id: "normal", label: "普通", buffs: 3, debuffs: 2, desc: "" },

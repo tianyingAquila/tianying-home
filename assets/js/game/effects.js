@@ -580,7 +580,7 @@
         medium: { id: "medium", label: "中", cols: 16, rows: 16, mines: 40 },
         large: { id: "large", label: "大", cols: 24, rows: 24, mines: 90 },
       },
-      maxChainEvents: 45,
+      maxChainEvents: 500,
       maxChainDepth: Infinity,
       mistChance: 0.1,
       sharpEyeThreshold: 0.4,
