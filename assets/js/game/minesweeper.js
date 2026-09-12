@@ -119,6 +119,8 @@
   };
 
   const totalSafe = () => G.cols * G.rows - G.mines;
+  // 棋盘最多能放几颗雷：首击格 + 它周围 8 格必须留空，所以至少要留下 9 格。
+  const maxMinesForBoard = () => Math.max(1, G.cols * G.rows - 9);
   const key = (cell) => cell.y * G.cols + cell.x;
   const rnd = () => G.rng();
   const randInt = (n) => Math.floor(rnd() * n);
@@ -239,6 +241,13 @@
       for (let i = 0; i < count; i += 1) {
         pool[i].mine = true;
       }
+    }
+    // 实际放下去的雷才是本局的真实雷数：
+    // 棋盘装不下时（小棋盘 + 一堆加雷负面）和 boss 锚点占格时都会比声明的少，
+    // 不校准的话 totalSafe 会算成负数，第一次点击就直接判胜利。
+    const placedMines = G.cells.filter((cell) => cell.mine).length;
+    if (placedMines < G.mines) {
+      G.mines = placedMines;
     }
     G.cells.forEach((cell) => {
       cell.value = neighbors(cell).filter((n) => n.mine).length;
@@ -2075,7 +2084,13 @@
       return;
     }
 
-    G.mines = minesForEffects(effects);
+    // 负面效果可以叠加加雷，但棋盘装不下就得封顶（首击 3×3 必须留空）。
+    const wantedMines = minesForEffects(effects);
+    const mineCap = maxMinesForBoard();
+    G.mines = Math.min(wantedMines, mineCap);
+    if (G.mines < wantedMines) {
+      showBoardToast(`棋盘最多 ${G.mines} 颗雷 · 已按上限压回`, null);
+    }
     G.bigNeeds = bigNeedsForEffects(effects);
     G.phase = "playing";
     setLocked(false);

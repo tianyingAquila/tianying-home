@@ -597,7 +597,7 @@
             if (cell.mine || cell.value < 1) {
               continue;
             }
-            if (Math.random() >= ctx.config.mistChance) {
+            if (ctx.random() >= ctx.config.mistChance) {
               continue;
             }
             if (ctx.spendImmunity()) {
