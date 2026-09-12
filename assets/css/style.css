@@ -154,13 +154,6 @@ body[data-theme="dark"] .bg.has-image {
   100% { top: 104%; opacity: 0; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bg-beam {
-    animation: none;
-    opacity: 0;
-  }
-}
-
 .bg-particles {
   position: fixed;
   inset: 0;
