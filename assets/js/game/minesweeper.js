@@ -1682,7 +1682,9 @@
     return BUFFS.concat(DEBUFFS).filter((effect) => G.freeSelection.has(effect.id));
   }
 
-  async function dealEffectCards(effects) {
+  // gen：调用方的开局代号（G.gen）。若期间又开了新的一局，这次发牌要立刻让位，
+  // 否则旧那局的收尾会覆盖新一局的雷数/效果（连点两次"重新开局"就会踩到）。
+  async function dealEffectCards(effects, gen) {
     G.effects = [];
     renderEffectCards(false);
     el.fxList.innerHTML = "";
@@ -1694,10 +1696,14 @@
         card.style.animationDelay = "0ms";
       }
       await sleep(260);
+      if (gen !== undefined && G.gen !== gen) {
+        return false;
+      }
     }
     if (!effects.length) {
       renderEffectCards(false);
     }
+    return true;
   }
 
   function setPhaseBadge(text) {
@@ -1732,7 +1738,12 @@
       effects = drawTierEffects(G.tier);
       setPhaseBadge(`难度模式：${TIERS[G.tier].label} · 正在抽取效果`);
     }
-    await dealEffectCards(effects);
+    const gen = G.gen;
+    const dealt = await dealEffectCards(effects, gen);
+    if (!dealt || G.gen !== gen) {
+      // 发牌期间又开了新的一局：本次收尾直接放弃，把状态让给新局
+      return;
+    }
 
     G.mines = minesForEffects(effects);
     G.bigNeeds = bigNeedsForEffects(effects);
