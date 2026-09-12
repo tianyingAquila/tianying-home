@@ -178,6 +178,10 @@ body.game-open {
   transform: none;
 }
 
+.game-button[hidden] {
+  display: none;
+}
+
 .game-statusline {
   display: flex;
   align-items: center;
@@ -779,6 +783,16 @@ body[data-theme="light"] .ms-cell.is-misted {
   animation: ms-dissolve 0.42s ease both;
 }
 
+/* 效果触发的额外揭格（九格 / 十二格馈赠） */
+.ms-cell.is-blessed {
+  animation: ms-bless 0.7s ease;
+}
+
+/* 免死的赐福：护盾展开 */
+.ms-cell.is-shielded {
+  animation: ms-shield 0.7s ease;
+}
+
 .ms-cell svg {
   width: 62%;
   height: 62%;
@@ -849,6 +863,56 @@ body[data-theme="light"] .num-8 { color: #334155; }
   fill: none;
   stroke: rgba(125, 211, 252, 0.9);
   stroke-width: 2;
+}
+
+/* ---------- 效果提示条 / 护盾圆环 ---------- */
+
+.board-toasts {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.board-toast {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: rgba(8, 12, 24, 0.74);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(2, 6, 18, 0.35);
+  animation: toast-float 1.7s ease forwards;
+}
+
+.board-toast.is-buff {
+  color: #7dd3fc;
+}
+
+.board-toast.is-debuff {
+  color: #fda4af;
+}
+
+.shield-ring {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  border: 2px solid rgba(125, 211, 252, 0.9);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.8), inset 0 0 12px rgba(186, 230, 253, 0.55);
+  pointer-events: none;
+  z-index: 7;
+  animation: shield-pop 0.85s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
 
 /* ---------- 结算层 ---------- */
@@ -1168,6 +1232,30 @@ body[data-theme="light"] .num-8 { color: #334155; }
   100% { transform: rotateY(0deg); filter: brightness(1); opacity: 1; }
 }
 
+@keyframes ms-bless {
+  0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); filter: brightness(1.7); }
+  100% { box-shadow: 0 0 0 14px rgba(56, 189, 248, 0); filter: brightness(1); }
+}
+
+@keyframes ms-shield {
+  0% { transform: scale(0.88); box-shadow: 0 0 0 0 rgba(186, 230, 253, 0.9); }
+  45% { transform: scale(1.06); box-shadow: 0 0 20px 6px rgba(56, 189, 248, 0.55); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+}
+
+@keyframes toast-float {
+  0% { opacity: 0; transform: translateY(6px) scale(0.94); }
+  16% { opacity: 1; transform: translateY(0) scale(1); }
+  76% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-12px) scale(0.98); }
+}
+
+@keyframes shield-pop {
+  0% { transform: scale(0.35); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: scale(4.4); opacity: 0; }
+}
+
 @keyframes ms-blast {
   0% { transform: scale(0.7); filter: brightness(2.4); }
   60% { transform: scale(1.12); }
@@ -1337,7 +1425,9 @@ body[data-theme="light"] .num-8 { color: #334155; }
   .game-panel,
   .ms-cell,
   .fx-card,
-  .board-glow {
+  .board-glow,
+  .board-toast,
+  .shield-ring {
     transition-duration: 0.01ms !important;
   }
 }

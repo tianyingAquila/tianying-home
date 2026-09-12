@@ -6,7 +6,7 @@
   <title>Tianying的巢</title>
   <meta name="description" content="Tianying 的个人小站。">
   <link rel="stylesheet" href="assets/css/style.css?v=7">
-  <link rel="stylesheet" href="assets/css/game.css?v=2">
+  <link rel="stylesheet" href="assets/css/game.css?v=3">
 </head>
 <body data-theme="light">
   <div class="bg" id="bg"></div>
@@ -163,9 +163,10 @@
       <header class="game-topbar">
         <div>
           <p class="game-eyebrow">MINESWEEPER</p>
-          <h2 class="game-title">扫雷 · 巢穴版</h2>
+          <h2 class="game-title">技能扫雷</h2>
         </div>
         <div class="game-topbar-actions">
+          <button class="game-button ghost" id="resultReopen" type="button" hidden>本局结算</button>
           <button class="game-button" id="gameRestart" type="button">重新开局</button>
           <button class="game-button ghost" id="gameClose" type="button">关闭</button>
         </div>
@@ -249,6 +250,7 @@
             <div class="game-board" id="gameBoard" role="grid" aria-label="扫雷棋盘"></div>
             <svg class="radar-layer" id="radarLayer" aria-hidden="true"></svg>
             <div class="particle-layer" id="particleLayer" aria-hidden="true"></div>
+            <div class="board-toasts" id="boardToasts" aria-hidden="true"></div>
           </div>
 
           <section class="game-card">
@@ -299,7 +301,7 @@
   </section>
 
   <script src="assets/js/main.js?v=8"></script>
-  <script src="assets/js/game/effects.js?v=2"></script>
-  <script src="assets/js/game/minesweeper.js?v=2"></script>
+  <script src="assets/js/game/effects.js?v=3"></script>
+  <script src="assets/js/game/minesweeper.js?v=3"></script>
 </body>
 </html>

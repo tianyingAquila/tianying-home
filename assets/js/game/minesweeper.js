@@ -1,7 +1,8 @@
 /* ==========================================================================
-   扫雷 · 巢穴版
+   技能扫雷
    --------------------------------------------------------------------------
    - 16x16 / 40 雷，首击安全（首击格和它的 8 邻格不布雷，所以首击必为 0）
+     （负面效果可以增加本局雷数，首击安全规则不变）
    - 一次玩家操作 = 一个事务：锁定输入 → 结算 → 播完所有连锁动画 → 解锁
    - 单次事务最多 30 个连锁事件、8 层深度，超限只停止派发新事件
    - 效果逻辑全部写在 assets/js/game/effects.js
@@ -13,9 +14,9 @@
   const FALLBACK = {
     config: { cols: 16, rows: 16, mines: 40, maxChainEvents: 30, maxChainDepth: 8, mistChance: 0.1 },
     tiers: {
-      easy: { id: "easy", label: "简单", buffs: 3, debuffs: 1, desc: "" },
-      normal: { id: "normal", label: "普通", buffs: 2, debuffs: 2, desc: "" },
-      hard: { id: "hard", label: "困难", buffs: 1, debuffs: 3, desc: "" },
+      easy: { id: "easy", label: "简单", buffs: 4, debuffs: 1, desc: "" },
+      normal: { id: "normal", label: "普通", buffs: 3, debuffs: 2, desc: "" },
+      hard: { id: "hard", label: "困难", buffs: 2, debuffs: 3, desc: "" },
     },
     buffs: [],
     debuffs: [],
@@ -33,6 +34,16 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.4"/><path d="M12 4.5a7.5 7.5 0 0 1 7.5 7.5"/><path d="M12 19.5A7.5 7.5 0 0 1 4.5 12"/><path d="M12 8.6a3.4 3.4 0 0 1 3.4 3.4"/></svg>',
     mist:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 9.5a3.5 3.5 0 1 1 5.3 3c-.9.6-1.3 1.1-1.3 2.1"/><circle cx="12.4" cy="18" r="0.9" fill="currentColor" stroke="none"/></svg>',
+    expand:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.6" y="3.6" width="7" height="7" rx="1.8"/><path d="M8 7.1h3.4"/><path d="M14.6 16.9h5.8M17.5 14v5.8"/><rect x="14.2" y="14.2" width="6.2" height="6.2" rx="1.6" stroke-dasharray="2.6 2.2"/></svg>',
+    flagplus:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20.4V4.6"/><path d="M7 5.2h7.4l-1.6 3.3 1.6 3.3H7z"/><path d="M17.4 15.4h4.2M19.5 13.3v4.2"/></svg>',
+    headstart:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 20.4V4.8"/><path d="M6.4 5.4h7.2l-1.6 3.3 1.6 3.3H6.4z"/><path d="M17.4 8.2l1 2 2 .3-1.5 1.4.4 2-1.9-1-1.9 1 .4-2-1.5-1.4 2-.3z"/></svg>',
+    shield:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l6.2 2.3v5.5c0 3.6-2.5 6.8-6.2 8.6-3.7-1.8-6.2-5-6.2-8.6V5.9z"/><path d="M9 12.1l2.1 2.1 4-4.2"/></svg>',
+    mineplus:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="4.4"/><path d="M11 3.6v2.4M11 16v2.4M3.6 11h2.4M16 11h2.4M5.8 5.8l1.7 1.7M14.5 14.5l1.7 1.7M16.2 5.8l-1.7 1.7M7.5 14.5l-1.7 1.7"/><path d="M18.4 18h4.2M20.5 15.9v4.2"/></svg>',
     blank:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="4.5" width="15" height="15" rx="3" stroke-dasharray="3 3"/></svg>',
   };
@@ -49,6 +60,7 @@
     nodes: {},
     cols: CFG.cols,
     rows: CFG.rows,
+    mines: CFG.mines,
     phase: "idle", // idle | dealing | playing | over
     placed: false,
     flags: 0,
@@ -60,6 +72,7 @@
     tx: null,
     txSeq: 0,
     effects: [],
+    fxState: {},
     fired: new Set(),
     reserved: new Set(),
     counts: {},
@@ -74,7 +87,7 @@
     panelOpen: false,
   };
 
-  const totalSafe = () => G.cols * G.rows - CFG.mines;
+  const totalSafe = () => G.cols * G.rows - G.mines;
   const key = (cell) => cell.y * G.cols + cell.x;
   const rnd = () => G.rng();
   const randInt = (n) => Math.floor(rnd() * n);
@@ -134,6 +147,7 @@
     G.gen += 1;
     G.cells = [];
     G.nodes = {};
+    G.fxState = {};
     G.fired = new Set();
     G.reserved = new Set();
     G.counts = {};
@@ -169,7 +183,7 @@
     }
     const pool = G.cells.filter((c) => !safe.has(key(c)));
     shuffle(pool);
-    const count = Math.min(CFG.mines, pool.length);
+    const count = Math.min(G.mines, pool.length);
     for (let i = 0; i < count; i += 1) {
       pool[i].mine = true;
     }
@@ -332,7 +346,7 @@
   }
 
   function updateHud() {
-    el.mineCount.textContent = String(Math.max(0, CFG.mines - G.flags));
+    el.mineCount.textContent = String(Math.max(0, G.mines - G.flags));
     el.modeBadge.textContent =
       G.mode === "free" ? (G.freeSelection.size ? `自由 · ${G.freeSelection.size} 个效果` : "自由 · 纯扫雷") : `难度 · ${TIERS[G.tier].label}`;
     el.modeBadge.classList.toggle("is-free", G.mode === "free");
@@ -516,6 +530,31 @@
     window.setTimeout(() => node.remove(), 800);
   }
 
+  // 棋盘上方的浮动提示：某个效果触发时让玩家看得见。
+  function showBoardToast(text, effectId) {
+    if (!el.toasts || !text) {
+      return;
+    }
+    const def = G.effects.find((item) => item.id === effectId);
+    const node = document.createElement("span");
+    node.className = `board-toast is-${def && def.type === "debuff" ? "debuff" : "buff"}`;
+    node.textContent = text;
+    el.toasts.appendChild(node);
+    window.setTimeout(() => node.remove(), 1700);
+  }
+
+  // 免死护盾展开时的圆环特效。
+  function shieldRing(cell) {
+    const wrapRect = el.boardWrap.getBoundingClientRect();
+    const point = cellCenter(cell, wrapRect);
+    const ring = document.createElement("span");
+    ring.className = "shield-ring";
+    ring.style.left = `${point.x}px`;
+    ring.style.top = `${point.y}px`;
+    el.boardWrap.appendChild(ring);
+    window.setTimeout(() => ring.remove(), 900);
+  }
+
   // ------------------------------------------------------------ 效果与结算
 
   function activeEffect(id) {
@@ -551,16 +590,55 @@
   }
 
   function makeCtx(extra) {
+    const option = extra || {};
+    const newCells = option.newCells || [];
     const base = {
       config: CFG,
-      depth: (extra && extra.depth) || 0,
-      newCells: (extra && extra.newCells) || [],
-      revealedBefore: (extra && extra.revealedBefore) || G.cells.filter((c) => c.revealed),
-      origin: (extra && extra.origin) || null,
+      mines: G.mines,
+      depth: option.depth || 0,
+      newCells,
+      newSafeCount: newCells.filter((cell) => !cell.mine).length,
+      meta: option.meta || {},
+      // true 表示这次揭格是效果自动触发的（额外开格），计数类效果会跳过它，避免自己喂自己形成长连锁。
+      effectDriven: !!(option.meta && option.meta.effectId),
+      revealedBefore: option.revealedBefore || G.cells.filter((c) => c.revealed),
+      origin: option.origin || null,
       isAdjacent,
+      cellKey(cell) {
+        return `${cell.x},${cell.y}`;
+      },
+      // 每张效果卡在本局里的私有数据，换局自动清空。
+      state() {
+        const id = currentEffectId;
+        if (!id) {
+          return {};
+        }
+        if (!G.fxState[id]) {
+          G.fxState[id] = {};
+        }
+        return G.fxState[id];
+      },
       randomUnflaggedMine() {
         const pool = G.cells.filter((c) => c.mine && !c.flagged && !G.reserved.has(key(c)));
         return pool.length ? pool[randInt(pool.length)] : null;
+      },
+      randomHiddenSafeCell(options) {
+        const opts = options || {};
+        const avoid = opts.awayFrom || [];
+        const gap = opts.minGap || 0;
+        const pool = G.cells.filter((c) => !c.mine && !c.revealed && !c.flagged && !G.reserved.has(key(c)));
+        if (!pool.length) {
+          return null;
+        }
+        if (gap > 0 && avoid.length) {
+          const spread = pool.filter((c) =>
+            avoid.every((other) => Math.max(Math.abs(other.x - c.x), Math.abs(other.y - c.y)) >= gap)
+          );
+          if (spread.length) {
+            return spread[randInt(spread.length)];
+          }
+        }
+        return pool[randInt(pool.length)];
       },
       wasFired(cell) {
         return G.fired.has(key(cell));
@@ -574,14 +652,20 @@
       bump(amount) {
         bumpEffectCount(currentEffectId, amount || 1);
       },
+      toast(text) {
+        showBoardToast(text, currentEffectId);
+      },
       queueFlag(cell, meta, depth) {
         enqueueFromEffect({ type: "autoFlag", x: cell.x, y: cell.y, meta: meta || {} }, depth);
+      },
+      queueReveal(cell, meta, depth) {
+        enqueueFromEffect({ type: "reveal", x: cell.x, y: cell.y, meta: meta || {} }, depth);
       },
       log() {
         console.log("[扫雷效果]", ...arguments);
       },
     };
-    return Object.assign(base, extra || {});
+    return Object.assign(base, option);
   }
 
   function markTruncated() {
@@ -612,8 +696,8 @@
       markTruncated();
       return;
     }
-    if (step.type === "autoFlag") {
-      // 同一批连锁里不要重复挑同一个雷：排队时就先占位。
+    if (step.type === "autoFlag" || (step.type === "reveal" && step.meta && step.meta.effectId)) {
+      // 同一批连锁里不要重复挑到同一个格子：排队时就先占位。
       G.reserved.add(step.y * G.cols + step.x);
     }
     G.tx.events += 1;
@@ -635,10 +719,18 @@
       placeMines(start.x, start.y);
       paintAll();
       startTimer();
+      // 布雷完成：把机会给“开局自动标记”这类效果，它们排的队会在本步之后依次结算。
+      runHooks("onMinesPlaced", makeCtx({ origin: start, depth: step.depth, type: "minesPlaced" }));
     }
     const batch = collectReveal(start);
     if (!batch.length) {
       return;
+    }
+    const meta = step.meta || {};
+    if (meta.effectId) {
+      // 效果触发的额外揭格：先给反馈，再播揭格动画。
+      pulseEffectCard(meta.effectId);
+      flashCell(start, "is-blessed");
     }
     const before = G.cells.filter((c) => c.revealed);
     const newCells = [];
@@ -652,7 +744,7 @@
       newCells.push(item.cell);
     });
 
-    const ctx = makeCtx({ newCells, revealedBefore: before, origin: start, depth: step.depth, type: "reveal" });
+    const ctx = makeCtx({ newCells, revealedBefore: before, origin: start, depth: step.depth, type: "reveal", meta });
     runHooks("onRevealCommit", ctx);
 
     updateHud();
@@ -665,9 +757,12 @@
 
     runHooks("onRevealDone", ctx);
 
-    const hitMine = newCells.some((c) => c.mine);
-    if (hitMine) {
-      await runLoss(newCells.find((c) => c.mine));
+    const hitCell = newCells.find((c) => c.mine);
+    if (hitCell) {
+      if (await resolveMineHit(ctx, hitCell)) {
+        return;
+      }
+      await runLoss(hitCell);
       return;
     }
     if (G.revealedSafe >= totalSafe()) {
@@ -705,13 +800,70 @@
       await animateMist(misted);
     }
     runHooks("onRevealDone", ctx);
-    const hitMine = newCells.some((c) => c.mine);
-    if (hitMine) {
-      await runLoss(newCells.find((c) => c.mine));
+
+    const hitCell = newCells.find((c) => c.mine);
+    if (hitCell) {
+      if (await resolveMineHit(ctx, hitCell)) {
+        return;
+      }
+      await runLoss(hitCell);
       return;
     }
     if (G.revealedSafe >= totalSafe()) {
       await runWin();
+    }
+  }
+
+  // 踩到雷：先给效果一次“免死”的机会；没有效果救场就正常失败。
+  async function resolveMineHit(ctx, hitCell) {
+    const outcome = { cancelled: false, flag: true };
+    const hitCtx = makeCtx({
+      newCells: ctx.newCells,
+      revealedBefore: ctx.revealedBefore,
+      origin: ctx.origin,
+      depth: ctx.depth,
+      type: "mineHit",
+      hitCell,
+    });
+    hitCtx.cancelLoss = (options) => {
+      outcome.cancelled = true;
+      outcome.flag = !(options && options.flag === false);
+    };
+    runHooks("onMineHit", hitCtx);
+    if (!outcome.cancelled) {
+      return false;
+    }
+    await animateShield(hitCell, outcome.flag);
+    return true;
+  }
+
+  async function animateShield(cell, flagIt) {
+    const gen = G.gen;
+    const node = G.nodes[key(cell)];
+    if (node) {
+      node.classList.add("is-shielded");
+    }
+    shieldRing(cell);
+    await sleep(560);
+    if (gen !== G.gen) {
+      return;
+    }
+    cell.revealed = false;
+    cell.exploded = false;
+    cell.misted = false;
+    cell.flagged = !!flagIt;
+    if (flagIt) {
+      G.flags += 1;
+    }
+    paintCell(cell);
+    flashCell(cell, flagIt ? "is-flagging" : "is-hinting");
+    updateHud();
+    await sleep(200);
+    if (gen === G.gen) {
+      runHooks(
+        "onFlagChange",
+        makeCtx({ origin: cell, depth: 0, type: "shieldFlag", flagCell: cell, flagValue: cell.flagged })
+      );
     }
   }
 
@@ -720,7 +872,7 @@
     if (!cell || cell.revealed || G.phase !== "playing") {
       return;
     }
-    if (!cell.flagged && G.flags >= CFG.mines) {
+    if (!cell.flagged && G.flags >= G.mines) {
       flashCell(cell, "is-hinting");
       return;
     }
@@ -1024,6 +1176,8 @@
 
   async function startGame() {
     abortTransaction();
+    G.phase = "dealing";
+    G.mines = CFG.mines;
     hideResult();
     buildCells();
     buildBoardNodes();
@@ -1034,7 +1188,6 @@
     G.savedThisGame = false;
     updateHud();
     el.setup.open = false;
-    G.phase = "dealing";
     setLocked(true);
     setPhaseBadge("正在抽取效果…");
 
@@ -1048,15 +1201,22 @@
     }
     await dealEffectCards(effects);
 
+    G.mines = minesForEffects(effects);
     G.phase = "playing";
     setLocked(false);
+    updateHud();
+    runHooks("onGameStart", makeCtx({ type: "start" }));
     setPhaseBadge(
       G.mode === "free"
         ? "自由模式：随便玩，不上榜。"
         : `难度模式：${TIERS[G.tier].label} · 胜利后可以保存成绩。`
     );
-    updateHud();
     renderEffectCards(false);
+  }
+
+  // 本局雷数 = 基础雷数 + 所有负面效果的加成（例如「雷区扩张 +10」）。
+  function minesForEffects(effects) {
+    return CFG.mines + effects.reduce((sum, effect) => sum + (Number(effect.mineDelta) || 0), 0);
   }
 
   function showResult(won) {
@@ -1088,10 +1248,19 @@
       el.resultStatus.textContent = "本局成绩已经保存过了。";
     }
     el.result.hidden = false;
+    syncResultReopen();
   }
 
   function hideResult() {
     el.result.hidden = true;
+    syncResultReopen();
+  }
+
+  // 「关闭」只收起结算层，让玩家能看着最终棋盘截图；结束的局可以用顶部按钮重新打开结算。
+  function syncResultReopen() {
+    if (el.resultReopen) {
+      el.resultReopen.hidden = !(G.phase === "over" && el.result.hidden);
+    }
   }
 
   // ------------------------------------------------------------------ 榜单
@@ -1336,7 +1505,14 @@
       startGame();
     });
     el.resultClose.addEventListener("click", () => {
-      closePanel();
+      // 只收起结算层，最终棋盘留着给人看；要重开上面本来就有按钮。
+      hideResult();
+      if (G.phase === "over") {
+        setPhaseBadge("本局结束 · 想看成绩可以点上面「本局结算」，或直接「重新开局」");
+      }
+    });
+    el.resultReopen.addEventListener("click", () => {
+      showResult(!!G.resultWon);
     });
     el.scoreTabs.forEach((tab) => {
       tab.addEventListener("click", () => {
@@ -1424,11 +1600,17 @@
     });
     window.addEventListener("hashchange", () => applyHash(false));
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && G.panelOpen) {
-        closePanel();
-        if (window.location.hash === "#game") {
-          history.pushState(null, "", window.location.pathname + window.location.search);
-        }
+      if (event.key !== "Escape" || !G.panelOpen) {
+        return;
+      }
+      if (!el.result.hidden) {
+        // 结算层开着的时候，Esc 先收结算层。
+        el.resultClose.click();
+        return;
+      }
+      closePanel();
+      if (window.location.hash === "#game") {
+        history.pushState(null, "", window.location.pathname + window.location.search);
       }
     });
   }
@@ -1450,6 +1632,7 @@
     el.flagToggle = document.getElementById("flagToggle");
     el.board = document.getElementById("gameBoard");
     el.boardWrap = document.getElementById("boardWrap");
+    el.toasts = document.getElementById("boardToasts");
     el.radar = document.getElementById("radarLayer");
     el.particles = document.getElementById("particleLayer");
     el.modeSwitch = document.getElementById("modeSwitch");
@@ -1476,6 +1659,7 @@
     el.resultStatus = document.getElementById("resultStatus");
     el.resultRestart = document.getElementById("resultRestart");
     el.resultClose = document.getElementById("resultClose");
+    el.resultReopen = document.getElementById("resultReopen");
     el.scoreList = document.getElementById("scoreList");
     el.scoreState = document.getElementById("scoreState");
     el.scoreTabs = Array.from(document.querySelectorAll(".score-tab"));
@@ -1501,6 +1685,8 @@
 
     window.MS_DEBUG = {
       state: () => G,
+      pool: () => ({ buffs: BUFFS.map((e) => e.id), debuffs: DEBUFFS.map((e) => e.id) }),
+      minesForEffects,
       draw: (tierId) => drawTierEffects(tierId),
       startTier(tier) {
         G.mode = "tier";
