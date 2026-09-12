@@ -186,6 +186,11 @@ function messages_file(): string
     return DATA_DIR . '/messages.json';
 }
 
+function ms_scores_file(): string
+{
+    return DATA_DIR . '/ms_scores.json';
+}
+
 function current_config(): array
 {
     $config = read_json(config_file(), default_config());
@@ -272,6 +277,9 @@ switch ($action) {
     case 'messages':
         respond(['ok' => true, 'data' => read_json(messages_file(), [])]);
 
+    case 'ms_scores':
+        respond(['ok' => true, 'data' => read_json(ms_scores_file(), [])]);
+
     case 'uptime':
         $startedFile = DATA_DIR . '/started_at.txt';
         if (!is_file($startedFile)) {
@@ -351,6 +359,57 @@ switch ($action) {
             return $messages;
         });
         respond(['ok' => true, 'data' => $messages]);
+
+    case 'ms_score':
+        if ($method !== 'POST') {
+            respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
+        }
+        $body = request_body();
+        $name = clean_text($body['name'] ?? '', 12);
+        if ($name === '') {
+            $name = '匿名玩家';
+        }
+        $timeMs = (int) ($body['timeMs'] ?? 0);
+        if ($timeMs < 1000 || $timeMs > 86400000) {
+            respond(['ok' => false, 'error' => '用时不合法'], 400);
+        }
+        $difficulty = (string) ($body['difficulty'] ?? '');
+        if (!in_array($difficulty, ['easy', 'normal', 'hard'], true)) {
+            respond(['ok' => false, 'error' => '难度不正确'], 400);
+        }
+        $rawEffects = $body['effects'] ?? [];
+        if (!is_array($rawEffects)) {
+            $rawEffects = [];
+        }
+        $effectIds = [];
+        foreach (array_slice($rawEffects, 0, 24) as $rawEffect) {
+            $clean = clean_text($rawEffect, 40);
+            if ($clean !== '') {
+                $effectIds[] = $clean;
+            }
+        }
+        $record = [
+            'id' => bin2hex(random_bytes(6)),
+            'name' => $name,
+            'timeMs' => $timeMs,
+            'difficulty' => $difficulty,
+            'effects' => $effectIds,
+            'createdAt' => time(),
+        ];
+        $scores = with_file_lock(ms_scores_file(), function ($fp) use ($record) {
+            $scores = is_resource($fp)
+                ? read_json_from_handle($fp, [])
+                : read_json(ms_scores_file(), []);
+            array_unshift($scores, $record);
+            $scores = array_slice($scores, 0, 200);
+            if (is_resource($fp)) {
+                write_json_to_handle($fp, $scores);
+            } else {
+                write_json(ms_scores_file(), $scores);
+            }
+            return $scores;
+        });
+        respond(['ok' => true, 'data' => $scores]);
 
     case 'admin_login':
         if ($method !== 'POST') {
