@@ -69,9 +69,6 @@
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="glyph-flag" d="M8 20V4.8"/><path class="glyph-flag" d="M8 5.4h7.6l-1.6 3.4 1.6 3.4H8z"/></svg>';
   const MINE_SVG =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><circle class="glyph-mine" cx="12" cy="12" r="4.6" fill="currentColor" fill-opacity="0.22"/><path class="glyph-mine" d="M12 4.4v3M12 16.6v3M4.4 12h3M16.6 12h3M6.6 6.6l2.1 2.1M15.3 15.3l2.1 2.1M17.4 6.6l-2.1 2.1M8.7 15.3l-2.1 2.1"/></svg>';
-  const SAND_SVG =
-    '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="glyph-sand" d="M5 14.4c1.5-1.3 2.5-1.3 4 0s2.5 1.3 4 0 2.5-1.3 4 0 2.5 1.3 4 0"/><path class="glyph-sand" d="M5 18c1.5-1.3 2.5-1.3 4 0s2.5 1.3 4 0 2.5-1.3 4 0 2.5 1.3 4 0"/><circle class="glyph-sand" cx="10" cy="8.4" r="1" fill="currentColor" stroke="none"/><circle class="glyph-sand" cx="14.4" cy="6.8" r="0.8" fill="currentColor" stroke="none"/><circle class="glyph-sand" cx="13.6" cy="10.6" r="1.2" fill="currentColor" stroke="none"/></svg>';
-
   const el = {};
   const G = {
     gen: 0,
@@ -527,9 +524,6 @@
         return;
       }
       node.innerHTML = FLAG_SVG;
-    } else if (cell.sand) {
-      node.classList.add("is-sand");
-      node.innerHTML = SAND_SVG;
     } else if (cell.wrong) {
       node.classList.add("is-wrong");
     }
@@ -545,9 +539,7 @@
               : `数字 ${cell.value}`
           : cell.flagged
             ? "已插旗"
-            : cell.sand
-              ? "被沙尘盖住，可以再点开"
-              : "未揭开"
+            : "未揭开"
       }`
     );
   }
@@ -1450,10 +1442,10 @@
     await sleep(140);
   }
 
-  // 全部真雷都插了旗 → 光扫清场。
-  // 只看"真雷是否都被插旗"：多插的错误旗子不拦（想撤就撤，不想撤也能通关）。
+  // 光扫清场：必须旗数正好等于雷数，而且每颗真雷都被插旗。
+  // 一面不能错、不能多、也不能少，否则不触发（防止开局乱插旗直接通关）。
   function allMinesFlagged() {
-    if (!G.placed || G.phase !== "playing" || G.flags < G.mines) {
+    if (!G.placed || G.phase !== "playing" || G.flags !== G.mines) {
       return false;
     }
     return G.cells.every((cell) => !cell.mine || cell.flagged);

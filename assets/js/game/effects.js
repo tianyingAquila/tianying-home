@@ -511,7 +511,7 @@
       name: "沙尘漫天",
       type: "debuff",
       glyph: "sand",
-      desc: "每标记 10 个雷，随机把 3 个已显示的数字盖成沙子（被盖的格子可以重新点开）。",
+      desc: "每标记 10 个雷，随机把 3 个已显示的数字盖成沙子（被盖的格子恢复成未翻开的样子，可以重新点开）。",
       hooks: {
         onFlagChange(ctx) {
           if (!ctx.flagValue || !ctx.flagCell.mine) {

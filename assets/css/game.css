@@ -952,16 +952,6 @@ body[data-theme="light"] .num-8 { color: #334155; }
   animation: shock-out 1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
 
-.ms-cell.is-sand {
-  border-color: rgba(217, 180, 110, 0.55);
-  background: linear-gradient(160deg, rgba(196, 154, 84, 0.5), rgba(140, 106, 54, 0.42));
-  color: #f0d9a8;
-}
-
-.ms-cell.is-sand .glyph-sand {
-  stroke: #f2dcae;
-}
-
 .ms-cell.is-sanding {
   animation: ms-sand 0.5s ease both;
 }
