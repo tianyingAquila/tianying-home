@@ -6,7 +6,7 @@
   <title>Tianying的巢</title>
   <meta name="description" content="Tianying 的个人小站。">
   <link rel="stylesheet" href="assets/css/style.css?v=11">
-  <link rel="stylesheet" href="assets/css/game.css?v=8">
+  <link rel="stylesheet" href="assets/css/game.css?v=9">
 </head>
 <body data-theme="light">
   <div class="bg" id="bg"></div>
@@ -246,6 +246,11 @@
             <div class="hud-badge" id="modeBadge">难度 · 普通</div>
             <div class="hud-badge is-immune" id="immuneBadge" hidden>免疫 ×0</div>
             <div class="hud-spacer"></div>
+            <button class="hud-hint" id="hintButton" type="button" title="用一次提示：从按钮射一道光过去，翻开一个安全格">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a5.4 5.4 0 0 0-5.4 5.4c0 3.6-2.3 5.9-2.3 5.9h15.4s-2.3-2.3-2.3-5.9A5.4 5.4 0 0 0 12 3.2Z"/><path d="M10 18.6a2.2 2.2 0 0 0 4 0"/><path d="M12 1.6v.9"/></svg>
+              <span class="hint-text">提示</span>
+              <span class="hint-count" id="hintCount">3/3</span>
+            </button>
             <button class="hud-toggle" id="flagToggle" type="button" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 20V5" /><path d="M8 5.6h7.4l-1.5 3.2 1.5 3.2H8z" /></svg>
               插旗模式
@@ -319,6 +324,6 @@
 
   <script src="assets/js/main.js?v=8"></script>
   <script src="assets/js/game/effects.js?v=9"></script>
-  <script src="assets/js/game/minesweeper.js?v=12"></script>
+  <script src="assets/js/game/minesweeper.js?v=13"></script>
 </body>
 </html>

@@ -664,6 +664,94 @@ body[data-theme="light"] .game-beam {
   stroke-linejoin: round;
 }
 
+/* 提示按钮（每局 3 次，射一道光翻开一个安全格） */
+.hud-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  background: rgba(250, 204, 21, 0.16);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.hud-hint:hover:not(:disabled) {
+  background: rgba(250, 204, 21, 0.28);
+  transform: translateY(-1px);
+}
+
+.hud-hint:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.hud-hint svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.hud-hint .hint-count {
+  font-variant-numeric: tabular-nums;
+  color: #fbbf24;
+}
+
+body[data-theme="light"] .hud-hint {
+  border-color: rgba(180, 83, 9, 0.42);
+  background: rgba(253, 230, 138, 0.75);
+  color: #7c2d12;
+}
+
+body[data-theme="light"] .hud-hint .hint-count {
+  color: #b45309;
+}
+
+/* 提示射出的那道光（从按钮射向目标格） */
+.hint-ray {
+  position: fixed;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 999px;
+  transform-origin: 0 50%;
+  background: linear-gradient(
+    90deg,
+    rgba(253, 224, 71, 0) 0%,
+    rgba(253, 224, 71, 0.55) 45%,
+    rgba(255, 251, 235, 0.95) 92%,
+    rgba(255, 255, 255, 1) 100%
+  );
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.85);
+  pointer-events: none;
+  z-index: 70;
+}
+
+.hint-impact {
+  position: fixed;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  border: 2px solid rgba(253, 224, 71, 0.9);
+  box-shadow: 0 0 24px rgba(250, 204, 21, 0.8), inset 0 0 12px rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  z-index: 70;
+  animation: hint-impact 0.68s ease-out forwards;
+}
+
+@keyframes hint-impact {
+  0% { transform: scale(0.35); opacity: 1; }
+  65% { transform: scale(2.4); opacity: 0.4; }
+  100% { transform: scale(3.2); opacity: 0; }
+}
+
 /* ---------- 棋盘 ---------- */
 
 .board-wrap {
@@ -1036,6 +1124,16 @@ body[data-theme="light"] .ms-cell.is-locked {
 
 .ms-cell.is-meteor-hit {
   animation: ms-meteor-hit 0.62s ease both;
+}
+
+.ms-cell.is-hinted {
+  animation: ms-hinted 0.8s ease both;
+}
+
+@keyframes ms-hinted {
+  0% { box-shadow: 0 0 0 rgba(250, 204, 21, 0); }
+  28% { box-shadow: 0 0 22px rgba(250, 204, 21, 0.8); filter: brightness(1.5); }
+  100% { box-shadow: none; filter: brightness(1); }
 }
 
 /* 命数已到：多重流星打击 */

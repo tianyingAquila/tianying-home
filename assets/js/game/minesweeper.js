@@ -29,6 +29,8 @@
   const BUFFS = SOURCE.buffs || [];
   const DEBUFFS = SOURCE.debuffs || [];
   const ABORT = Symbol("ms-abort");
+  // 每局送几次提示
+  const HINT_PER_GAME = 3;
 
   const ICONS = {
     radar:
@@ -111,6 +113,7 @@
     tier: "normal",
     freeSelection: new Set(["buff_radar2", "debuff_mist"]),
     flagMode: false,
+    hints: 3,
     rng: Math.random,
     scores: [],
     scoreTab: "rank",
@@ -202,6 +205,7 @@
     G.immunity = 0;
     G.bigAchieved = 0;
     G.bigAnchors = [];
+    G.hints = HINT_PER_GAME;
     for (let y = 0; y < G.rows; y += 1) {
       for (let x = 0; x < G.cols; x += 1) {
         G.cells.push({
@@ -612,6 +616,26 @@
       el.immuneBadge.hidden = G.immunity <= 0;
       el.immuneBadge.textContent = `免疫 ×${G.immunity}`;
     }
+    updateHintButton();
+  }
+
+  // 提示按钮：每局 3 次，用完 / 没开局 / 结算完就灰掉
+  function updateHintButton() {
+    if (!el.hint) {
+      return;
+    }
+    const left = Math.max(0, G.hints);
+    if (el.hintCount) {
+      el.hintCount.textContent = `${left}/${HINT_PER_GAME}`;
+    }
+    const usable = G.phase === "playing" && G.placed && left > 0 && !G.tx;
+    el.hint.disabled = !usable;
+    el.hint.classList.toggle("is-empty", left <= 0);
+    el.hint.title = !G.placed
+      ? "先点开第一格，之后就能用提示了"
+      : left <= 0
+        ? "这一局的提示用完了"
+        : "用一次提示：从按钮射一道光过去，翻开一个安全格";
   }
 
   function sizeInfo() {
@@ -1685,6 +1709,97 @@
     }
   }
 
+  // 提示挑哪一格：优先挑"贴着已经翻开区域"的安全格（看起来更像在指路），
+  // 实在没有（比如整盘只剩孤立的格子）就退回到随便一个隐藏安全格。
+  function hintTarget() {
+    const pool = G.cells.filter(
+      (cell) => !cell.mine && !cell.revealed && !cell.flagged && !cell.locked && !G.reserved.has(key(cell))
+    );
+    if (!pool.length) {
+      return null;
+    }
+    const nearRevealed = pool.filter((cell) => neighbors(cell).some((n) => n.revealed));
+    const bag = nearRevealed.length ? nearRevealed : pool;
+    return bag[randInt(bag.length)];
+  }
+
+  // 提示的光：从按钮射一道光到目标格，落点炸开一圈光晕。
+  async function hintBeam(cell) {
+    const node = G.nodes[key(cell)];
+    if (!node || !el.hint) {
+      return;
+    }
+    const from = el.hint.getBoundingClientRect();
+    const rect = node.getBoundingClientRect();
+    const ax = from.left + from.width / 2;
+    const ay = from.top + from.height / 2;
+    const bx = rect.left + rect.width / 2;
+    const by = rect.top + rect.height / 2;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len = Math.hypot(dx, dy) || 1;
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    const ray = document.createElement("span");
+    ray.className = "hint-ray";
+    ray.style.left = `${ax}px`;
+    ray.style.top = `${ay}px`;
+    ray.style.width = `${len}px`;
+    ray.style.transform = `rotate(${angle}deg)`;
+    document.body.appendChild(ray);
+    try {
+      await ray.animate(
+        [
+          { clipPath: "inset(0 100% 0 0)", opacity: 0 },
+          { clipPath: "inset(0 0 0 0)", opacity: 1 },
+        ],
+        { duration: 320, easing: "cubic-bezier(0.25, 0.7, 0.3, 1)", fill: "forwards" }
+      ).finished;
+    } catch (error) {
+      // 动画被打断也要继续把格子翻开
+    }
+    const ring = document.createElement("span");
+    ring.className = "hint-impact";
+    ring.style.left = `${bx}px`;
+    ring.style.top = `${by}px`;
+    document.body.appendChild(ring);
+    window.setTimeout(() => ray.remove(), 420);
+    window.setTimeout(() => ring.remove(), 760);
+    await sleep(120);
+  }
+
+  // 用掉一次提示：射道光 → 翻开一个安全格
+  async function stepHint() {
+    if (G.phase !== "playing" || !G.placed) {
+      return;
+    }
+    if (G.hints <= 0) {
+      showBoardToast("提示 · 这一局用完了", null);
+      return;
+    }
+    const target = hintTarget();
+    if (!target) {
+      showBoardToast("提示 · 已经没有能翻的安全格了", null);
+      return;
+    }
+    G.hints -= 1;
+    G.reserved.add(key(target));
+    updateHintButton();
+    flashCell(target, "is-hinted");
+    await hintBeam(target);
+    if (G.phase !== "playing") {
+      return;
+    }
+    const result = await commitRevealBatch(collectReveal(target), {
+      origin: target,
+      depth: 0,
+      type: "hint",
+      meta: { effectId: null },
+    });
+    if (result === "lost" || result === "won" || result === "saved") {
+      return;
+    }
+  }
+
   // 光扫清场：必须旗数正好等于雷数，而且每颗真雷都被插旗。
   // 一面不能错、不能多、也不能少，否则不触发（防止开局乱插旗直接通关）。
   function allMinesFlagged() {
@@ -1751,6 +1866,8 @@
       await stepUnflag(step);
     } else if (step.type === "meteor") {
       await stepMeteor(step);
+    } else if (step.type === "hint") {
+      await stepHint(step);
     }
   }
 
@@ -1759,7 +1876,7 @@
       return;
     }
     // 锁魂链锁住的格子：点也不给点，右键插旗、双击、长按全部无效。
-    const guardCell = at(payload.x, payload.y);
+    const guardCell = payload ? at(payload.x, payload.y) : null;
     if (guardCell && guardCell.locked) {
       flashCell(guardCell, "is-locked-hit");
       showBoardToast("锁魂链 · 这个格子被锁住了", "debuff_chain");
@@ -1786,6 +1903,8 @@
         tx.queue.push({ type: "chord", x: payload.x, y: payload.y, depth: 0 });
       } else if (kind === "flag") {
         tx.queue.push({ type: "toggleFlag", x: payload.x, y: payload.y, depth: 0 });
+      } else if (kind === "hint") {
+        tx.queue.push({ type: "hint", depth: 0 });
       }
       while (tx.queue.length || tx.procPending) {
         if (G.txSeq !== tx.token) {
@@ -2219,7 +2338,9 @@
       const tier = document.createElement("span");
       const tierId = TIERS[row.difficulty] ? row.difficulty : "normal";
       tier.className = `score-tier tier-${tierId}`;
-      tier.textContent = TIERS[tierId].label;
+      // 新成绩带棋盘大小（简单 / 小）；以前的老成绩没有这个字段，就只显示难度。
+      const sizeLabel = row.size && CFG.sizes && CFG.sizes[row.size] ? CFG.sizes[row.size].label : "";
+      tier.textContent = sizeLabel ? `${TIERS[tierId].label} / ${sizeLabel}` : TIERS[tierId].label;
       item.appendChild(rank);
       item.appendChild(name);
       item.appendChild(time);
@@ -2246,6 +2367,7 @@
         body: JSON.stringify({
           name,
           mode: G.mode,
+          size: G.sizeId,
           timeMs: G.endedAt - G.startedAt,
           difficulty: G.tier,
           effects: G.effects.map((effect) => effect.id),
@@ -2405,6 +2527,21 @@
       G.flagMode = !G.flagMode;
       el.flagToggle.classList.toggle("is-active", G.flagMode);
       el.flagToggle.setAttribute("aria-pressed", G.flagMode ? "true" : "false");
+    });
+
+    el.hint.addEventListener("click", () => {
+      if (G.tx || G.phase !== "playing") {
+        return;
+      }
+      if (!G.placed) {
+        showBoardToast("提示 · 先点开第一格吧", null);
+        return;
+      }
+      if (G.hints <= 0) {
+        showBoardToast("提示 · 这一局用完了", null);
+        return;
+      }
+      runTransaction("hint", null);
     });
   }
 
@@ -2644,6 +2781,8 @@
     el.timerText = document.getElementById("timerText");
     el.modeBadge = document.getElementById("modeBadge");
     el.flagToggle = document.getElementById("flagToggle");
+    el.hint = document.getElementById("hintButton");
+    el.hintCount = document.getElementById("hintCount");
     el.board = document.getElementById("gameBoard");
     el.boardWrap = document.getElementById("boardWrap");
     el.toasts = document.getElementById("boardToasts");

@@ -377,6 +377,11 @@ switch ($action) {
         if (!in_array($difficulty, ['easy', 'normal', 'hard'], true)) {
             respond(['ok' => false, 'error' => '难度不正确'], 400);
         }
+        // 棋盘大小（新版本前端会带；老客户端没有这个字段就存空字符串）
+        $size = (string) ($body['size'] ?? '');
+        if (!in_array($size, ['small', 'medium', 'large'], true)) {
+            $size = '';
+        }
         // 只有难度模式的胜利可以进榜，自由模式一律不收。
         if (($body['mode'] ?? '') !== 'tier') {
             respond(['ok' => false, 'error' => '只有难度模式的成绩可以上榜'], 403);
@@ -397,6 +402,7 @@ switch ($action) {
             'name' => $name,
             'timeMs' => $timeMs,
             'difficulty' => $difficulty,
+            'size' => $size,
             'effects' => $effectIds,
             'createdAt' => time(),
         ];
