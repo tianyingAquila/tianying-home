@@ -1779,7 +1779,9 @@ body[data-theme="light"] .ms-cell.is-locked {
 
 @media (max-width: 960px) {
   .game-body {
-    grid-template-columns: 1fr;
+    /* 必须是 minmax(0, 1fr)：写成 1fr 时轨道最小宽度取内容的 min-content，
+       窄屏上会被内部元素撑到 1200px 以上，棋盘和右侧按钮直接跑到屏幕外。 */
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .game-sidebar {

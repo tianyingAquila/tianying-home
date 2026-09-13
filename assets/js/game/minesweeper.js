@@ -15,9 +15,9 @@
   const FALLBACK = {
     config: { cols: 16, rows: 16, mines: 40, maxChainEvents: 500, maxChainDepth: Infinity, mistChance: 0.1 },
     tiers: {
-      easy: { id: "easy", label: "简单", buffs: 4, debuffs: 1, desc: "" },
-      normal: { id: "normal", label: "普通", buffs: 3, debuffs: 2, desc: "" },
-      hard: { id: "hard", label: "困难", buffs: 2, debuffs: 3, desc: "" },
+      easy: { id: "easy", label: "简单", buffs: 5, debuffs: 1, desc: "" },
+      normal: { id: "normal", label: "普通", buffs: 4, debuffs: 2, desc: "" },
+      hard: { id: "hard", label: "困难", buffs: 3, debuffs: 3, desc: "" },
     },
     buffs: [],
     debuffs: [],

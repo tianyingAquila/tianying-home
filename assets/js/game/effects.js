@@ -819,9 +819,9 @@
       stealEvery: 10,
     },
     tiers: {
-      easy: { id: "easy", label: "简单", buffs: 4, debuffs: 1, desc: "正面多、负面少，玩起来轻松。" },
-      normal: { id: "normal", label: "普通", buffs: 3, debuffs: 2, desc: "正面比负面稍多，比较均衡。" },
-      hard: { id: "hard", label: "困难", buffs: 2, debuffs: 3, desc: "负面比正面多，难度偏高。" },
+      easy: { id: "easy", label: "简单", buffs: 5, debuffs: 1, desc: "正面多、负面少，玩起来轻松。" },
+      normal: { id: "normal", label: "普通", buffs: 4, debuffs: 2, desc: "正面比负面稍多，比较均衡。" },
+      hard: { id: "hard", label: "困难", buffs: 3, debuffs: 3, desc: "正负各三个，难度偏高。" },
     },
     buffs,
     debuffs,
