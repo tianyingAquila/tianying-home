@@ -13,7 +13,7 @@
       "云自无心水自闲",
       "停车坐爱枫林晚",
     ],
-    avatar: "assets/img/avatar.svg",
+    avatar: "assets/img/avatar.jpg",
     background: "/assets/img/background.jpg",
     github: "https://github.com/tianyingAquila",
     steam: {
