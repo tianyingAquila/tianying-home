@@ -10,10 +10,10 @@ import * as THREE from "./lib/three.module.min.js";
 const LANES = 13;                // 横向位置 -6..6（含两侧补位，铺满画面）
 const ROWS = 32;                 // 纵深位置
 const COL_SPACING = 5.2;         // 列间距（纵深方向上"列与列"的距离）
-const ROW_SPACING = 1.7;         // 同一列里两片档案的间距（原版 0.62，拉开一点才能看清层次）
-const BOX_W = 3.4;               // 档案正面宽
-const BOX_H = 7.4;               // 档案高度
-const BOX_D = 0.5;               // 端面深度
+const ROW_SPACING = 0.62;        // 同一列里两片档案的间距（照抄原版：密排）
+const BOX_W = 5.2;               // 档案正面宽 = 列间距（列与列紧贴）
+const BOX_H = 8.0;               // 档案高度（抽出来的那本才像一本立着的档案）
+const BOX_D = 0.46;              // 端面深度（比原版厚一点，顶面看得更清楚）
 const ROW_MID = (ROWS - 1) / 2;          // 15.5：阵列的几何中心（用于摆位置）
 const CHOSEN_ROW = Math.floor(ROW_MID);  // 15：当前档案所在的格子（实例下标必须是整数）
 
@@ -31,11 +31,12 @@ export function createStage(canvas, columns, hooks) {
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0xf7f6f3, 46, 135);
 
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.5, 400);
-  const AZ = THREE.MathUtils.degToRad(58);
-  const EL = THREE.MathUtils.degToRad(34);
-  const DIST = 36;
-  const aim = new THREE.Vector3(-5.5, 3.4, 0);   // 往左上偏，画面左上角留给标题
+  const camera = new THREE.PerspectiveCamera(23, 1, 0.5, 400);   // 长焦：压缩透视，各排大小接近
+  // 从左侧朝内、近距离俯视：视野里主要三四排，而不是远距离俯瞰一大片
+  const AZ = THREE.MathUtils.degToRad(-38);   // 从左侧朝内
+  const EL = THREE.MathUtils.degToRad(62);    // 俯角大：主要看到档案顶面
+  const DIST = 30;
+  const aim = new THREE.Vector3(0, 2.4, 0);
   camera.position.set(
     Math.sin(AZ) * Math.cos(EL) * DIST,
     Math.sin(EL) * DIST,
@@ -44,9 +45,9 @@ export function createStage(canvas, columns, hooks) {
   camera.lookAt(aim);
 
   // ---- 光照：一盏主光（顶面亮、侧面自然变暗）+ 半球环境光 + 一盏补光
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xcdc6b8, 1.15));
-  const sun = new THREE.DirectionalLight(0xfff4e4, 2.5);
-  sun.position.set(18, 34, 16);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd6d0c4, 1.6));
+  const sun = new THREE.DirectionalLight(0xfff6ea, 2.2);
+  sun.position.set(-16, 32, 20);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -42;
@@ -65,7 +66,7 @@ export function createStage(canvas, columns, hooks) {
   // ---- 地面：只接收阴影，让档案"站在"某处而不是浮着
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(360, 360),
-    new THREE.ShadowMaterial({ opacity: 0.16 })
+    new THREE.ShadowMaterial({ opacity: 0.09 })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;

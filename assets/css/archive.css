@@ -191,7 +191,14 @@ body.is-col-switching .arc-file.is-fg { opacity: 0 !important; }
   transition: opacity 0.4s ease;
 }
 
-.arc-hud > * { pointer-events: auto; }
+/* HUD 只让真正可交互的东西接管鼠标，其余一律穿透到画布上——
+   否则中间那块信息面板和底部横栏会把点击全吃掉，档案根本选不中 */
+.arc-hud > * { pointer-events: none; }
+.hud-tools button,
+.hud-access,
+.hud-arrow,
+.hud-ticks .step,
+.hud-ticks .bar { pointer-events: auto; }
 
 body[data-view="detail"] .arc-hud { opacity: 0; pointer-events: none; }
 body[data-view="detail"] .arc-hud > * { pointer-events: none; }
