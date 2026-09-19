@@ -2248,9 +2248,17 @@
     renderEffectCards(false);
   }
 
-  // 本局雷数 = 基础雷数 + 所有负面效果的加成（例如「雷区扩张 +10」）。
+  // 本局雷数 = 基础雷数 + 固定加雷（mineDelta）+ 按比例加雷（mineRatio，例如雷区扩张 25%/50%/75%）。
+  // 多个效果的固定值和比例分别相加后再四舍五入，所以「Ⅰ + Ⅱ」正好等于「Ⅲ」。
+  // 换棋盘大小时基础雷数跟着变，比例加雷也就跟着变，不会出现"小棋盘被加成翻倍"的问题。
   function minesForEffects(effects) {
-    return G.baseMines + effects.reduce((sum, effect) => sum + (Number(effect.mineDelta) || 0), 0);
+    let delta = 0;
+    let ratio = 0;
+    effects.forEach((effect) => {
+      delta += Number(effect.mineDelta) || 0;
+      ratio += Number(effect.mineRatio) || 0;
+    });
+    return G.baseMines + delta + Math.round(G.baseMines * ratio + 1e-9);
   }
 
   // boss 类负面效果的要求：至少 count 个 ≥ value 的数字。

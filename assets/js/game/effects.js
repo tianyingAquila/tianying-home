@@ -11,7 +11,8 @@
      type:        "buff" | "debuff"
      glyph:       图标名
      desc:        一句话说明，显示在左侧效果卡里
-     mineDelta:   可选，改变本局雷数（例如 +15）
+     mineDelta:   可选，给本局雷数加固定颗数（例如 +10）
+     mineRatio:   可选，按基础雷数的比例加雷（0.25 = 加 25%）；多个效果的比例先相加，最后统一四舍五入
      bossTarget:  可选 { value, count }：开局布雷时保证有 count 个 ≥ value 的数字
      hooks: { ... }
    }
@@ -615,8 +616,8 @@
       name: "雷区扩张Ⅰ",
       type: "debuff",
       glyph: "mineplus",
-      desc: "本局雷的数量增加 15 颗（首击安全规则不变）。",
-      mineDelta: 15,
+      desc: "本局雷的数量增加 25%（首击安全规则不变）。",
+      mineRatio: 0.25,
       hooks: {},
     },
     {
@@ -624,8 +625,8 @@
       name: "雷区扩张Ⅱ",
       type: "debuff",
       glyph: "mineplus",
-      desc: "本局雷的数量增加 25 颗（首击安全规则不变）。",
-      mineDelta: 25,
+      desc: "本局雷的数量增加 50%（首击安全规则不变）。",
+      mineRatio: 0.5,
       hooks: {},
     },
     {
@@ -633,8 +634,8 @@
       name: "雷区扩张Ⅲ",
       type: "debuff",
       glyph: "mineplus",
-      desc: "本局雷的数量增加 35 颗（首击安全规则不变）。",
-      mineDelta: 35,
+      desc: "本局雷的数量增加 75%（首击安全规则不变）。",
+      mineRatio: 0.75,
       hooks: {},
     },
     {
