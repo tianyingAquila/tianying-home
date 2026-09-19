@@ -557,7 +557,7 @@
       name: "生生不息",
       type: "buff",
       glyph: "spark",
-      desc: "你每做一次操作（翻开 / 插旗），有 6% 概率随机再翻开一个安全格、或再标记一个雷。",
+      desc: "你每做一次有效操作（真的翻开格子或插旗），有 6% 概率随机再翻开一个安全格、或再标记一个雷。",
       hooks: {
         onPlayerAction(ctx) {
           if (ctx.random() >= ctx.config.procChance1) {
@@ -572,7 +572,7 @@
       name: "生生不息Ⅱ",
       type: "buff",
       glyph: "spark",
-      desc: "你每做一次操作（翻开 / 插旗），有 10% 概率随机再翻开一个安全格、或再标记一个雷。",
+      desc: "你每做一次有效操作（真的翻开格子或插旗），有 10% 概率随机再翻开一个安全格、或再标记一个雷。",
       hooks: {
         onPlayerAction(ctx) {
           if (ctx.random() >= ctx.config.procChance2) {

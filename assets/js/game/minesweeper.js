@@ -465,31 +465,31 @@
     return out;
   }
 
-  function collectChord(cell) {
+  // 双击已揭开的数字要做什么：
+  //   open —— 周围旗子数正好等于数字，剩下的未知格一定是安全的，直接打开
+  //   flag —— 旗子不够，但剩下的未知格数量正好等于"还差几面旗"，那它们只可能是雷，直接补旗
+  //   其余情况返回 null（只闪一下，什么也不做，绝不可能误开安全格或错标雷）
+  function planChord(cell) {
     if (!cell.revealed || cell.value <= 0) {
       return null;
     }
     const ns = neighbors(cell);
     const flags = ns.filter((n) => n.flagged).length;
-    if (flags !== cell.value) {
+    const hiddenAll = ns.filter((n) => !n.revealed && !n.flagged);
+    if (!hiddenAll.length) {
       return null;
     }
-    const targets = ns.filter((n) => !n.flagged && !n.revealed);
-    if (!targets.length) {
+    const actable = hiddenAll.filter((n) => !n.locked);
+    if (!actable.length) {
       return null;
     }
-    const merged = new Map();
-    targets.forEach((t) => {
-      collectReveal(t).forEach((entry) => {
-        const k = key(entry.cell);
-        const dist = entry.dist + 1;
-        const prev = merged.get(k);
-        if (prev === undefined || dist < prev) {
-          merged.set(k, dist);
-        }
-      });
-    });
-    return Array.from(merged.entries()).map(([k, dist]) => ({ cell: G.cells[k], dist }));
+    if (flags === cell.value) {
+      return { mode: "open", cells: actable };
+    }
+    if (hiddenAll.length === cell.value - flags) {
+      return { mode: "flag", cells: actable };
+    }
+    return null;
   }
 
   function removeFlag(cell) {
@@ -1322,6 +1322,9 @@
       return "skip";
     }
     const opt = option || {};
+    if (G.tx) {
+      G.tx.changed = true;
+    }
     const before = G.cells.filter((c) => c.revealed);
     const newCells = [];
     usable.forEach((item) => {
@@ -1375,8 +1378,19 @@
     if (!cell || !cell.revealed || G.phase !== "playing") {
       return;
     }
-    const batch = collectChord(cell);
-    if (!batch) {
+    const plan = planChord(cell);
+    if (!plan) {
+      flashCell(cell, "is-hinting");
+      return;
+    }
+    if (plan.mode === "flag") {
+      // 由数字推理出来的雷：直接补旗（这些格子按数字只可能是雷）
+      showBoardToast(`双击补旗 · 这 ${plan.cells.length} 格只可能是雷`, null);
+      await flagCells(plan.cells, { effectId: null }, step.depth);
+      return;
+    }
+    const batch = mergeReveals(plan.cells);
+    if (!batch.length) {
       flashCell(cell, "is-hinting");
       return;
     }
@@ -1444,6 +1458,9 @@
     // 允许插旗数超过雷数（剩余雷数会显示负数，方便玩家发现"多插了一面旗"）
     cell.flagged = !cell.flagged;
     G.flags += cell.flagged ? 1 : -1;
+    if (G.tx) {
+      G.tx.changed = true;
+    }
     paintCell(cell);
     flashCell(cell, "is-flagging");
     updateHud();
@@ -1480,6 +1497,9 @@
     );
     if (!targets.length || G.phase !== "playing") {
       return;
+    }
+    if (G.tx) {
+      G.tx.changed = true;
     }
     const staggered = targets.length > 1;
     const flaggedNow = [];
@@ -1890,8 +1910,10 @@
       queue: [],
       truncated: false,
       kind,
+      // 这次操作有没有真的改变棋盘（点已揭开的格子、对着旗子左键这类空点不算操作）。
+      changed: false,
       // 「每次操作都有概率」的效果要等这一次操作彻底结算完再掷骰子。
-      procPending: kind === "reveal" || kind === "flag",
+      procPending: kind === "reveal" || kind === "flag" || kind === "chord",
     };
     G.txSeq = tx.token;
     G.tx = tx;
@@ -1912,7 +1934,10 @@
         }
         if (!tx.queue.length) {
           tx.procPending = false;
-          runHooks("onPlayerAction", makeCtx({ depth: 0, type: tx.kind }));
+          // 只有真的改变了棋盘才算"一次有效操作"，否则对着安全格子狂点也能白嫖概率效果。
+          if (tx.changed) {
+            runHooks("onPlayerAction", makeCtx({ depth: 0, type: tx.kind }));
+          }
           if (G.phase !== "playing") {
             break;
           }
@@ -2404,6 +2429,9 @@
     let pressCell = null;
     let pressX = 0;
     let pressY = 0;
+    // 自己数双击：不依赖浏览器的 dblclick（触屏双击更稳，也不会被事务动画打断）
+    let lastChordCell = null;
+    let lastChordAt = 0;
 
     const clearPress = () => {
       if (pressTimer) {
@@ -2461,11 +2489,27 @@
       if (G.phase !== "playing" || G.tx) {
         return;
       }
-      if (G.flagMode || event.ctrlKey) {
-        runTransaction("flag", { x: cell.x, y: cell.y });
-      } else {
-        runTransaction("reveal", { x: cell.x, y: cell.y });
+      const wantsFlag = G.flagMode || event.ctrlKey;
+      // 双击已揭开的数字 = 和弦：旗子插满了就打开剩下的安全格；差几面旗就补几面旗。
+      if (!wantsFlag && cell.revealed && cell.value > 0) {
+        const now = Date.now();
+        if (lastChordCell === cell && now - lastChordAt < 400) {
+          lastChordCell = null;
+          lastChordAt = 0;
+          runTransaction("chord", { x: cell.x, y: cell.y });
+          return;
+        }
+        lastChordCell = cell;
+        lastChordAt = now;
+        return;
       }
+      lastChordCell = null;
+      // 无效点击（已揭开的格子、对着旗子按左键）根本不进事务：
+      // 否则"每做一次操作有概率触发"的效果会被反复空点一直白嫖。
+      if (cell.revealed || (!wantsFlag && cell.flagged)) {
+        return;
+      }
+      runTransaction(wantsFlag ? "flag" : "reveal", { x: cell.x, y: cell.y });
     });
 
     el.board.addEventListener("pointercancel", () => {
@@ -2485,16 +2529,6 @@
         if (event.pointerType !== "mouse") {
           runTransaction("flag", { x: cell.x, y: cell.y });
         }
-      }
-    });
-
-    el.board.addEventListener("dblclick", (event) => {
-      const cell = cellFromEvent(event);
-      if (!cell || G.phase !== "playing" || G.tx) {
-        return;
-      }
-      if (cell.revealed && cell.value > 0) {
-        runTransaction("chord", { x: cell.x, y: cell.y });
       }
     });
   }
