@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>天鹰档案终端 · Tianying Archive</title>
+  <meta name="description" content="Tianying 的项目档案终端：以三维档案阵列的形式检索与阅读做过的东西。">
+  <link rel="stylesheet" href="assets/css/style.css?v=14">
+  <link rel="stylesheet" href="assets/css/archive.css?v=11">
+</head>
+<body class="archive-page has-fixed-nav" data-view="array">
+
+  <header class="site-header">
+    <a class="site-brand" href="index.html">
+      <span class="brand-mark"></span>
+      <span>Tianying的巢</span>
+    </a>
+    <div class="header-actions">
+      <nav class="site-nav-links" aria-label="主导航">
+        <a class="nav-link" href="index.html">首页</a>
+        <a class="nav-link is-current" href="projects.html" aria-current="page">项目</a>
+        <a class="nav-link" href="minesweeper.html">扫雷</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="arc-stage">
+    <div class="arc-scene" aria-hidden="true">
+      <div class="arc-grid" id="arcGrid"></div>
+    </div>
+
+    <div class="arc-hud">
+      <div class="hud-brand">
+        <strong>TIANYING ARCHIVE</strong>
+        <span>SYNTHESIZE INFORMATION</span>
+        <strong>ARCHIVE OS</strong>
+      </div>
+
+      <div class="hud-tools">
+        <button type="button" id="indexBtn" aria-label="打开档案索引">⌕ ARCHIVE INDEX ／</button>
+        <button type="button" id="savedBtn" aria-label="已收藏的档案">＋ SAVED <span class="saved-count" id="savedCount">00</span></button>
+      </div>
+
+      <div class="hud-info">
+        <div class="cat" id="infoCat">INTERNAL DATABASE ／</div>
+        <p class="num" id="infoNum">FILE NUMBER: —</p>
+        <div class="rule"></div>
+        <div class="row">
+          <span class="zh" id="infoTitle">正在读取档案…</span>
+          <span class="en" id="infoEn">—</span>
+        </div>
+        <button class="hud-access" type="button" id="accessBtn">ACCESS FILE</button>
+      </div>
+
+      <div class="hud-bottom">
+        <div class="hud-select">
+          <div class="label">ARCHIVE / SELECT</div>
+          <div class="value"><span id="selIndex">01</span> <small>/ <span id="selTotal">07</span></small></div>
+        </div>
+
+        <div class="hud-ticks">
+          <button class="step" type="button" id="prevFile" aria-label="上一份档案">↑</button>
+          <div class="bars" id="tickBars"></div>
+          <button class="step" type="button" id="nextFile" aria-label="下一份档案">↓</button>
+        </div>
+
+        <div class="hud-column">
+          <div class="label">COLUMN <span id="colIndex">01</span> / 06</div>
+          <div class="value">
+            <button class="hud-arrow" type="button" id="prevCol" aria-label="上一列">←</button>
+            <span class="name" id="colName">—</span>
+            <button class="hud-arrow" type="button" id="nextCol" aria-label="下一列">→</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-help">← →  切换列　／　↑ ↓  前后档案　／　ENTER  读取</div>
+
+      <div class="hud-foot">
+        <span>● SESSION AUTHORIZED</span>
+        <span>DESIGN REFERENCE · RHINE LAB ANALYSIS OS (MIT)</span>
+        <span class="powered">POWERED BY TIANYING ARCHIVE</span>
+      </div>
+    </div>
+  </main>
+
+  <main class="arc-detail" id="arcDetail">
+    <button class="detail-back" type="button" id="detailBack">
+      <span class="glyph">←</span><span>ARCHIVE OVERVIEW</span><span class="esc">ESC</span>
+    </button>
+
+    <div class="detail-case" id="detailCase">
+      <div class="case-rings"><i></i><i></i></div>
+      <div class="case-top" id="caseTop">TIANYING ARCHIVE</div>
+      <div class="case-sub" id="caseSub">NO.001</div>
+      <div class="case-no" id="caseNo">X-001</div>
+      <div class="case-caption">INTERNAL DATABASE</div>
+      <div class="case-veil"></div>
+      <div class="scanline"></div>
+    </div>
+
+    <div class="detail-doc" id="detailDoc">
+      <div class="doc-meta"><span id="docFile">FILE —</span><span id="docArea">REFERENCE AREA</span></div>
+      <h2 id="docTitle">—</h2>
+      <div class="doc-sub"><span id="docSub">—</span><span class="chip" id="docChip">—</span></div>
+      <div class="doc-rule"></div>
+
+      <div class="doc-fields">
+        <div class="doc-field"><div class="k">TYPE / 类型</div><div class="v" id="docType">—</div></div>
+        <div class="doc-field"><div class="k">STATUS / 状态</div><div class="v" id="docStatus">—</div></div>
+      </div>
+
+      <div class="doc-block">
+        <div class="k">ABSTRACT / 概述</div>
+        <p id="docAbstract">—</p>
+      </div>
+
+      <div class="doc-block" id="docCommitsBlock" hidden>
+        <div class="k">COMMITS / 提交记录</div>
+        <ul class="doc-commits" id="docCommits"></ul>
+      </div>
+
+      <div class="doc-actions">
+        <button class="doc-btn is-primary" type="button" id="docSave">＋ 收藏档案</button>
+        <button class="doc-btn" type="button" id="docExport">EXPORT ↓</button>
+        <a class="doc-repo" id="docRepo" href="#" target="_blank" rel="noopener noreferrer" hidden>查看仓库 ↗</a>
+      </div>
+
+      <div class="doc-veil"></div>
+    </div>
+
+    <div class="detail-caption">
+      <span>TIANYING ARCHIVE</span>
+      <span>NO. <span id="capNo">—</span></span>
+    </div>
+  </main>
+
+  <div class="arc-index" id="arcIndex" role="dialog" aria-modal="true" aria-label="档案索引">
+    <div class="panel">
+      <h3>ARCHIVE INDEX</h3>
+      <p class="idx-note">点击任意档案直接跳转</p>
+      <div id="indexList"></div>
+      <button class="doc-btn idx-close" type="button" id="indexClose">关闭</button>
+    </div>
+  </div>
+
+  <script src="assets/js/archive.js?v=8"></script>
+</body>
+</html>

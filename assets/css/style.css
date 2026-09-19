@@ -1239,3 +1239,87 @@ body[data-theme="light"] .carousel-dot {
     max-width: 96vw;
   }
 }
+
+/* ------------------------------------------------------------------ 顶部导航
+   三页（首页 / 项目 / 扫雷）共用同一套导航；跨文档切换时用 View Transitions
+   做一个轻量淡入，不支持的浏览器退化为普通跳转。 */
+
+@view-transition {
+  navigation: auto;
+}
+
+.site-brand {
+  text-decoration: none;
+  color: inherit;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.site-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 15px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.nav-link:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-link.is-current {
+  color: var(--text);
+  border-color: rgba(109, 109, 246, 0.45);
+  background: rgba(109, 109, 246, 0.16);
+}
+
+@media (max-width: 620px) {
+  .site-header {
+    padding: 10px 14px;
+  }
+
+  .nav-link {
+    height: 34px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+
+  .site-nav-links {
+    gap: 2px;
+  }
+}
+
+/* 独立页面（项目页 / 扫雷页）用固定顶栏，浮在页面内容之上 */
+body.has-fixed-nav .site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.88);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}

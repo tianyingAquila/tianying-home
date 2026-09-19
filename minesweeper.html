@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>技能扫雷 · Tianying的巢</title>
+  <meta name="description" content="天鹰个人小站里的技能扫雷：三档棋盘、正负面技能、提示与记录榜。">
+  <link rel="stylesheet" href="assets/css/style.css?v=14">
+  <link rel="stylesheet" href="assets/css/game.css?v=13">
+</head>
+<body class="minesweeper-page has-fixed-nav" data-theme="light">
+
+  <header class="site-header">
+    <a class="site-brand" href="index.html">
+      <span class="brand-mark"></span>
+      <span>Tianying的巢</span>
+    </a>
+    <div class="header-actions">
+      <nav class="site-nav-links" aria-label="主导航">
+        <a class="nav-link" href="index.html">首页</a>
+        <a class="nav-link" href="projects.html">项目</a>
+        <a class="nav-link is-current" href="minesweeper.html" aria-current="page">扫雷</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="game-panel" id="gamePanel" aria-label="扫雷小游戏">
+    <div class="game-beam" aria-hidden="true"></div>
+    <div class="game-shell">
+      <header class="game-topbar">
+        <div>
+          <p class="game-eyebrow">MINESWEEPER</p>
+          <h2 class="game-title">技能扫雷</h2>
+        </div>
+        <div class="game-topbar-actions">
+          <button class="game-button ghost" id="resultReopen" type="button" hidden>本局结算</button>
+          <button class="game-button" id="gameRestart" type="button">重新开局</button>
+        </div>
+      </header>
+
+      <div class="game-statusline" id="gameStatusline">
+        <span id="gameStatusText">正在准备…</span>
+        <span class="lock-hint"><span class="lock-spinner" aria-hidden="true"></span><span id="gameLockText"></span></span>
+        <span class="play-help">左键揭开 · 右键 / 长按插旗 · 双击数字快速开格</span>
+      </div>
+
+      <div class="game-body">
+        <aside class="game-sidebar">
+          <details class="game-card game-setup" id="gameSetup" open>
+            <summary><span>开局设置</span></summary>
+
+            <div class="setup-block">
+              <p class="setup-label">模式</p>
+              <div class="segmented" id="modeSwitch">
+                <button type="button" data-mode="free">自由模式</button>
+                <button type="button" data-mode="tier" class="is-active">难度模式</button>
+              </div>
+            </div>
+
+            <div class="setup-block" id="tierBlock">
+              <p class="setup-label">难度（每局自动重抽效果）</p>
+              <div class="segmented" id="tierSwitch">
+                <button type="button" data-tier="easy">简单</button>
+                <button type="button" data-tier="normal" class="is-active">普通</button>
+                <button type="button" data-tier="hard">困难</button>
+              </div>
+              <p class="setup-note" id="tierNote"></p>
+            </div>
+
+            <div class="setup-block">
+              <p class="setup-label">雷区大小</p>
+              <div class="segmented" id="sizeSwitch">
+                <button type="button" data-size="small">小 · 10×10</button>
+                <button type="button" data-size="medium" class="is-active">中 · 16×16</button>
+                <button type="button" data-size="large">大 · 24×24</button>
+              </div>
+              <p class="setup-note" id="sizeNote"></p>
+            </div>
+
+            <div class="setup-block" id="freeBlock" hidden>
+              <p class="setup-label">自己挑效果（可以全不选，等于纯扫雷）</p>
+              <div class="fx-picker-group">
+                <h4>正面效果</h4>
+                <div class="fx-choices" id="buffChoices"></div>
+              </div>
+              <div class="fx-picker-group">
+                <h4>负面效果</h4>
+                <div class="fx-choices" id="debuffChoices"></div>
+              </div>
+            </div>
+
+            <div class="setup-block">
+              <button class="game-button primary" id="startGame" type="button" style="width: 100%">开始新局</button>
+              <p class="setup-note">自由模式不上榜；难度模式胜利后可以把成绩存到下面的记录榜。</p>
+            </div>
+          </details>
+
+          <section class="game-card">
+            <h3 class="game-card-title"><span>生效效果</span><span id="fxCount">0</span></h3>
+            <div class="fx-list" id="fxList">
+              <p class="fx-empty">还没有生效的效果。</p>
+            </div>
+            <div id="fxNote"></div>
+          </section>
+        </aside>
+
+        <main class="game-main">
+          <div class="game-hud">
+            <div class="hud-item">
+              <span class="hud-label">剩余雷数</span>
+              <span class="hud-value" id="mineCount">40</span>
+            </div>
+            <div class="hud-item">
+              <span class="hud-label">用时</span>
+              <span class="hud-value" id="timerText">00:00</span>
+            </div>
+            <div class="hud-badge" id="modeBadge">难度 · 普通</div>
+            <div class="hud-badge is-immune" id="immuneBadge" hidden>免疫 ×0</div>
+            <div class="hud-spacer"></div>
+            <button class="hud-hint" id="hintButton" type="button" title="用一次提示：从按钮射一道光过去，翻开一个安全格">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a5.4 5.4 0 0 0-5.4 5.4c0 3.6-2.3 5.9-2.3 5.9h15.4s-2.3-2.3-2.3-5.9A5.4 5.4 0 0 0 12 3.2Z"/><path d="M10 18.6a2.2 2.2 0 0 0 4 0"/><path d="M12 1.6v.9"/></svg>
+              <span class="hint-text">提示</span>
+              <span class="hint-count" id="hintCount">3/3</span>
+            </button>
+            <button class="hud-toggle" id="flagToggle" type="button" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 20V5" /><path d="M8 5.6h7.4l-1.5 3.2 1.5 3.2H8z" /></svg>
+              插旗模式
+            </button>
+          </div>
+
+          <div class="board-wrap" id="boardWrap">
+            <div class="board-glow" aria-hidden="true"></div>
+            <div class="game-board" id="gameBoard" role="grid" aria-label="扫雷棋盘"></div>
+            <svg class="radar-layer" id="radarLayer" aria-hidden="true"></svg>
+            <div class="particle-layer" id="particleLayer" aria-hidden="true"></div>
+            <div class="board-toasts" id="boardToasts" aria-hidden="true"></div>
+          </div>
+
+          <section class="game-card">
+            <h3 class="game-card-title">
+              <span>记录榜</span>
+              <span class="score-tabs">
+                <button class="score-tab is-active" data-tab="rank" type="button">排行榜</button>
+                <button class="score-tab" data-tab="latest" type="button">最新榜</button>
+              </span>
+            </h3>
+            <div class="score-list" id="scoreList"></div>
+            <p class="score-state" id="scoreState">正在读取记录…</p>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div class="game-result" id="gameResult" hidden>
+      <div class="result-card" role="dialog" aria-modal="true" aria-label="本局结算">
+        <h3 class="result-title" id="resultTitle">排雷成功</h3>
+        <p class="result-sub" id="resultSub"></p>
+        <div class="result-stats">
+          <div>
+            <span class="result-stat-label">用时</span>
+            <span class="result-stat-value" id="resultTime">00:00.0</span>
+          </div>
+          <div>
+            <span class="result-stat-label">插旗</span>
+            <span class="result-stat-value" id="resultFlags">0</span>
+          </div>
+          <div>
+            <span class="result-stat-label">模式</span>
+            <span class="result-stat-value" id="resultMode">普通</span>
+          </div>
+        </div>
+        <div class="result-effects" id="resultEffects"></div>
+        <form class="score-form" id="scoreForm" hidden>
+          <input id="scoreName" type="text" maxlength="12" placeholder="留个名字（最多 12 字）" autocomplete="nickname">
+          <button class="game-button primary" id="scoreSave" type="submit">保存成绩</button>
+        </form>
+        <div class="result-actions">
+          <button class="game-button primary" id="resultRestart" type="button">再来一局</button>
+          <button class="game-button ghost" id="resultClose" type="button">关闭</button>
+        </div>
+        <p class="result-status" id="resultStatus"></p>
+      </div>
+    </div>
+
+    <div class="game-confirm" id="sizeConfirm" hidden>
+      <div class="confirm-card" role="dialog" aria-modal="true" aria-label="更换雷区大小">
+        <p class="confirm-text">更大的游玩雷区建议到 PC 端获得最佳体验，是否依旧更换？</p>
+        <div class="confirm-actions">
+          <button class="game-button primary" id="sizeConfirmYes" type="button">依旧更换</button>
+          <button class="game-button ghost" id="sizeConfirmNo" type="button">取消</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="assets/js/game/effects.js?v=13"></script>
+  <script src="assets/js/game/minesweeper.js?v=17"></script>
+</body>
+</html>

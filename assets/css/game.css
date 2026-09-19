@@ -1894,3 +1894,35 @@ body[data-theme="light"] .ms-cell.is-locked {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ------------------------------------------------------------------
+   独立页面模式（minesweeper.html）
+   .game-panel 从"整屏滑入浮层"变成普通页面主体。
+------------------------------------------------------------------ */
+
+body.minesweeper-page {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body.minesweeper-page .game-panel {
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  min-height: 100vh;
+  transform: none;
+  transition: none;
+  padding-top: 68px;
+}
+
+body.minesweeper-page .game-panel[hidden] {
+  display: block;
+}
+
+body.minesweeper-page .game-beam {
+  top: 0;
+}
+
+body.minesweeper-page .game-shell {
+  padding-bottom: 90px;
+}

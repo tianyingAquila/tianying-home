@@ -620,37 +620,6 @@
     });
   }
 
-  function renderProjects() {
-    const grid = $("projectGrid");
-    grid.innerHTML = "";
-    (state.config.projects || []).forEach((project) => {
-      const card = document.createElement("a");
-      const url = safeUrl(project.url, "#");
-      card.className = "project-card";
-      card.href = url;
-      if (/^https?:/i.test(url)) {
-        card.target = "_blank";
-        card.rel = "noopener noreferrer";
-      }
-      const title = document.createElement("h3");
-      title.className = "project-title";
-      title.textContent = project.title || "未命名项目";
-      const description = document.createElement("p");
-      description.className = "project-description";
-      description.textContent = project.description || "";
-      const tags = document.createElement("div");
-      tags.className = "project-tags";
-      (project.tags || []).forEach((tag) => {
-        const span = document.createElement("span");
-        span.className = "tag";
-        span.textContent = tag;
-        tags.appendChild(span);
-      });
-      card.append(title, description, tags);
-      grid.appendChild(card);
-    });
-  }
-
   function setupParticles() {
     const container = $("bgParticles");
     const count = window.innerWidth < 620 ? 10 : 18;
@@ -721,7 +690,6 @@
     setupMottoSwap();
     setupMusic();
     renderGallery();
-    renderProjects();
     setupGuestbook();
     loadMessages();
   }

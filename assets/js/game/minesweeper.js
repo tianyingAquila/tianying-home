@@ -2717,16 +2717,16 @@
 
   // --------------------------------------------------------------- 面板开关
 
+  // 扫雷现在是独立页面（minesweeper.html）：加载即进入游戏，
+  // 不再有"滑入 / 收起"这套浮层逻辑，关闭＝回首页。
+
   function openPanel() {
     if (G.panelOpen) {
       return;
     }
     G.panelOpen = true;
-    document.body.classList.add("game-open");
     el.panel.hidden = false;
     el.panel.setAttribute("aria-hidden", "false");
-    el.entry.setAttribute("aria-expanded", "true");
-    void el.panel.offsetWidth;
     el.panel.classList.add("is-open");
     if (G.phase === "idle" || G.phase === "over") {
       startGame();
@@ -2735,74 +2735,24 @@
   }
 
   function closePanel() {
-    if (!G.panelOpen) {
-      return;
-    }
-    G.panelOpen = false;
-    abortTransaction();
-    G.phase = "idle";
-    G.endedAt = Date.now();
-    stopTimer();
-    setLocked(false);
-    hideResult();
-    document.body.classList.remove("game-open");
-    el.panel.classList.remove("is-open");
-    el.entry.setAttribute("aria-expanded", "false");
-    window.setTimeout(() => {
-      if (!G.panelOpen) {
-        el.panel.hidden = true;
-        el.panel.setAttribute("aria-hidden", "true");
-      }
-    }, 520);
+    window.location.href = "index.html";
   }
 
-  function applyHash(initial) {
-    if (window.location.hash === "#game") {
-      if (!G.panelOpen) {
-        if (initial) {
-          el.panel.classList.add("no-anim");
-        }
-        openPanel();
-        if (initial) {
-          window.setTimeout(() => el.panel.classList.remove("no-anim"), 60);
-        }
-      }
-    } else if (G.panelOpen) {
-      closePanel();
-    }
+  function applyHash() {
+    openPanel();
   }
 
   function bindPanel() {
-    el.entry.addEventListener("click", () => {
-      if (G.panelOpen) {
-        closePanel();
-        if (window.location.hash === "#game") {
-          history.pushState(null, "", window.location.pathname + window.location.search);
-        }
-        return;
-      }
-      history.pushState(null, "", "#game");
-      openPanel();
-    });
-    el.closeButton.addEventListener("click", () => {
-      closePanel();
-      if (window.location.hash === "#game") {
-        history.pushState(null, "", window.location.pathname + window.location.search);
-      }
-    });
-    window.addEventListener("hashchange", () => applyHash(false));
+    if (el.closeButton) {
+      el.closeButton.addEventListener("click", closePanel);
+    }
     document.addEventListener("keydown", (event) => {
-      if (event.key !== "Escape" || !G.panelOpen) {
+      if (event.key !== "Escape") {
         return;
       }
       if (!el.result.hidden) {
         // 结算层开着的时候，Esc 先收结算层。
         el.resultClose.click();
-        return;
-      }
-      closePanel();
-      if (window.location.hash === "#game") {
-        history.pushState(null, "", window.location.pathname + window.location.search);
       }
     });
   }
