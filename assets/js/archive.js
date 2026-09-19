@@ -8,7 +8,9 @@
   "use strict";
 
   const MOVE_MS = 320;     // 一次滑动动画的时长（略大于 CSS 过渡，兼顾连按手感）
-  const BG_MAX = 6;        // 背景阵列范围：gx / gy 各 -6..6
+  const BG_COLS = 9;       // 一排里左右各铺多少个装饰档案
+  const BG_ROWS = 7;       // 往后铺多少排
+  const CURRENT_ROW = 1;   // 当前这一列在第几排（前面留两排，画面才有纵深）
   const SAVED_KEY = "tianying.archive.saved.v1";
 
   const el = {};
@@ -16,7 +18,6 @@
     columns: [],
     col: 0,
     row: 0,
-    saved: new Set(),
     fg: [],
     busy: false,
   };
@@ -27,14 +28,14 @@
     [
       "arcGrid", "infoCat", "infoNum", "infoTitle", "infoEn", "selIndex", "selTotal",
       "tickBars", "prevFile", "nextFile", "prevCol", "nextCol", "colIndex", "colName",
-      "accessBtn", "savedCount", "indexBtn", "indexClose", "arcIndex", "indexList",
+      "accessBtn", "hudClock", "indexBtn", "indexClose", "arcIndex", "indexList",
       "detailBack", "docFile", "docArea", "docTitle", "docSub", "docChip", "docType",
-      "docStatus", "docAbstract", "docCommitsBlock", "docCommits", "docSave",
-      "docExport", "docRepo", "caseTop", "caseSub", "caseNo", "capNo", "detailCase", "detailDoc",
+      "docStatus", "docAbstract", "docCommitsBlock", "docCommits", "docRepo",
+      "caseTop", "caseSub", "caseNo", "capNo", "detailCase", "detailDoc",
     ].forEach((id) => { el[id] = document.getElementById(id); });
 
-    loadSaved();
     bindEvents();
+    startClock();
     loadData();
   }
 
@@ -99,20 +100,20 @@
     return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 620px)").matches;
   }
 
-  // 背景：一片固定的档案墙（手机端改纵向列表，不再生成这些装饰盒）
+  // 背景：一排排竖立的档案册堆成档案墙
+  // gx = 同一排里的位置，gy = 第几排（0 = 最前面那一排，也就是当前列所在的排）
   function buildBackground() {
     if (isSmallScreen()) {
       return;
     }
     const frag = document.createDocumentFragment();
-    for (let gy = -BG_MAX; gy <= BG_MAX; gy += 1) {
-      for (let gx = -BG_MAX; gx <= BG_MAX; gx += 1) {
+    for (let gy = 0; gy <= BG_ROWS; gy += 1) {
+      for (let gx = -BG_COLS; gx <= BG_COLS; gx += 1) {
         const node = makeFile("is-decor");
         node.style.setProperty("--gx", gx);
         node.style.setProperty("--gy", gy);
-        const depth = Math.max(Math.abs(gx), Math.abs(gy));
-        node.style.setProperty("--dim", String(Math.max(0.34, 1 - depth * 0.1)));
-        if (depth >= 3) { node.style.setProperty("--blur", (depth - 2) * 0.45 + "px"); }
+        node.style.setProperty("--dim", String(Math.max(0.3, 1 - gy * 0.115)));
+        if (gy >= 2) { node.style.setProperty("--blur", (gy - 1) * 0.4 + "px"); }
         frag.appendChild(node);
       }
     }
@@ -136,7 +137,6 @@
     renderArray();
     renderHud();
     renderTicks();
-    renderSavedCount();
   }
 
   function renderArray() {
@@ -148,14 +148,15 @@
         return;
       }
       node.hidden = false;
-      const gy = i - state.row;
-      node.style.setProperty("--gy", gy);
+      const gx = i - state.row;            // 沿当前这一排左右移动
+      node.style.setProperty("--gx", gx);
+      node.style.setProperty("--gy", CURRENT_ROW);   // 始终待在同一排
       node.classList.toggle("is-active", i === state.row);
-      const depth = Math.abs(gy);
-      node.style.setProperty("--dim", String(Math.max(0.4, 1 - depth * 0.12)));
-      node.style.setProperty("--blur", depth >= 5 ? (depth - 4) * 0.6 + "px" : "0px");
+      const depth = Math.abs(gx);
+      node.style.setProperty("--dim", String(Math.max(0.45, 1 - depth * 0.1)));
+      node.style.setProperty("--blur", depth >= 4 ? (depth - 3) * 0.5 + "px" : "0px");
       node.querySelector(".arc-tag").textContent = entry.id;
-      node.querySelector(".arc-name").textContent = entry.title;
+      node.querySelector(".arc-name").textContent = entry.title;   // 桌面端被 CSS 隐藏，手机端列表要用
     });
   }
 
@@ -206,9 +207,6 @@
     el.arcIndex.addEventListener("click", (event) => {
       if (event.target === el.arcIndex) { closeIndex(); }
     });
-    el.docSave.addEventListener("click", toggleSave);
-    el.docExport.addEventListener("click", exportEntry);
-
     document.addEventListener("keydown", onKeydown);
     el.detailCase.addEventListener("click", openDetail);
     bindSwipe();
@@ -265,13 +263,19 @@
     state.col = (state.col + delta + total) % total;
     const entries = currentColumn().entries.length;
     state.row = Math.min(state.row, Math.max(0, entries - 1));
+
+    // 整片档案墙向前滑一排，同时当前排淡出；滑完瞬移归位并换上新的列
+    el.arcGrid.style.setProperty("--shift-y", String(-delta));
     document.body.classList.add("is-col-switching");
     renderHud();
     window.setTimeout(() => {
+      el.arcGrid.classList.add("no-anim");
+      el.arcGrid.style.setProperty("--shift-y", "0");
       renderArray();
       renderTicks();
       document.body.classList.remove("is-col-switching");
-    }, 240);
+      window.requestAnimationFrame(() => el.arcGrid.classList.remove("no-anim"));
+    }, 430);
   }
 
   function bindSwipe() {
@@ -349,67 +353,19 @@
       el.docRepo.hidden = true;
       el.docRepo.removeAttribute("href");
     }
-    el.docSave.classList.toggle("is-saved", state.saved.has(entry.id));
-    el.docSave.textContent = state.saved.has(entry.id) ? "已收藏 ✓" : "＋ 收藏档案";
   }
 
-  /* ------------------------------------------------------------ 收藏 / 导出 */
+  /* ---------------------------------------------------------------- 时钟 */
 
-  function loadSaved() {
-    try {
-      const raw = window.localStorage.getItem(SAVED_KEY);
-      if (raw) { state.saved = new Set(JSON.parse(raw)); }
-    } catch (error) {
-      state.saved = new Set();
-    }
-  }
-
-  function persistSaved() {
-    try {
-      window.localStorage.setItem(SAVED_KEY, JSON.stringify(Array.from(state.saved)));
-    } catch (error) {
-      /* 隐私模式下写不进去也不影响浏览 */
-    }
-  }
-
-  function renderSavedCount() {
-    el.savedCount.textContent = String(state.saved.size).padStart(2, "0");
-  }
-
-  function toggleSave() {
-    const entry = currentEntry();
-    if (!entry) { return; }
-    if (state.saved.has(entry.id)) { state.saved.delete(entry.id); } else { state.saved.add(entry.id); }
-    persistSaved();
-    renderSavedCount();
-    fillDetail(entry);
-  }
-
-  function exportEntry() {
-    const entry = currentEntry();
-    if (!entry) { return; }
-    const lines = [
-      "FILE " + entry.id,
-      entry.title + (entry.en ? " / " + entry.en : ""),
-      "类型：" + (entry.type || "—"),
-      "状态：" + (entry.status || "—"),
-      "",
-      entry.abstract || "",
-    ];
-    if (Array.isArray(entry.commits) && entry.commits.length) {
-      lines.push("", "提交记录：");
-      entry.commits.forEach((c) => { lines.push("  " + (c.date || "") + "  " + (c.message || "")); });
-    }
-    if (entry.repo) { lines.push("", entry.repo); }
-    lines.push("", "— Tianying Archive");
-    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "archive-" + entry.id + ".txt";
-    document.body.appendChild(a);
-    a.click();
-    window.setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 400);
+  function startClock() {
+    if (!el.hudClock) { return; }
+    const tick = () => {
+      const now = new Date();
+      const p = (n) => String(n).padStart(2, "0");
+      el.hudClock.textContent = p(now.getHours()) + ":" + p(now.getMinutes()) + ":" + p(now.getSeconds());
+    };
+    tick();
+    window.setInterval(tick, 1000);
   }
 
   /* -------------------------------------------------------------- 索引 */

@@ -16,6 +16,8 @@
   --arc-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
 }
 
+body.archive-page .site-header { z-index: 40; }
+
 body.archive-page {
   margin: 0;
   min-height: 100vh;
@@ -36,8 +38,8 @@ body.archive-page {
 .arc-scene {
   position: absolute;
   inset: 0;
-  perspective: 2600px;
-  perspective-origin: 58% 44%;
+  perspective: 2200px;
+  perspective-origin: 50% 46%;
   overflow: hidden;
   transition: opacity 0.55s ease, transform 0.6s ease;
 }
@@ -50,26 +52,29 @@ body[data-view="detail"] .arc-scene { opacity: 0; transform: scale(1.06); }
   top: 50%;
   width: 0;
   height: 0;
-  --tilt-x: 46deg;
-  --tilt-z: -33deg;
-  --step-x: 190px;
-  --step-y: 108px;
+  --tilt-x: 50deg;      /* 俯角：越大越像从高处往下看 */
+  --tilt-z: -26deg;     /* 斜向：整片档案墙的倾斜角 */
+  --step-x: 62px;       /* 同一排里两本档案紧挨着的间距 */
+  --step-y: 158px;      /* 排与排之间的间距（越小，前后排叠得越紧） */
+  --shift-y: 0;         /* 换列时的临时位移（以"排"为单位） */
   transform-style: preserve-3d;
-  transform: translate3d(0, 0, 150px) rotateX(var(--tilt-x)) rotateZ(var(--tilt-z));
-  transition: transform 0.6s cubic-bezier(0.4, 0.02, 0.2, 1);
+  transform: translate3d(0, calc(var(--shift-y) * var(--step-y)), 0) rotateX(var(--tilt-x)) rotateZ(var(--tilt-z));
+  transition: transform 0.5s cubic-bezier(0.32, 0.02, 0.2, 1);
 }
+
+.arc-grid.no-anim { transition: none; }
 
 .arc-file {
   position: absolute;
   left: 0;
   top: 0;
-  width: 168px;
-  height: 62px;
-  margin: -31px 0 0 -84px;
+  width: 66px;          /* 书脊宽度 */
+  height: 288px;        /* 档案册高度 */
+  margin: -144px 0 0 -33px;
   transform-style: preserve-3d;
   --z: 0px;
-  transform: translate3d(calc(var(--gx) * var(--step-x)), calc(var(--gy) * var(--step-y)), 0) rotateZ(calc(-1 * var(--tilt-z))) rotateX(calc(-1 * var(--tilt-x))) translateZ(var(--z));
-  transition: transform 0.45s cubic-bezier(0.3, 0, 0.2, 1), opacity 0.45s ease, filter 0.45s ease, box-shadow 0.3s ease;
+  transform: translate3d(calc(var(--gx) * var(--step-x)), calc(var(--gy) * var(--step-y)), 0) rotateX(calc(-1 * var(--tilt-x))) translateZ(var(--z));
+  transition: transform 0.45s cubic-bezier(0.3, 0, 0.2, 1), opacity 0.4s ease, filter 0.45s ease;
   opacity: var(--dim, 1);
   filter: blur(var(--blur, 0px));
 }
@@ -77,101 +82,78 @@ body[data-view="detail"] .arc-scene { opacity: 0; transform: scale(1.06); }
 .arc-box {
   position: absolute;
   inset: 0;
-  border-radius: 2px;
-  background: linear-gradient(178deg, #ffffff 8%, #f0eee9 94%);
-  border: 1px solid rgba(20, 22, 26, 0.1);
+  border-radius: 3px 3px 2px 2px;
+  background: linear-gradient(94deg, #fefcf8 0%, #f8f3ea 72%, #eae4d9 100%);
+  border: 1px solid rgba(20, 22, 26, 0.07);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 18px 26px -18px rgba(20, 22, 26, 0.55);
+    inset 1px 0 0 rgba(255, 255, 255, 0.9),
+    inset -3px 0 4px -2px rgba(20, 22, 26, 0.2),
+    0 30px 40px -26px rgba(20, 22, 26, 0.68);
 }
 
-/* 档案盒顶面与右侧厚度，制造立体感 */
+/* 顶面：从书脊上沿向后翻 90°，在斜视角下露出一条厚度 */
 .arc-box::before {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  top: -12px;
-  height: 12px;
+  left: -1px;
+  right: -1px;
+  top: -1px;
+  height: 15px;
+  transform-origin: top center;
+  transform: rotateX(90deg);
+  background: linear-gradient(180deg, #fdfbf7 0%, #ece7dd 100%);
+  border: 1px solid rgba(20, 22, 26, 0.06);
   border-radius: 2px 2px 0 0;
-  background: linear-gradient(180deg, #ffffff, #eceae5);
-  border: 1px solid rgba(20, 22, 26, 0.08);
-  border-bottom: 0;
-}
-
-.arc-box::after {
-  content: "";
-  position: absolute;
-  right: -6px;
-  top: -12px;
-  bottom: 0;
-  width: 6px;
-  background: linear-gradient(90deg, #e4e1db, #d3cfc7);
-  border-radius: 0 2px 2px 0;
 }
 
 .arc-file .arc-dot {
   position: absolute;
-  right: 12px;
-  bottom: 10px;
-  width: 6px;
-  height: 6px;
+  left: 50%;
+  top: 15px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
   border-radius: 50%;
-  background: rgba(20, 22, 26, 0.22);
+  background: rgba(20, 22, 26, 0.2);
 }
 
 .arc-file .arc-tag {
   position: absolute;
-  left: 13px;
-  top: 11px;
+  left: 0;
+  right: 0;
+  top: 26px;
   font-family: var(--arc-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-align: center;
   color: var(--arc-muted);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.arc-file .arc-name {
-  position: absolute;
-  left: 13px;
-  right: 30px;
-  top: 27px;
-  overflow: hidden;
-  font-size: 10.5px;
-  line-height: 1.25;
-  color: rgba(20, 22, 26, 0.72);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
+/* 书脊太窄放不下标题，标题只出现在 HUD 里 */
+.arc-file .arc-name { display: none; }
 
-.arc-file.is-fg .arc-tag { opacity: 0.85; }
+.arc-file.is-fg .arc-tag { opacity: 0.75; }
 .arc-file.is-active .arc-tag { opacity: 1; color: var(--arc-ink); }
-.arc-file.is-active .arc-name { opacity: 1; }
 
 .arc-file.is-active .arc-box {
-  border-color: rgba(20, 22, 26, 0.6);
-  background: linear-gradient(178deg, #ffffff 10%, #fbfaf7 94%);
+  border-color: rgba(20, 22, 26, 0.42);
+  background: linear-gradient(94deg, #ffffff 0%, #faf8f4 74%, #efebe3 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    0 30px 44px -20px rgba(20, 22, 26, 0.7),
-    0 0 0 6px rgba(255, 255, 255, 0.55);
+    inset 1px 0 0 rgba(255, 255, 255, 1),
+    0 34px 46px -26px rgba(20, 22, 26, 0.72);
 }
 
-/* 当前列的档案浮在背景墙之上；选中的那一份再往前凸出 */
-.arc-file.is-fg { --z: 10px; }
-.arc-file.is-fg .arc-box { border-color: rgba(20, 22, 26, 0.2); }
-.arc-file.is-fg .arc-dot { background: rgba(20, 22, 26, 0.4); }
-.arc-file.is-active { --z: 42px; }
+/* 当前这一排的档案略微浮起；选中的那本再抽出来一截 */
+.arc-file.is-fg { --z: 12px; }
+.arc-file.is-fg .arc-box { border-color: rgba(20, 22, 26, 0.16); }
+.arc-file.is-fg .arc-dot { background: rgba(20, 22, 26, 0.38); }
+.arc-file.is-active { --z: 54px; }
 
-.arc-file.is-active .arc-box::after { background: linear-gradient(90deg, #dcd8d1, #c7c2b9); }
+/* 换列时当前排淡出，整片档案墙向前滑一排 */
+body.is-col-switching .arc-file.is-fg { opacity: 0 !important; }
 
-/* 选中档案的横向高亮线 */
-.arc-file.is-active .arc-box { background: linear-gradient(178deg, #ffffff 6%, #f6f4f0 92%); }
-
-.arc-file.is-hover .arc-box { border-color: rgba(20, 22, 26, 0.28); }
 
 /* ----------------------------------------------------------------- HUD 层 */
 
@@ -235,6 +217,14 @@ body[data-view="detail"] .arc-hud > * { pointer-events: none; }
 
 .hud-tools button:hover { opacity: 0.6; }
 .hud-tools .saved-count { font-family: var(--arc-mono); }
+
+.hud-clock {
+  font-family: var(--arc-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--arc-muted);
+  font-variant-numeric: tabular-nums;
+}
 
 .hud-info {
   position: absolute;
@@ -773,6 +763,7 @@ body.is-index-open .arc-index { opacity: 1; pointer-events: auto; }
     max-width: none;
     opacity: 1;
     overflow: visible;
+    text-align: left;
     white-space: normal;
   }
 

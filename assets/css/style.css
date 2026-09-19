@@ -48,6 +48,8 @@ body[data-theme="light"] {
 
 html {
   scroll-behavior: smooth;
+  /* 三页的滚动条占位保持一致，顶栏位置才不会因为有没有滚动条而左右偏移 */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -1306,20 +1308,3 @@ body[data-theme="light"] .carousel-dot {
   }
 }
 
-/* 独立页面（项目页 / 扫雷页）用固定顶栏，浮在页面内容之上 */
-body.has-fixed-nav .site-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  max-width: none;
-  margin: 0;
-  border-radius: 0;
-  border-left: 0;
-  border-right: 0;
-  border-top: 0;
-  z-index: 40;
-  background: rgba(255, 255, 255, 0.88);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-}
