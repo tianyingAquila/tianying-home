@@ -6,6 +6,7 @@ require_once __DIR__ . '/config.php';
 
 define('DATA_DIR', __DIR__ . '/data');
 define('UPLOAD_DIR', __DIR__ . '/uploads');
+require_once __DIR__ . '/steam.php';
 
 function respond(array $data, int $code = 200): never
 {
@@ -201,72 +202,6 @@ function current_config(): array
     return array_replace_recursive(default_config(), $config);
 }
 
-function fetch_url(string $url, int $timeout = 8): string
-{
-    if (function_exists('curl_init')) {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_TIMEOUT => $timeout,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Tianying-Home; +https://github.com/tianyingAquila/tianying-home)',
-        ]);
-        $body = curl_exec($ch);
-        $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
-        return $body !== false && $code < 400 ? (string) $body : '';
-    }
-
-    $context = stream_context_create([
-        'http' => ['timeout' => $timeout, 'header' => "User-Agent: Mozilla/5.0\r\n"],
-        'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
-    ]);
-    $body = @file_get_contents($url, false, $context);
-    return $body === false ? '' : (string) $body;
-}
-
-function parse_steam_status(string $xml): array
-{
-    $data = [
-        'available' => false,
-        'online' => false,
-        'display' => '状态暂不可用',
-        'gameName' => '',
-    ];
-
-    $previous = libxml_use_internal_errors(true);
-    $doc = simplexml_load_string($xml);
-    libxml_use_internal_errors($previous);
-    if ($doc === false || !isset($doc->profile)) {
-        return $data;
-    }
-
-    $profile = $doc->profile;
-    $onlineState = strtolower(trim((string) ($profile->onlineState ?? '')));
-    $stateMessage = trim((string) ($profile->stateMessage ?? ''));
-    $gameName = isset($profile->inGameInfo) ? trim((string) $profile->inGameInfo->gameName) : '';
-
-    $data['available'] = true;
-    $data['online'] = in_array($onlineState, ['online', 'in-game'], true) || $stateMessage === 'In-Game';
-    $data['gameName'] = $gameName;
-
-    if ($gameName !== '' && ($stateMessage === 'In-Game' || $onlineState === 'in-game')) {
-        $data['display'] = '正在游玩 ' . $gameName;
-    } elseif ($data['online']) {
-        $data['display'] = '在线';
-    } elseif (in_array($onlineState, ['away', 'snooze'], true)) {
-        $data['display'] = '离开';
-    } elseif ($onlineState === 'busy') {
-        $data['display'] = '忙碌';
-    } else {
-        $data['display'] = '离线';
-    }
-
-    return $data;
-}
-
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
@@ -302,26 +237,47 @@ switch ($action) {
             respond(['ok' => false, 'error' => '未配置 Steam ID'], 404);
         }
 
-        $cacheFile = DATA_DIR . '/steam_status.json';
-        $cache = read_json($cacheFile, []);
-        if (($cache['steamId'] ?? '') === $steamId && ($cache['time'] ?? 0) > time() - 300) {
-            respond(['ok' => true, 'data' => $cache['data']]);
+        // 正常情况下缓存由服务器上的 cron 每 5 分钟刷新一次，这里只负责读取，
+        // 所以访客几乎不会等待 Steam 接口。
+        $cache = read_json(steam_cache_file(), []);
+        $cachedData = is_array($cache['data'] ?? null) ? $cache['data'] : null;
+        $cacheOwner = (string) ($cache['steamId'] ?? '');
+        $cacheAge = time() - (int) ($cache['time'] ?? 0);
+
+        if ($cachedData !== null && $cacheOwner === $steamId && $cacheAge <= 900) {
+            respond(['ok' => true, 'data' => $cachedData]);
         }
 
-        $xml = fetch_url('https://steamcommunity.com/profiles/' . rawurlencode($steamId) . '/?xml=1');
-        $data = $xml === '' ? [
-            'available' => false,
-            'online' => false,
-            'display' => '状态暂不可用',
-            'gameName' => '',
-        ] : parse_steam_status($xml);
+        if ($cachedData !== null) {
+            // 缓存过期：先把旧数据返回给访客，再在后台刷新，避免让访客干等
+            steam_flush_then_refresh($steamId, $cachedData);
+        }
 
-        write_json($cacheFile, [
-            'steamId' => $steamId,
-            'time' => time(),
-            'data' => $data,
-        ]);
-        respond(['ok' => true, 'data' => $data]);
+        // 完全没有缓存（刚部署、cron 还没跑）：同步取一次，预算调短
+        $fresh = steam_fetch_status($steamId, true);
+        if ($fresh !== null) {
+            steam_write_cache($steamId, $fresh);
+            respond(['ok' => true, 'data' => $fresh]);
+        }
+        respond(['ok' => true, 'data' => steam_empty_status('状态获取中…')]);
+
+    case 'steam_icon':
+        $appid = (int) preg_replace('/\D/', '', (string) ($_GET['appid'] ?? ''));
+        $hash = strtolower((string) preg_replace('/[^0-9a-f]/i', '', (string) ($_GET['hash'] ?? '')));
+        if ($appid <= 0 || $hash === '' || strlen($hash) > 64) {
+            http_response_code(404);
+            exit;
+        }
+        $iconBytes = steam_icon_bytes($appid, $hash);
+        if ($iconBytes === '') {
+            http_response_code(404);
+            exit;
+        }
+        header('Content-Type: image/jpeg');
+        header('Content-Length: ' . strlen($iconBytes));
+        header('Cache-Control: public, max-age=2592000');
+        echo $iconBytes;
+        exit;
 
     case 'message':
         if ($method !== 'POST') {

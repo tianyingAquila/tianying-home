@@ -208,6 +208,57 @@
     $("socialLinks").appendChild(link);
   }
 
+  function formatHours(minutes) {
+    const total = Math.max(0, Math.floor(Number(minutes) || 0));
+    if (total < 60) {
+      return "不足 1 小时";
+    }
+    if (total < 600) {
+      return `${(total / 60).toFixed(1)} 小时`;
+    }
+    return `${Math.round(total / 60)} 小时`;
+  }
+
+  function renderRecentGames(list) {
+    const box = $("recentGames");
+    const container = $("recentGamesList");
+    if (!box || !container) {
+      return;
+    }
+    const games = (Array.isArray(list) ? list : []).filter((game) => game && game.name);
+    container.replaceChildren();
+    if (!games.length) {
+      box.hidden = true;
+      return;
+    }
+    games.forEach((game) => {
+      const item = document.createElement("li");
+      item.className = "recent-game";
+      if (typeof game.icon === "string" && game.icon.startsWith("api.php?action=steam_icon&")) {
+        const icon = document.createElement("img");
+        icon.className = "recent-game-icon";
+        icon.src = game.icon;
+        icon.alt = "";
+        icon.loading = "lazy";
+        icon.addEventListener("error", () => icon.remove());
+        item.appendChild(icon);
+      }
+      const name = document.createElement("span");
+      name.className = "recent-game-name";
+      name.textContent = game.name;
+      const time = document.createElement("span");
+      time.className = "recent-game-time";
+      time.textContent = formatHours(game.minutesTotal);
+      if (Number(game.minutes2w) > 0) {
+        time.title = `近两周 ${formatHours(game.minutes2w)}`;
+      }
+      item.appendChild(name);
+      item.appendChild(time);
+      container.appendChild(item);
+    });
+    box.hidden = false;
+  }
+
   async function loadSteamStatus() {
     const status = $("steamStatus");
     if (!status) {
@@ -216,8 +267,11 @@
     try {
       const data = await request("steam_status");
       status.textContent = data.display || (data.online ? "在线" : "离线");
+      status.classList.toggle("is-online", Boolean(data.online));
+      renderRecentGames(data.recent);
     } catch (error) {
       status.textContent = "状态暂不可用";
+      renderRecentGames([]);
     }
   }
 

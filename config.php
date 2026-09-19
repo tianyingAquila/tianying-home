@@ -11,6 +11,12 @@ if (!defined('ADMIN_PASSWORD') || ADMIN_PASSWORD === '') {
     define('ADMIN_PASSWORD', bin2hex(random_bytes(24)));
 }
 
+// Steam Web API 密钥（首页显示 Steam 在线状态用）。同样放在 config.local.php，不提交到 Git。
+// 留空时会退回到抓取公开个人资料页的 XML。
+if (!defined('STEAM_API_KEY')) {
+    define('STEAM_API_KEY', '');
+}
+
 // 允许上传的图片类型（扩展名）
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
