@@ -38,8 +38,8 @@ body.archive-page {
 .arc-scene {
   position: absolute;
   inset: 0;
-  perspective: 2200px;
-  perspective-origin: 50% 46%;
+  perspective: 1750px;
+  perspective-origin: 48% 44%;
   overflow: hidden;
   transition: opacity 0.55s ease, transform 0.6s ease;
 }
@@ -52,13 +52,13 @@ body[data-view="detail"] .arc-scene { opacity: 0; transform: scale(1.06); }
   top: 50%;
   width: 0;
   height: 0;
-  --tilt-x: 50deg;      /* 俯角：越大越像从高处往下看 */
+  --tilt-x: 43deg;      /* 俯角：对齐原版的镜头仰角 35-43° */
   --tilt-z: -26deg;     /* 斜向：整片档案墙的倾斜角 */
-  --step-x: 46px;       /* 同一列里两本档案的间距（原版 ROW_SPACING 0.62：很密） */
-  --step-y: 236px;      /* 列与列之间的间距（原版 COLUMN_SPACING 5.2：很松） */
+  --step-x: 80px;       /* 同一列里两片档案的间距（原版 ROW_SPACING 0.62，间隙≈厚度） */
+  --step-y: 242px;      /* 列与列之间的间距（原版 COLUMN_SPACING 5.2：很松） */
   --shift-y: 0;         /* 换列时的临时位移（以"排"为单位） */
   transform-style: preserve-3d;
-  transform: translate3d(0, calc(var(--shift-y) * var(--step-y)), 0) rotateX(var(--tilt-x)) rotateZ(var(--tilt-z));
+  transform: translate3d(0, calc(var(--shift-y) * var(--step-y)), 70px) rotateX(var(--tilt-x)) rotateZ(var(--tilt-z));
   transition: transform 0.5s cubic-bezier(0.32, 0.02, 0.2, 1);
 }
 
@@ -68,9 +68,9 @@ body[data-view="detail"] .arc-scene { opacity: 0; transform: scale(1.06); }
   position: absolute;
   left: 0;
   top: 0;
-  width: 42px;          /* 档案片宽度（比间距略窄，留一条缝） */
-  height: 256px;        /* 档案高度 */
-  margin: -128px 0 0 -21px;
+  width: 60px;          /* 档案正面宽度 */
+  height: 300px;        /* 档案高度 */
+  margin: -150px 0 0 -30px;
   transform-style: preserve-3d;
   --z: 0px;
   transform: translate3d(calc(var(--gx) * var(--step-x)), calc(var(--gy) * var(--step-y)), 0) rotateX(calc(-1 * var(--tilt-x))) translateZ(var(--z));
@@ -83,36 +83,50 @@ body[data-view="detail"] .arc-scene { opacity: 0; transform: scale(1.06); }
   position: absolute;
   inset: 0;
   border-radius: 3px 3px 2px 2px;
-  background: linear-gradient(94deg, #fefcf8 0%, #f8f3ea 72%, #eae4d9 100%);
-  border: 1px solid rgba(20, 22, 26, 0.07);
+  background: linear-gradient(178deg, #fdfbf5 0%, #f5f0e4 46%, #e9e2d3 100%);
+  border: 1px solid rgba(20, 22, 26, 0.08);
   box-shadow:
-    inset 1px 0 0 rgba(255, 255, 255, 0.9),
-    inset -3px 0 4px -2px rgba(20, 22, 26, 0.2),
-    0 30px 40px -26px rgba(20, 22, 26, 0.68);
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset -1px 0 0 rgba(255, 255, 255, 0.8),
+    inset 0 -22px 26px -20px rgba(20, 22, 26, 0.3),
+    0 38px 52px -32px rgba(20, 22, 26, 0.8);
 }
 
-/* 顶面：从书脊上沿向后翻 90°，在斜视角下露出一条厚度 */
+/* 顶面：从正面上沿向后翻 90°，斜视角下露出一条厚度 */
 .arc-box::before {
   content: "";
   position: absolute;
   left: -1px;
   right: -1px;
   top: -1px;
-  height: 15px;
+  height: 26px;
   transform-origin: top center;
   transform: rotateX(90deg);
-  background: linear-gradient(180deg, #fdfbf7 0%, #ece7dd 100%);
-  border: 1px solid rgba(20, 22, 26, 0.06);
+  background: linear-gradient(180deg, #fefdf9 0%, #e6dfd0 100%);
+  border: 1px solid rgba(20, 22, 26, 0.07);
   border-radius: 2px 2px 0 0;
+}
+
+/* 右侧厚度：档案盒的侧面 */
+.arc-box::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: -26px;
+  bottom: 0;
+  width: 6px;
+  background: linear-gradient(90deg, #eae4d5 0%, #d6cebd 100%);
+  border-radius: 0 2px 2px 0;
+  box-shadow: inset -1px 0 0 rgba(20, 22, 26, 0.06);
 }
 
 .arc-file .arc-dot {
   position: absolute;
   left: 50%;
-  top: 15px;
-  width: 4px;
-  height: 4px;
-  margin-left: -2px;
+  top: 16px;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
   border-radius: 50%;
   background: rgba(20, 22, 26, 0.2);
 }
@@ -138,11 +152,12 @@ body[data-view="detail"] .arc-scene { opacity: 0; transform: scale(1.06); }
 .arc-file.is-active .arc-tag { opacity: 1; color: var(--arc-ink); }
 
 .arc-file.is-active .arc-box {
-  border-color: rgba(20, 22, 26, 0.42);
-  background: linear-gradient(94deg, #ffffff 0%, #faf8f4 74%, #efebe3 100%);
+  border-color: rgba(20, 22, 26, 0.34);
+  background: linear-gradient(178deg, #ffffff 0%, #fcfaf6 50%, #f2eee6 100%);
   box-shadow:
-    inset 1px 0 0 rgba(255, 255, 255, 1),
-    0 34px 46px -26px rgba(20, 22, 26, 0.72);
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -18px 22px -18px rgba(20, 22, 26, 0.18),
+    0 44px 58px -30px rgba(20, 22, 26, 0.78);
 }
 
 /* 当前这一排的档案略微浮起；选中的那本再抽出来一截 */

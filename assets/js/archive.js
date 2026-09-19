@@ -112,8 +112,8 @@
         const node = makeFile("is-decor");
         node.style.setProperty("--gx", gx);
         node.style.setProperty("--gy", gy);
-        node.style.setProperty("--dim", String(Math.max(0.3, 1 - gy * 0.115)));
-        if (gy >= 2) { node.style.setProperty("--blur", (gy - 1) * 0.4 + "px"); }
+        node.style.setProperty("--dim", String(Math.max(0.22, 1 - gy * 0.155)));
+        if (gy >= 1) { node.style.setProperty("--blur", gy * 0.5 + "px"); }
         frag.appendChild(node);
       }
     }
