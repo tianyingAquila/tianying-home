@@ -14,6 +14,7 @@
   const SAVED_KEY = "tianying.archive.saved.v1";
 
   const el = {};
+  let stage = null;            // PC 端的 WebGL 档案墙（手机端为 null，走 CSS 列表）
   const state = {
     columns: [],
     col: 0,
@@ -26,7 +27,7 @@
 
   function boot() {
     [
-      "arcGrid", "infoCat", "infoNum", "infoTitle", "infoEn", "selIndex", "selTotal",
+      "arcGrid", "arcCanvas", "infoCat", "infoNum", "infoTitle", "infoEn", "selIndex", "selTotal",
       "tickBars", "prevFile", "nextFile", "prevCol", "nextCol", "colIndex", "colName",
       "accessBtn", "hudClock", "indexBtn", "indexClose", "arcIndex", "indexList",
       "detailBack", "docFile", "docArea", "docTitle", "docSub", "docChip", "docType",
@@ -50,10 +51,15 @@
           throw new Error("档案数据为空");
         }
         state.columns = columns;
-        buildBackground();
-        buildForeground();
+        if (isSmallScreen()) {
+          buildBackground();
+          buildForeground();
+        }
         renderAll();
         document.body.classList.add("is-ready");
+        if (!isSmallScreen()) {
+          setup3D();
+        }
       })
       .catch((error) => {
         console.error("[档案终端] 数据加载失败：", error);
@@ -94,6 +100,43 @@
     box.appendChild(dot);
     node.appendChild(box);
     return node;
+  }
+
+  // PC 端：动态加载 WebGL 渲染层。加载失败就退回 CSS 阵列，不影响浏览。
+  function setup3D() {
+    if (!el.arcCanvas) {
+      buildBackground();
+      buildForeground();
+      return;
+    }
+    // 注意：改 archive3d.js 之后要顺手把这里的版本号 +1，否则浏览器会用缓存
+    import("./archive3d.js?v=8")
+      .then((mod) => {
+        // 先让 canvas 参与布局，否则量到的尺寸是 0
+        document.body.classList.add("is-3d");
+        stage = mod.createStage(el.arcCanvas, state.columns, {
+          onPick(hit) {
+            if (hit.colIndex !== state.col) {
+              state.col = hit.colIndex;
+              state.row = hit.entryIndex;
+              stage.selectCol(state.col, state.row);
+              renderHud();
+              renderTicks();
+              return;
+            }
+            selectRow(hit.entryIndex);
+          },
+        });
+        stage.setLift(4.2);
+        stage.resize();
+      })
+      .catch((error) => {
+        console.error("[档案终端] 3D 初始化失败，退回平面阵列：", error);
+        document.body.classList.remove("is-3d");
+        buildBackground();
+        buildForeground();
+        renderArray();
+      });
   }
 
   function isSmallScreen() {
@@ -241,7 +284,11 @@
     if (next < 0 || next >= total) { return; }
     if (!lockMove()) { return; }
     state.row = next;
-    renderArray();
+    if (stage) {
+      stage.goRow(delta);
+    } else {
+      renderArray();
+    }
     renderHud();
     renderTicks();
   }
@@ -250,8 +297,13 @@
     const total = currentColumn().entries.length;
     if (index === state.row || index < 0 || index >= total) { return; }
     if (!lockMove()) { return; }
+    const delta = index - state.row;
     state.row = index;
-    renderArray();
+    if (stage) {
+      stage.goRow(delta);
+    } else {
+      renderArray();
+    }
     renderHud();
     renderTicks();
   }
@@ -265,6 +317,12 @@
     state.row = Math.min(state.row, Math.max(0, entries - 1));
 
     // 整片档案墙向前滑一排，同时当前排淡出；滑完瞬移归位并换上新的列
+    if (stage) {
+      stage.goColumn(delta);
+      renderHud();
+      renderTicks();
+      return;
+    }
     el.arcGrid.style.setProperty("--shift-y", String(-delta));
     document.body.classList.add("is-col-switching");
     renderHud();
