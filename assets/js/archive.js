@@ -8,8 +8,8 @@
   "use strict";
 
   const MOVE_MS = 320;     // 一次滑动动画的时长（略大于 CSS 过渡，兼顾连按手感）
-  const BG_COLS = 9;       // 一排里左右各铺多少个装饰档案
-  const BG_ROWS = 7;       // 往后铺多少排
+  const BG_COLS = 15;      // 同一列里左右各铺多少片装饰档案（原版纵深 32 个位置）
+  const BG_ROWS = 6;       // 往深处铺多少列（原版 5 个分类 + 两侧补位）
   const CURRENT_ROW = 1;   // 当前这一列在第几排（前面留两排，画面才有纵深）
   const SAVED_KEY = "tianying.archive.saved.v1";
 

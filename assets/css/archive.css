@@ -54,8 +54,8 @@ body[data-view="detail"] .arc-scene { opacity: 0; transform: scale(1.06); }
   height: 0;
   --tilt-x: 50deg;      /* 俯角：越大越像从高处往下看 */
   --tilt-z: -26deg;     /* 斜向：整片档案墙的倾斜角 */
-  --step-x: 62px;       /* 同一排里两本档案紧挨着的间距 */
-  --step-y: 158px;      /* 排与排之间的间距（越小，前后排叠得越紧） */
+  --step-x: 46px;       /* 同一列里两本档案的间距（原版 ROW_SPACING 0.62：很密） */
+  --step-y: 236px;      /* 列与列之间的间距（原版 COLUMN_SPACING 5.2：很松） */
   --shift-y: 0;         /* 换列时的临时位移（以"排"为单位） */
   transform-style: preserve-3d;
   transform: translate3d(0, calc(var(--shift-y) * var(--step-y)), 0) rotateX(var(--tilt-x)) rotateZ(var(--tilt-z));
@@ -68,9 +68,9 @@ body[data-view="detail"] .arc-scene { opacity: 0; transform: scale(1.06); }
   position: absolute;
   left: 0;
   top: 0;
-  width: 66px;          /* 书脊宽度 */
-  height: 288px;        /* 档案册高度 */
-  margin: -144px 0 0 -33px;
+  width: 42px;          /* 档案片宽度（比间距略窄，留一条缝） */
+  height: 256px;        /* 档案高度 */
+  margin: -128px 0 0 -21px;
   transform-style: preserve-3d;
   --z: 0px;
   transform: translate3d(calc(var(--gx) * var(--step-x)), calc(var(--gy) * var(--step-y)), 0) rotateX(calc(-1 * var(--tilt-x))) translateZ(var(--z));
