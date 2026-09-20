@@ -110,24 +110,22 @@
       return;
     }
     // 注意：改 archive3d.js 之后要顺手把这里的版本号 +1，否则浏览器会用缓存
-    import("./archive3d.js?v=15")
+    import("./archive3d.js?v=22")
       .then((mod) => {
         // 先让 canvas 参与布局，否则量到的尺寸是 0
         document.body.classList.add("is-3d");
         stage = mod.createStage(el.arcCanvas, state.columns, {
+          // 点中阵列里的哪一册，就把那一册滑到选中位再抬起来
           onPick(hit) {
-            if (hit.colIndex !== state.col) {
-              state.col = hit.colIndex;
-              state.row = hit.entryIndex;
-              stage.selectCol(state.col, state.row);
-              renderHud();
-              renderTicks();
-              return;
-            }
-            selectRow(hit.entryIndex);
+            if (hit.colIndex === state.col && hit.entryIndex === state.row) { return; }
+            state.col = hit.colIndex;
+            state.row = hit.entryIndex;
+            stage.selectCell(state.col, state.row, hit.dLane, hit.dRow);
+            renderHud();
+            renderTicks();
           },
         });
-        stage.setLift(2.6);
+        stage.setLift(0.9);
         stage.resize();
       })
       .catch((error) => {
