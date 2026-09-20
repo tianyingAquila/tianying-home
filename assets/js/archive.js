@@ -11,7 +11,6 @@
   const BG_COLS = 15;      // 同一列里左右各铺多少片装饰档案（原版纵深 32 个位置）
   const BG_ROWS = 6;       // 往深处铺多少列（原版 5 个分类 + 两侧补位）
   const CURRENT_ROW = 1;   // 当前这一列在第几排（前面留两排，画面才有纵深）
-  const SAVED_KEY = "tianying.archive.saved.v1";
   const REVEAL_MS = 1000;   // 详情右侧整列淡入的总时长（最后一项在这时收尾）
   const REVEAL_FADE = 320;  // 单项自己的淡入时长
   const REVEAL_RISE = 6;    // 淡入时附加的轻微上浮（px）

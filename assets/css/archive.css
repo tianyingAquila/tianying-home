@@ -250,7 +250,6 @@ body[data-view="detail"] .arc-hud > * { pointer-events: none; }
 }
 
 .hud-tools button:hover { opacity: 0.6; }
-.hud-tools .saved-count { font-family: var(--arc-mono); }
 
 .hud-clock {
   font-family: var(--arc-mono);
@@ -637,9 +636,6 @@ body[data-view="detail"] .arc-detail { opacity: 1; pointer-events: auto; }
 }
 
 .doc-btn:hover { border-color: rgba(20, 22, 26, 0.45); }
-.doc-btn.is-primary { background: var(--arc-ink); color: #fff; border-color: var(--arc-ink); }
-.doc-btn.is-primary:hover { opacity: 0.85; }
-.doc-btn.is-saved { background: var(--arc-accent); border-color: var(--arc-accent); color: #fff; }
 .doc-repo { font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase; border-bottom: 1px solid var(--arc-line); padding-bottom: 2px; }
 
 /* ----------------------------------------------------------------- 索引浮层 */
