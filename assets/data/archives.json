@@ -38,34 +38,34 @@
         },
         {
           "id": "P-002",
-          "title": "git-hello-world",
-          "en": "GIT HELLO WORLD",
-          "type": "练习仓库",
+          "title": "天鹰个人网站",
+          "en": "TIANYING HOME",
+          "type": "个人站点",
           "status": "未归档 · 可读取",
-          "abstract": "第一个用来熟悉 Git 的仓库。内容从一个 Hello World 开始，陆续做过改动、回滚（Revert）、重做与自动提交。代码本身没有价值，留下的是一条完整的操作轨迹。",
+          "abstract": "给自己做的个人网站，也是这个档案终端的本体：首页是资料卡、随笔、留言板、图片集、音乐与 Steam 实时状态，扫雷独立成一页，项目页是一条可以翻的档案阵列。后端只有 PHP 加几个 JSON 文件，跑在 2 核 2G 的云服务器上，所以每一处都按轻量来写。",
           "commits": [
             {
-              "date": "2026-09-07",
-              "message": "Automate update to Hello world 6"
+              "date": "2026-09-20",
+              "message": "详情页改为 1 秒逐条淡入（JS 驱动，兼容减少动效），新增滚轮换档与到头自动换列"
             },
             {
-              "date": "2026-09-06",
-              "message": "Automate update to Hello world 5"
+              "date": "2026-09-20",
+              "message": "项目页改用 Three.js 做真 3D 档案墙（PC 端）"
             },
             {
-              "date": "2026-09-06",
-              "message": "Update greeting to Hello World 4"
+              "date": "2026-09-20",
+              "message": "新增天鹰档案终端项目页；扫雷改为独立页；三页统一顶部导航"
             },
             {
-              "date": "2026-09-06",
-              "message": "Reapply \"Update greeting to Hello World 3\""
+              "date": "2026-09-19",
+              "message": "接入 Steam Web API：真实在线状态 + 最近在玩"
             },
             {
-              "date": "2026-09-06",
-              "message": "Revert \"Update greeting to Hello World 3\""
+              "date": "2026-09-13",
+              "message": "Add board sizes, auto-sweep, 6 new buffs and 4 new debuffs"
             }
           ],
-          "repo": "https://github.com/tianyingAquila/git-hello-world"
+          "repo": "https://github.com/tianyingAquila/tianying-home"
         },
         {
           "id": "X-001",
