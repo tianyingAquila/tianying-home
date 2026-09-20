@@ -154,20 +154,6 @@ function default_config(): array
             'src' => 'assets/music/track.wav',
             'cover' => 'assets/img/music-cover.svg',
         ],
-        'projects' => [
-            [
-                'title' => 'GitHub 主页',
-                'description' => '我的代码和开源项目都放在这里。',
-                'url' => 'https://github.com/tianyingAquila',
-                'tags' => ['GitHub'],
-            ],
-            [
-                'title' => '天鹰个人网站',
-                'description' => '你现在看到的这个网站。',
-                'url' => '#',
-                'tags' => ['网站'],
-            ],
-        ],
         'gallery' => [
             ['src' => 'assets/img/photo1.svg', 'caption' => '示例照片 1'],
             ['src' => 'assets/img/photo2.svg', 'caption' => '示例照片 2'],
@@ -192,6 +178,51 @@ function ms_scores_file(): string
     return DATA_DIR . '/ms_scores.json';
 }
 
+// 项目页的档案数据：仓库里的 assets/data/archives.json 是种子，
+// 后台改过的四个字段（名称/类型/状态/概述）存在 data/archives.json，
+// 由 api.php 合并后给前端。data/ 不进 Git、不被 deploy.ps1 覆盖，所以改动不会丢。
+function archives_seed_file(): string
+{
+    return __DIR__ . '/assets/data/archives.json';
+}
+
+function archives_override_file(): string
+{
+    return DATA_DIR . '/archives.json';
+}
+
+const ARCHIVE_EDITABLE_KEYS = ['title', 'type', 'status', 'abstract'];
+
+function current_archives(): array
+{
+    $seed = read_json(archives_seed_file(), []);
+    if (!is_array($seed) || !isset($seed['columns']) || !is_array($seed['columns'])) {
+        return ['generatedAt' => date('Y-m-d'), 'columns' => []];
+    }
+    $overrides = read_json(archives_override_file(), []);
+    $saved = is_array($overrides['entries'] ?? null) ? $overrides['entries'] : [];
+    if (!$saved) {
+        return $seed;
+    }
+    foreach ($seed['columns'] as $ci => $column) {
+        if (!isset($column['entries']) || !is_array($column['entries'])) {
+            continue;
+        }
+        foreach ($column['entries'] as $ei => $entry) {
+            $id = (string) ($entry['id'] ?? '');
+            if ($id === '' || !isset($saved[$id]) || !is_array($saved[$id])) {
+                continue;
+            }
+            foreach (ARCHIVE_EDITABLE_KEYS as $key) {
+                if (array_key_exists($key, $saved[$id])) {
+                    $seed['columns'][$ci]['entries'][$ei][$key] = (string) $saved[$id][$key];
+                }
+            }
+        }
+    }
+    return $seed;
+}
+
 function current_config(): array
 {
     $config = read_json(config_file(), default_config());
@@ -211,6 +242,9 @@ switch ($action) {
 
     case 'messages':
         respond(['ok' => true, 'data' => read_json(messages_file(), [])]);
+
+    case 'archives':
+        respond(['ok' => true, 'data' => current_archives()]);
 
     case 'ms_scores':
         respond(['ok' => true, 'data' => read_json(ms_scores_file(), [])]);
@@ -446,30 +480,54 @@ switch ($action) {
             $config['social'] = $social;
         }
 
-        if (isset($input['projects']) && is_array($input['projects'])) {
-            $projects = [];
-            foreach ($input['projects'] as $item) {
-                if (!is_array($item)) {
-                    continue;
-                }
-                $tags = [];
-                if (isset($item['tags']) && is_array($item['tags'])) {
-                    foreach ($item['tags'] as $tag) {
-                        $tags[] = clean_text($tag, 30);
-                    }
-                }
-                $projects[] = [
-                    'title' => clean_text($item['title'] ?? '', 80),
-                    'description' => clean_text($item['description'] ?? '', 300),
-                    'url' => clean_url($item['url'] ?? ''),
-                    'tags' => $tags,
-                ];
-            }
-            $config['projects'] = $projects;
-        }
-
         write_json(config_file(), $config);
         respond(['ok' => true, 'data' => $config]);
+
+    case 'archive_save':
+        if ($method !== 'POST') {
+            respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
+        }
+        $body = request_body();
+        require_admin($body);
+        $input = $body['entries'] ?? [];
+        if (!is_array($input)) {
+            respond(['ok' => false, 'error' => '数据格式不正确'], 400);
+        }
+        // 只认种子数据里真实存在的 P- 档案，虚拟档案与提交记录一概不动
+        $seed = read_json(archives_seed_file(), []);
+        $known = [];
+        foreach ($seed['columns'] ?? [] as $column) {
+            foreach ($column['entries'] ?? [] as $entry) {
+                $id = (string) ($entry['id'] ?? '');
+                if ($id !== '' && str_starts_with($id, 'P-')) {
+                    $known[$id] = true;
+                }
+            }
+        }
+        $entries = [];
+        foreach ($input as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $id = clean_text($item['id'] ?? '', 20);
+            if (!isset($known[$id])) {
+                continue;
+            }
+            $entries[$id] = [
+                'title' => clean_text($item['title'] ?? '', 120),
+                'type' => clean_text($item['type'] ?? '', 40),
+                'status' => clean_text($item['status'] ?? '', 40),
+                'abstract' => clean_text($item['abstract'] ?? '', 600),
+            ];
+        }
+        if (!$entries) {
+            respond(['ok' => false, 'error' => '没有可保存的项目档案'], 400);
+        }
+        write_json(archives_override_file(), [
+            'updatedAt' => date('Y-m-d H:i:s'),
+            'entries' => $entries,
+        ]);
+        respond(['ok' => true, 'data' => current_archives()]);
 
     case 'upload':
         if ($method !== 'POST') {

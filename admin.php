@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>网站后台 · Tianying的巢</title>
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="assets/css/admin.css?v=2">
+  <link rel="stylesheet" href="assets/css/admin.css?v=3">
 </head>
 <body>
   <div class="admin-shell">
     <header class="admin-header">
       <div>
         <h1>Tianying的巢 · 后台</h1>
-        <p>修改首页内容、项目和照片。</p>
+        <p>修改首页内容、项目档案和照片。</p>
       </div>
       <button id="logoutButton" class="text-button" type="button" hidden>退出登录</button>
     </header>
@@ -102,11 +102,11 @@
 
       <section class="admin-section">
         <div class="section-title">
-          <h2>项目</h2>
-          <p>显示在首页下方的项目卡片。</p>
+          <h2>项目档案</h2>
+          <p>改的是项目页（projects.html）里那几条真实档案的名称、类型、状态和概述。提交记录去 GitHub 上手动拉，虚拟档案不用改。</p>
         </div>
-        <div id="projectEditor" class="project-editor"></div>
-        <button id="addProjectButton" class="secondary-button" type="button">＋ 添加项目</button>
+        <div id="archiveEditor" class="project-editor"></div>
+        <button id="saveArchiveButton" class="primary-button" type="button">保存项目档案</button>
       </section>
 
       <section class="admin-section">
@@ -137,6 +137,6 @@
     </main>
   </div>
 
-  <script src="assets/js/admin.js"></script>
+  <script src="assets/js/admin.js?v=2"></script>
 </body>
 </html>

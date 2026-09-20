@@ -4,6 +4,7 @@
   const state = {
     csrf: "",
     config: null,
+    archives: null,
     messages: [],
   };
 
@@ -83,30 +84,82 @@
     }
   }
 
-  function renderProjects() {
-    const container = $("projectEditor");
+  // 项目页里真实存在的档案（编号 P- 开头）；虚拟档案和提交记录不在这里改
+  function realArchiveEntries() {
+    const list = [];
+    (state.archives?.columns || []).forEach((column) => {
+      (column.entries || []).forEach((entry) => {
+        if (/^P-/.test(entry.id || "")) {
+          list.push(entry);
+        }
+      });
+    });
+    return list;
+  }
+
+  function renderArchives() {
+    const container = $("archiveEditor");
     container.innerHTML = "";
-    (state.config?.projects || []).forEach((project, index) => {
+    const entries = realArchiveEntries();
+    if (!entries.length) {
+      container.innerHTML = '<p class="editor-hint">没有读到可编辑的项目档案。</p>';
+      return;
+    }
+    entries.forEach((entry) => {
       const row = document.createElement("div");
-      row.className = "project-editor-item";
-      row.dataset.index = String(index);
+      row.className = "project-editor-item archive-item";
+      row.dataset.id = entry.id;
       row.innerHTML = `
-        <label>标题
-          <input class="p-title" type="text" value="${escapeHtml(project.title || "")}">
+        <div class="archive-head"><strong>${escapeHtml(entry.id)}</strong><span>${escapeHtml(entry.title || "")}</span></div>
+        <div class="archive-grid">
+          <label>名称
+            <input class="a-title" type="text" maxlength="120" value="${escapeHtml(entry.title || "")}">
+          </label>
+          <label>类型
+            <input class="a-type" type="text" maxlength="40" value="${escapeHtml(entry.type || "")}">
+          </label>
+          <label>状态
+            <input class="a-status" type="text" maxlength="40" value="${escapeHtml(entry.status || "")}">
+          </label>
+        </div>
+        <label class="archive-abstract">概述
+          <textarea class="a-abstract" rows="4" maxlength="600">${escapeHtml(entry.abstract || "")}</textarea>
         </label>
-        <label>说明
-          <input class="p-desc" type="text" value="${escapeHtml(project.description || "")}">
-        </label>
-        <label>链接
-          <input class="p-url" type="url" value="${escapeHtml(project.url || "")}">
-        </label>
-        <label>标签（用逗号分隔）
-          <input class="p-tags" type="text" value="${escapeHtml((project.tags || []).join(", "))}">
-        </label>
-        <button class="remove-button" type="button" data-action="remove-project">删除</button>
       `;
       container.appendChild(row);
     });
+  }
+
+  async function saveArchives() {
+    const rows = Array.from($("archiveEditor").querySelectorAll(".archive-item"));
+    if (!rows.length) {
+      setStatus("没有可保存的项目档案", true);
+      return;
+    }
+    const entries = rows.map((row) => ({
+      id: row.dataset.id,
+      title: row.querySelector(".a-title").value.trim(),
+      type: row.querySelector(".a-type").value.trim(),
+      status: row.querySelector(".a-status").value.trim(),
+      abstract: row.querySelector(".a-abstract").value.trim(),
+    }));
+    const button = $("saveArchiveButton");
+    button.disabled = true;
+    setStatus("正在保存项目档案…");
+    try {
+      const result = await request("archive_save", {
+        method: "POST",
+        body: JSON.stringify({ csrf: state.csrf, entries }),
+      });
+      state.archives = result.data;
+      renderArchives();
+      setStatus("项目档案已保存");
+      window.setTimeout(() => setStatus(""), 2000);
+    } catch (error) {
+      setStatus(error.message || "项目档案保存失败", true);
+    } finally {
+      button.disabled = false;
+    }
   }
 
   function renderGallery() {
@@ -149,18 +202,6 @@
 
   function collectConfig() {
     const c = state.config || {};
-    const projects = Array.from($("projectEditor").querySelectorAll(".project-editor-item")).map((row) => {
-      const tags = row.querySelector(".p-tags").value
-        .split(/[,，]/)
-        .map((item) => item.trim())
-        .filter(Boolean);
-      return {
-        title: row.querySelector(".p-title").value.trim(),
-        description: row.querySelector(".p-desc").value.trim(),
-        url: row.querySelector(".p-url").value.trim(),
-        tags,
-      };
-    });
     return {
       brand: $("brandInput").value.trim(),
       name: $("nameInput").value.trim(),
@@ -174,7 +215,6 @@
         src: $("musicSrcInput").value.trim(),
         cover: $("musicCoverInput").value.trim(),
       },
-      projects,
       gallery: c.gallery || [],
     };
   }
@@ -259,23 +299,7 @@
     });
 
     $("saveButton").addEventListener("click", saveConfig);
-    $("addProjectButton").addEventListener("click", () => {
-      state.config = state.config || { projects: [] };
-      state.config.projects = state.config.projects || [];
-      state.config.projects.push({ title: "", description: "", url: "", tags: [] });
-      renderProjects();
-    });
-
-    $("projectEditor").addEventListener("click", (event) => {
-      const button = event.target.closest("button[data-action='remove-project']");
-      if (!button) {
-        return;
-      }
-      const row = button.closest(".project-editor-item");
-      const index = Number(row.dataset.index || 0);
-      state.config.projects.splice(index, 1);
-      renderProjects();
-    });
+    $("saveArchiveButton").addEventListener("click", saveArchives);
 
     $("avatarFile").addEventListener("change", () => uploadFile("avatar", $("avatarFile")));
     $("backgroundFile").addEventListener("change", () => uploadFile("background", $("backgroundFile")));
@@ -326,8 +350,10 @@
       state.config = configResult.data;
       const messageResult = await request("messages");
       state.messages = messageResult.data;
+      const archiveResult = await request("archives");
+      state.archives = archiveResult.data;
       fillFields();
-      renderProjects();
+      renderArchives();
       renderGallery();
       renderMessages();
     } catch (error) {

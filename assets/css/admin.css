@@ -263,6 +263,49 @@ input[type="file"] {
   min-width: 0;
 }
 
+/* 项目档案编辑器：一行头 + 三列短字段 + 整行概述 */
+.archive-item {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.archive-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.archive-head strong {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+.archive-head span {
+  opacity: 0.6;
+}
+
+.archive-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 10px;
+}
+
+.archive-item textarea {
+  min-width: 0;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.55;
+}
+
+.editor-hint {
+  margin: 0;
+  opacity: 0.65;
+  font-size: 13px;
+}
+
 .remove-button {
   border: 1px solid rgba(251, 113, 133, 0.5);
   border-radius: 10px;
@@ -376,6 +419,10 @@ input[type="file"] {
 
   .project-editor-item {
     align-items: stretch;
+  }
+
+  .archive-grid {
+    grid-template-columns: 1fr;
   }
 
   .admin-header {

@@ -51,9 +51,27 @@
 
   /* ---------------------------------------------------------------- 数据 */
 
-  function loadData() {
-    fetch("assets/data/archives.json?v=1", { credentials: "same-origin" })
+  // 档案数据优先走后端接口（后台改过的字段存在服务器 data/ 里，由 api.php 合并），
+  // 接口取不到就回落到仓库里的静态文件——单独把源码解压出来看时也能跑。
+  function fetchArchives() {
+    return fetch("api.php?action=archives", { credentials: "same-origin" })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error("HTTP " + res.status))))
+      .then((payload) => {
+        const data = payload && payload.ok ? payload.data : null;
+        if (!data || !Array.isArray(data.columns) || !data.columns.length) {
+          throw new Error("接口没有返回档案数据");
+        }
+        return data;
+      })
+      .catch(() =>
+        fetch("assets/data/archives.json?v=2", { credentials: "same-origin" }).then((res) =>
+          res.ok ? res.json() : Promise.reject(new Error("HTTP " + res.status)),
+        ),
+      );
+  }
+
+  function loadData() {
+    fetchArchives()
       .then((data) => {
         const columns = Array.isArray(data.columns) ? data.columns.filter((c) => c && Array.isArray(c.entries) && c.entries.length) : [];
         if (!columns.length) {
