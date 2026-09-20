@@ -12,6 +12,11 @@
   const BG_ROWS = 6;       // 往深处铺多少列（原版 5 个分类 + 两侧补位）
   const CURRENT_ROW = 1;   // 当前这一列在第几排（前面留两排，画面才有纵深）
   const SAVED_KEY = "tianying.archive.saved.v1";
+  const REVEAL_MS = 1000;   // 详情右侧整列淡入的总时长（最后一项在这时收尾）
+  const REVEAL_FADE = 320;  // 单项自己的淡入时长
+  const REVEAL_RISE = 6;    // 淡入时附加的轻微上浮（px）
+  const WHEEL_STEP = 40;    // 滚轮累计多少 deltaY 才算走一格
+  const WHEEL_GAP = 180;    // 两次滚轮换档之间的最小间隔（毫秒）
 
   const el = {};
   let stage = null;            // PC 端的 WebGL 档案墙（手机端为 null，走 CSS 列表）
@@ -22,6 +27,10 @@
     fg: [],
     busy: false,
   };
+  let revealFrame = 0;      // 详情淡入的 rAF 句柄
+  let revealItems = [];     // 正在淡入的元素
+  let wheelAcc = 0;         // 滚轮累计量
+  let wheelLast = 0;        // 上次滚轮换档的时间
 
   document.addEventListener("DOMContentLoaded", boot);
 
@@ -110,7 +119,7 @@
       return;
     }
     // 注意：改 archive3d.js 之后要顺手把这里的版本号 +1，否则浏览器会用缓存
-    import("./archive3d.js?v=22")
+    import("./archive3d.js?v=23")
       .then((mod) => {
         // 先让 canvas 参与布局，否则量到的尺寸是 0
         document.body.classList.add("is-3d");
@@ -237,8 +246,8 @@
   /* -------------------------------------------------------------- 交互 */
 
   function bindEvents() {
-    el.prevFile.addEventListener("click", () => moveRow(-1));
-    el.nextFile.addEventListener("click", () => moveRow(1));
+    el.prevFile.addEventListener("click", () => stepVertical(-1));
+    el.nextFile.addEventListener("click", () => stepVertical(1));
     el.prevCol.addEventListener("click", () => moveCol(-1));
     el.nextCol.addEventListener("click", () => moveCol(1));
     el.accessBtn.addEventListener("click", openDetail);
@@ -249,7 +258,10 @@
       if (event.target === el.arcIndex) { closeIndex(); }
     });
     document.addEventListener("keydown", onKeydown);
+    // 点左边档案盒 = 重新播一遍右侧淡入（保留这个行为）
     el.detailCase.addEventListener("click", openDetail);
+    // 滚轮当成 ↑ ↓ 用；非 passive 才能 preventDefault
+    window.addEventListener("wheel", onWheel, { passive: false });
     bindSwipe();
   }
 
@@ -264,8 +276,8 @@
     }
     if (event.key === "ArrowLeft") { moveCol(-1); event.preventDefault(); }
     else if (event.key === "ArrowRight") { moveCol(1); event.preventDefault(); }
-    else if (event.key === "ArrowUp") { moveRow(-1); event.preventDefault(); }
-    else if (event.key === "ArrowDown") { moveRow(1); event.preventDefault(); }
+    else if (event.key === "ArrowUp") { stepVertical(-1); event.preventDefault(); }
+    else if (event.key === "ArrowDown") { stepVertical(1); event.preventDefault(); }
     else if (event.key === "Enter") { openDetail(); event.preventDefault(); }
   }
 
@@ -334,6 +346,49 @@
     }, 430);
   }
 
+  // 滚轮 = ↑ ↓；走到列的头/尾就自动翻到相邻列，不会卡住
+  function onWheel(event) {
+    if (event.ctrlKey) { return; }                                        // 触控板捏合缩放，别拦
+    if (document.body.dataset.view === "detail") { return; }              // 详情里让正文自己滚
+    if (document.body.classList.contains("is-index-open")) { return; }    // 索引浮层里让它自己滚
+    if (!event.deltaY) { return; }
+    const now = window.performance.now();
+    if (now - wheelLast < WHEEL_GAP) { event.preventDefault(); return; }  // 惯性滚动期间吞掉多余事件
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1;
+    wheelAcc += event.deltaY * unit;
+    if (Math.abs(wheelAcc) < WHEEL_STEP) { return; }
+    const direction = wheelAcc > 0 ? 1 : -1;
+    wheelAcc = 0;
+    wheelLast = now;
+    event.preventDefault();
+    stepVertical(direction);
+  }
+
+  // 往下走到列尾 → 下一列第一条；往上走到列首 → 上一列最后一条
+  function stepVertical(direction) {
+    const total = currentColumn().entries.length;
+    const next = state.row + direction;
+    if (next >= 0 && next < total) { moveRow(direction); return; }
+    jumpColumn(direction);
+  }
+
+  function jumpColumn(direction) {
+    const cols = state.columns.length;
+    if (!cols || !lockMove()) { return; }
+    const from = state.row;
+    state.col = (state.col + direction + cols) % cols;
+    const entries = currentColumn().entries.length;
+    state.row = direction > 0 ? 0 : Math.max(0, entries - 1);
+    if (stage) {
+      // 换列 + 换排合成一次滑动；涟漪从选中位发出
+      stage.selectCell(state.col, state.row, direction, state.row - from, true);
+    } else {
+      renderArray();
+    }
+    renderHud();
+    renderTicks();
+  }
+
   function bindSwipe() {
     let sx = 0, sy = 0, active = false;
     el.arcGrid.addEventListener("touchstart", (event) => {
@@ -362,14 +417,82 @@
   function openDetail() {
     const entry = currentEntry();
     if (entry) { fillDetail(entry); }
-    document.body.classList.add("is-decrypting");
+    beginReveal();
     document.body.dataset.view = "detail";
-    window.setTimeout(() => document.body.classList.remove("is-decrypting"), 1900);
+    playReveal();
   }
 
   function closeDetail() {
-    document.body.classList.remove("is-decrypting");
+    cancelReveal();
     document.body.dataset.view = "array";
+  }
+
+  /* ------------------------------------------------------------------
+     详情淡入：右侧整列从上往下依次浮现，总时长 REVEAL_MS。
+     注意：这里刻意用 JS 逐帧改内联样式，而不是 CSS 动画 ——
+     因为系统关掉「动画效果」时浏览器会把 CSS 动画/过渡全部跳过
+     （本机 Edge 实测 prefers-reduced-motion: reduce），那样就什么都看不到。
+     所以这个效果用 JS 驱动，且按用户要求不跟随该系统设置。
+     ------------------------------------------------------------------ */
+
+  // 先按最终状态渲染，再把要淡入的元素置为透明，避免闪一下
+  function beginReveal() {
+    cancelReveal();
+    revealItems = collectRevealItems();
+    revealItems.forEach((node) => {
+      node.style.opacity = "0";
+      node.style.transform = "translateY(" + REVEAL_RISE + "px)";
+    });
+  }
+
+  function collectRevealItems() {
+    const list = [];
+    const push = (node) => { if (node && !node.hidden) { list.push(node); } };
+    push(el.detailDoc.querySelector(".doc-meta"));
+    push(el.docTitle);
+    push(el.detailDoc.querySelector(".doc-sub"));
+    push(el.detailDoc.querySelector(".doc-rule"));
+    Array.prototype.forEach.call(el.detailDoc.querySelectorAll(".doc-field"), push);
+    Array.prototype.forEach.call(el.detailDoc.querySelectorAll(".doc-block"), push);
+    if (el.docRepo && !el.docRepo.hidden) { push(el.detailDoc.querySelector(".doc-actions")); }
+    return list;
+  }
+
+  function playReveal() {
+    if (!revealItems.length) { return; }
+    const fade = Math.min(REVEAL_FADE, REVEAL_MS);
+    const span = Math.max(0, REVEAL_MS - fade);
+    const step = revealItems.length > 1 ? span / (revealItems.length - 1) : 0;
+    const start = window.performance.now();
+    const tick = (now) => {
+      const t = now - start;
+      let done = true;
+      revealItems.forEach((node, i) => {
+        const p = Math.min(1, Math.max(0, (t - i * step) / fade));
+        const eased = 1 - Math.pow(1 - p, 3);
+        node.style.opacity = String(eased);
+        node.style.transform = p >= 1 ? "" : "translateY(" + (1 - eased) * REVEAL_RISE + "px)";
+        if (p < 1) { done = false; }
+      });
+      if (done || document.body.dataset.view !== "detail") {
+        finishReveal();
+        return;
+      }
+      revealFrame = window.requestAnimationFrame(tick);
+    };
+    revealFrame = window.requestAnimationFrame(tick);
+  }
+
+  function finishReveal() {
+    if (revealFrame) { window.cancelAnimationFrame(revealFrame); revealFrame = 0; }
+    revealItems.forEach((node) => { node.style.opacity = ""; node.style.transform = ""; });
+    revealItems = [];
+  }
+
+  function cancelReveal() {
+    if (revealFrame) { window.cancelAnimationFrame(revealFrame); revealFrame = 0; }
+    revealItems.forEach((node) => { node.style.opacity = ""; node.style.transform = ""; });
+    revealItems = [];
   }
 
   function fillDetail(entry) {

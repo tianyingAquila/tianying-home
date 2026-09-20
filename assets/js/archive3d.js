@@ -523,15 +523,15 @@ export function createStage(canvas, columns, hooks) {
 
   return {
     // 点击阵列：把点中的那一册滑到选中位（dLane / dRow 是它相对选中位的格数）
-    selectCell(nextCol, nextRow, dLane, dRow) {
+    // pulseAtSlot = true 时涟漪从选中位发出（跨列那种大位移用它，否则涟漪会落在画面外）
+    selectCell(nextCol, nextRow, dLane, dRow, pulseAtSlot) {
       const periodL = columns.length || 1;
       col = wrap(nextCol, periodL);
       const list = columns[col] ? columns[col].entries : [];
       row = list.length ? wrap(nextRow, list.length) : 0;
-      applySlide(dLane || 0, dRow || 0, {
-        L: SLOT_LANE + (dLane || 0),
-        R: SLOT_ROW + (dRow || 0),
-      });
+      applySlide(dLane || 0, dRow || 0, pulseAtSlot
+        ? { L: SLOT_LANE, R: SLOT_ROW }
+        : { L: SLOT_LANE + (dLane || 0), R: SLOT_ROW + (dRow || 0) });
     },
     goColumn(delta) {
       const periodL = columns.length || 1;

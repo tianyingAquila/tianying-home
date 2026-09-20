@@ -642,44 +642,6 @@ body[data-view="detail"] .arc-detail { opacity: 1; pointer-events: auto; }
 .doc-btn.is-saved { background: var(--arc-accent); border-color: var(--arc-accent); color: #fff; }
 .doc-repo { font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase; border-bottom: 1px solid var(--arc-line); padding-bottom: 2px; }
 
-/* 解密动画：磨砂 → 清晰 + 扫描线 */
-.detail-case .case-veil,
-.detail-doc .doc-veil {
-  position: absolute;
-  inset: 0;
-  background: rgba(246, 245, 243, 0.92);
-  backdrop-filter: blur(9px);
-  -webkit-backdrop-filter: blur(9px);
-  pointer-events: none;
-  transition: opacity 0.9s ease 0.35s, backdrop-filter 0.9s ease 0.35s;
-}
-
-.detail-doc .doc-veil { transition-delay: 0.6s; }
-
-body.is-decrypting .detail-case .case-veil,
-body.is-decrypting .detail-doc .doc-veil { opacity: 1; backdrop-filter: blur(9px); }
-body:not(.is-decrypting) .detail-case .case-veil,
-body:not(.is-decrypting) .detail-doc .doc-veil { opacity: 0; backdrop-filter: blur(0px); }
-
-.scanline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(20, 22, 26, 0.55), transparent);
-  opacity: 0;
-  pointer-events: none;
-}
-
-body.is-decrypting .scanline { animation: arc-scan 1.5s ease-in-out 1; }
-
-@keyframes arc-scan {
-  0% { opacity: 0; transform: translateY(-30%); }
-  12% { opacity: 1; }
-  88% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(320%); }
-}
-
 /* ----------------------------------------------------------------- 索引浮层 */
 
 .arc-index {
@@ -869,6 +831,4 @@ body.is-index-open .arc-index { opacity: 1; pointer-events: auto; }
 
 @media (prefers-reduced-motion: reduce) {
   .arc-scene, .arc-file, .arc-grid, .arc-detail, .arc-hud, .arc-index { transition: none !important; }
-  body.is-decrypting .scanline { animation: none; }
-  .detail-case .case-veil, .detail-doc .doc-veil { transition: none; }
 }
