@@ -170,7 +170,8 @@
           </div>
         </div>
         <div class="result-effects" id="resultEffects"></div>
-        <form class="score-form" id="scoreForm" hidden>
+        <!-- [功能开关 2026-09-21] 恢复时删除本行注释，并删掉下一行 form 里的 style="display: none" -->
+        <form class="score-form" id="scoreForm" hidden style="display: none">
           <input id="scoreName" type="text" maxlength="12" placeholder="留个名字（最多 12 字）" autocomplete="nickname">
           <button class="game-button primary" id="scoreSave" type="submit">保存成绩</button>
         </form>

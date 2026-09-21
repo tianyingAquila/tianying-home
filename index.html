@@ -110,7 +110,8 @@
       <div class="message-list" id="messageList">
         <p class="empty-hint">还没有留言，来做第一个吧。</p>
       </div>
-      <form class="message-form" id="messageForm">
+      <!-- [功能开关 2026-09-21] 恢复时删除本行注释，并删掉下一行 form 里的 style="display: none" -->
+      <form class="message-form" id="messageForm" style="display: none">
         <div class="form-row">
           <input id="guestName" name="name" type="text" maxlength="12" placeholder="昵称（可选）" autocomplete="nickname">
           <input id="guestMessage" name="message" type="text" maxlength="20" placeholder="写一句不超过 20 个字的话…" required>
