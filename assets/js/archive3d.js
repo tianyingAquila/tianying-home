@@ -177,7 +177,7 @@ export function createStage(canvas, columns, hooks) {
   const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
   const glRendererName = debugInfo ? String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || "") : "";
   const softwareRenderer = /swiftshader|llvmpipe|software|basic render/i.test(glRendererName);
-  const targetFps = softwareRenderer ? 12 : 30;
+  const targetFps = softwareRenderer ? 12 : 60;
   renderer.shadowMap.enabled = !softwareRenderer;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;

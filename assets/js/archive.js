@@ -146,7 +146,7 @@
       return;
     }
     // 注意：改 archive3d.js 之后要顺手把这里的版本号 +1，否则浏览器会用缓存
-    import("./archive3d.js?v=26")
+    import("./archive3d.js?v=27")
       .then((mod) => {
         // 先让 canvas 参与布局，否则量到的尺寸是 0
         document.body.classList.add("is-3d");
