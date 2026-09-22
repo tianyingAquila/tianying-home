@@ -1114,6 +1114,24 @@ body[data-theme="light"] .carousel-dot {
 .footer-icp a {
   color: var(--muted-2);
 }
+.footer-legal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.footer-gongan a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-gongan img {
+  display: block;
+  width: 15px;
+  height: auto;
+}
 
 .lightbox {
   position: fixed;
