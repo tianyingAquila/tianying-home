@@ -26,6 +26,9 @@
       headers: options.headers || {},
       credentials: "same-origin",
     };
+    if (init.method !== "GET") {
+      init.headers["X-Requested-With"] = "XMLHttpRequest";
+    }
     if (options.body !== undefined) {
       init.body = options.body;
       if (!init.headers["Content-Type"] && !(options.body instanceof FormData)) {
@@ -71,11 +74,12 @@
     $("mottoInput").value = c.motto || "";
     $("githubInput").value = c.github || "";
     $("icpInput").value = c.icp || "";
-    $("musicTitleInput").value = c.music?.title || "";
-    $("musicArtistInput").value = c.music?.artist || "";
-    $("musicSrcInput").value = c.music?.src || "";
+    const firstTrack = Array.isArray(c.music?.tracks) && c.music.tracks[0] ? c.music.tracks[0] : (c.music || {});
+    $("musicTitleInput").value = firstTrack.title || "";
+    $("musicArtistInput").value = firstTrack.artist || "";
+    $("musicSrcInput").value = firstTrack.src || "";
     $("musicCoverInput").value = c.music?.cover || "";
-    $("avatarPreview").src = c.avatar || "assets/img/avatar.svg";
+    $("avatarPreview").src = c.avatar || "assets/img/avatar.webp";
     $("backgroundPreview").src = c.background || "";
     if (!c.background) {
       $("backgroundPreview").style.opacity = "0";
@@ -169,7 +173,7 @@
       const card = document.createElement("div");
       card.className = "gallery-manager-item";
       card.innerHTML = `
-        <img src="${escapeHtml(item.src)}" alt="${escapeHtml(item.caption || "照片")}">
+        <img width="600" height="400" loading="lazy" src="${escapeHtml(item.src)}" alt="${escapeHtml(item.caption || "照片")}">
         <div class="caption">${escapeHtml(item.caption || "")}</div>
         <button class="remove-button" type="button" data-src="${escapeHtml(item.src)}">删除</button>
       `;

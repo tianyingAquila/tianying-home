@@ -171,9 +171,14 @@ function makeLabelTexture() {
 export function createStage(canvas, columns, hooks) {
   const onPick = (hooks && hooks.onPick) || function () {};
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.shadowMap.enabled = true;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  const gl = renderer.getContext();
+  const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+  const glRendererName = debugInfo ? String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || "") : "";
+  const softwareRenderer = /swiftshader|llvmpipe|software|basic render/i.test(glRendererName);
+  const targetFps = softwareRenderer ? 12 : 30;
+  renderer.shadowMap.enabled = !softwareRenderer;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -204,8 +209,8 @@ export function createStage(canvas, columns, hooks) {
 
   const key = new THREE.DirectionalLight(0xfffaf2, 2.7);
   key.position.set(AIM_X - 48, AIM_Y + 84, AIM_Z - 30);
-  key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.castShadow = !softwareRenderer;
+  key.shadow.mapSize.set(1024, 1024);
   key.shadow.camera.left = -70;
   key.shadow.camera.right = 70;
   key.shadow.camera.top = 70;
@@ -302,6 +307,7 @@ export function createStage(canvas, columns, hooks) {
   let pulses = [];         // 换档涟漪
   let running = true;
   let lastTime = performance.now() / 1000;
+  let lastFrameAt = 0;
 
   /* ---------------------------------------------- 实例范围（按取景计算） */
 
@@ -382,9 +388,12 @@ export function createStage(canvas, columns, hooks) {
 
   /* ---------------------------------------------------------------- 循环 */
 
-  function frame() {
+  function frame(nowMs = performance.now()) {
     if (!running) { return; }
-    const now = performance.now() / 1000;
+    requestAnimationFrame(frame);
+    if (document.hidden || nowMs - lastFrameAt < 1000 / targetFps) { return; }
+    lastFrameAt = nowMs;
+    const now = nowMs / 1000;
     const dt = Math.min(0.05, Math.max(0.001, now - lastTime));
     lastTime = now;
 
@@ -405,7 +414,7 @@ export function createStage(canvas, columns, hooks) {
 
     writeMatrices(now);
     renderer.render(scene, camera);
-    requestAnimationFrame(frame);
+
   }
 
   /* ---------------------------------------------------------------- 尺寸 */

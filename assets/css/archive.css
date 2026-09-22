@@ -388,17 +388,29 @@ body[data-view="detail"] .arc-hud > * { pointer-events: none; }
 .hud-ticks .bars { display: flex; gap: 10px; align-items: flex-end; height: 22px; }
 
 .hud-ticks .bar {
-  width: 1px;
-  height: 12px;
-  background: var(--arc-faint);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
   border: 0;
   padding: 0;
   cursor: pointer;
+}
+
+.hud-ticks .bar::before {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 12px;
+  background: var(--arc-faint);
   transition: height 0.25s ease, background 0.25s ease;
 }
 
-.hud-ticks .bar.is-active { height: 22px; background: var(--arc-ink); }
-.hud-ticks .bar.is-done { background: rgba(20, 22, 26, 0.5); }
+.hud-ticks .bar.is-active::before { height: 22px; background: var(--arc-ink); }
+.hud-ticks .bar.is-done::before { background: rgba(20, 22, 26, 0.5); }
 
 .hud-help {
   position: absolute;

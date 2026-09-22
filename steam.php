@@ -77,9 +77,10 @@ function steam_http_get(string $url, int $timeout): array
 function steam_api_get(string $path, array $query, int $timeout = 8, bool $quick = false): ?array
 {
     $suffix = 'api.steampowered.com' . $path . '?' . http_build_query($query);
+    // 密钥只能通过 HTTPS 发送；HTTP 兜底会泄露 API key。
     $plan = $quick
-        ? [['https://' . $suffix, 5], ['http://' . $suffix, 6]]
-        : [['https://' . $suffix, $timeout], ['https://' . $suffix, $timeout], ['http://' . $suffix, $timeout]];
+        ? [['https://' . $suffix, 5], ['https://' . $suffix, 6]]
+        : [['https://' . $suffix, $timeout], ['https://' . $suffix, $timeout], ['https://' . $suffix, $timeout]];
 
     foreach ($plan as [$url, $limit]) {
         $result = steam_http_get($url, $limit);
@@ -163,7 +164,8 @@ function steam_fetch_status(string $steamId, bool $quick = false): ?array
 
     $player = $summary['response']['players'][0] ?? null;
     if (!is_array($player)) {
-        return null;
+        // Web API 的 HTTPS 不通时，退回不带密钥的公开 XML 页面。
+        return steam_fetch_status_xml($steamId, $quick);
     }
 
     $gameName = trim((string) ($player['gameextrainfo'] ?? ''));
@@ -309,6 +311,7 @@ function steam_icon_bytes(int $appid, string $hash): string
 function steam_flush_then_refresh(string $steamId, array $data): void
 {
     header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: public, max-age=60');
     echo json_encode(['ok' => true, 'data' => $data], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if (function_exists('fastcgi_finish_request')) {
         fastcgi_finish_request();

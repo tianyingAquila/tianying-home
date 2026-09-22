@@ -509,13 +509,23 @@
     el.board.dataset.size = G.sizeId;
     el.board.style.gridTemplateColumns = `repeat(${G.cols}, minmax(0, 1fr))`;
     el.board.style.gridTemplateRows = `repeat(${G.rows}, minmax(0, 1fr))`;
+    const rowNodes = [];
+    for (let y = 0; y < G.rows; y += 1) {
+      const row = document.createElement("div");
+      row.className = "ms-row";
+      row.setAttribute("role", "row");
+      row.setAttribute("aria-rowindex", String(y + 1));
+      frag.appendChild(row);
+      rowNodes.push(row);
+    }
     G.cells.forEach((cell) => {
       const node = document.createElement("div");
       node.className = "ms-cell";
       node.setAttribute("role", "gridcell");
+      node.setAttribute("aria-colindex", String(cell.x + 1));
       node.dataset.x = String(cell.x);
       node.dataset.y = String(cell.y);
-      frag.appendChild(node);
+      rowNodes[cell.y].appendChild(node);
       G.nodes[key(cell)] = node;
     });
     el.board.appendChild(frag);
@@ -2396,7 +2406,7 @@
       const response = await fetch("api.php?action=ms_score", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({
           name,
           mode: G.mode,

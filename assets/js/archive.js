@@ -69,6 +69,16 @@
       );
   }
 
+  function safeExternalUrl(value) {
+    const text = String(value || "").trim();
+    if (!text) { return ""; }
+    try {
+      const url = new URL(text, location.href);
+      return url.protocol === "http:" || url.protocol === "https:" ? url.href : "";
+    } catch (error) {
+      return "";
+    }
+  }
   function loadData() {
     fetchArchives()
       .then((data) => {
@@ -136,7 +146,7 @@
       return;
     }
     // 注意：改 archive3d.js 之后要顺手把这里的版本号 +1，否则浏览器会用缓存
-    import("./archive3d.js?v=23")
+    import("./archive3d.js?v=26")
       .then((mod) => {
         // 先让 canvas 参与布局，否则量到的尺寸是 0
         document.body.classList.add("is-3d");
@@ -542,9 +552,10 @@
       el.docCommits.appendChild(li);
     });
 
-    if (entry.repo) {
+    const repoUrl = safeExternalUrl(entry.repo);
+    if (repoUrl) {
       el.docRepo.hidden = false;
-      el.docRepo.href = entry.repo;
+      el.docRepo.href = repoUrl;
     } else {
       el.docRepo.hidden = true;
       el.docRepo.removeAttribute("href");

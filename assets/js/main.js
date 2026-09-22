@@ -13,8 +13,8 @@
       "云自无心水自闲",
       "停车坐爱枫林晚",
     ],
-    avatar: "assets/img/avatar.jpg",
-    background: "/assets/img/background.jpg",
+    avatar: "assets/img/avatar.webp",
+    background: "/assets/img/background.webp",
     github: "https://github.com/tianyingAquila",
     steam: {
       id: "76561199375770516",
@@ -25,7 +25,7 @@
       { name: "B站", url: "https://space.bilibili.com/385516184", icon: "bilibili" },
     ],
     music: {
-      cover: "assets/img/music-cover.jpg",
+      cover: "assets/img/music-cover.webp",
       tracks: [
         {
           title: "Ex-Otogibanashi",
@@ -39,24 +39,11 @@
         },
       ],
     },
-    projects: [
-      {
-        title: "DeepSeek 余额悬浮小工具",
-        description: "Windows 桌面上的 DeepSeek 余额悬浮小工具（可跟随 Codex 显隐）",
-        url: "https://github.com/tianyingAquila/deepseek-balance-widget",
-        tags: ["PowerShell", "Windows"],
-      },
-      {
-        title: "git-hello-world",
-        description: "第一次 Git 尝试",
-        url: "https://github.com/tianyingAquila/git-hello-world",
-        tags: ["Git"],
-      },
-    ],
+
     gallery: [
-      { src: "assets/img/photo1.jpg", caption: "" },
-      { src: "assets/img/photo2.jpg", caption: "" },
-      { src: "assets/img/photo3.jpg", caption: "" },
+      { src: "assets/img/photo1.webp", caption: "" },
+      { src: "assets/img/photo2.webp", caption: "" },
+      { src: "assets/img/photo3.webp", caption: "" },
     ],
     icp: "",
   };
@@ -111,6 +98,9 @@
       headers: options.headers || {},
       credentials: "same-origin",
     };
+    if (init.method !== "GET") {
+      init.headers["X-Requested-With"] = "XMLHttpRequest";
+    }
     if (options.body !== undefined) {
       init.body = options.body;
       if (!init.headers["Content-Type"] && !(options.body instanceof FormData)) {
@@ -239,6 +229,8 @@
         icon.className = "recent-game-icon";
         icon.src = game.icon;
         icon.alt = "";
+        icon.width = 24;
+        icon.height = 24;
         icon.loading = "lazy";
         icon.addEventListener("error", () => icon.remove());
         item.appendChild(icon);
@@ -566,6 +558,10 @@
       slide.className = "gallery-slide";
       const img = document.createElement("img");
       img.src = image.src;
+      img.width = 1200;
+      img.height = 820;
+      img.loading = index === 0 ? "eager" : "lazy";
+      img.decoding = "async";
       img.alt = image.caption || `图片 ${index + 1}`;
       slide.appendChild(img);
       if (image.caption) {

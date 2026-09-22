@@ -1,17 +1,21 @@
 <?php
 declare(strict_types=1);
 
-session_start();
 require_once __DIR__ . '/config.php';
 
 define('DATA_DIR', __DIR__ . '/data');
 define('UPLOAD_DIR', __DIR__ . '/uploads');
 require_once __DIR__ . '/steam.php';
 
-function respond(array $data, int $code = 200): never
+function respond(array $data, int $code = 200, ?int $cacheSeconds = null): never
 {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
+    if ($cacheSeconds === null) {
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+    } else {
+        header('Cache-Control: public, max-age=' . $cacheSeconds);
+    }
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
@@ -93,6 +97,95 @@ function request_body(): array
     return is_array($data) ? $data : [];
 }
 
+function client_ip(): string
+{
+    return (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+}
+
+function ensure_session(): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
+    }
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => is_https_request(),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
+}
+
+function require_https(): void
+{
+    if (!is_https_request()) {
+        respond(['ok' => false, 'error' => '管理操作必须通过 HTTPS 访问'], 403);
+    }
+}
+
+function require_json_fetch(): void
+{
+    $contentType = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
+    if (!str_starts_with($contentType, 'application/json')) {
+        respond(['ok' => false, 'error' => '请求格式不正确'], 415);
+    }
+    if (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) !== 'xmlhttprequest') {
+        respond(['ok' => false, 'error' => '请求来源未通过校验'], 403);
+    }
+    $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+    if ($origin !== '') {
+        $originHost = parse_url($origin, PHP_URL_HOST);
+        $requestHost = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        $requestHost = preg_replace('/:\d+$/', '', $requestHost) ?? $requestHost;
+        if (!is_string($originHost) || strcasecmp($originHost, $requestHost) !== 0) {
+            respond(['ok' => false, 'error' => '请求来源未通过校验'], 403);
+        }
+    }
+}
+
+function rate_limit(string $bucket, int $max, int $window): void
+{
+    $file = DATA_DIR . '/rate_limits.json';
+    $key = hash('sha256', $bucket . '|' . client_ip());
+    $now = time();
+    $retry = 0;
+    with_file_lock($file, function ($fp) use ($file, $key, $max, $window, $now, &$retry) {
+        $store = is_resource($fp) ? read_json_from_handle($fp, []) : read_json($file, []);
+        $cutoff = $now - $window;
+        foreach ($store as $bucketKey => $stamps) {
+            if (!is_array($stamps)) {
+                unset($store[$bucketKey]);
+                continue;
+            }
+            $fresh = array_values(array_filter(
+                $stamps,
+                static fn ($stamp): bool => is_int($stamp) && $stamp >= $cutoff
+            ));
+            if ($fresh) {
+                $store[$bucketKey] = $fresh;
+            } else {
+                unset($store[$bucketKey]);
+            }
+        }
+        $hits = isset($store[$key]) && is_array($store[$key]) ? $store[$key] : [];
+        if (count($hits) >= $max) {
+            $retry = max(1, ((int) min($hits)) + $window - $now);
+            return;
+        }
+        $hits[] = $now;
+        $store[$key] = $hits;
+        if (is_resource($fp)) {
+            write_json_to_handle($fp, $store);
+        } else {
+            write_json($file, $store);
+        }
+    });
+    if ($retry > 0) {
+        header('Retry-After: ' . $retry);
+        respond(['ok' => false, 'error' => '请求过于频繁，请稍后再试'], 429);
+    }
+}
 function clean_text(mixed $value, int $max = 200): string
 {
     $text = trim((string) ($value ?? ''));
@@ -116,11 +209,14 @@ function clean_url(mixed $value): string
 
 function is_admin(): bool
 {
+    ensure_session();
     return !empty($_SESSION['is_admin']);
 }
 
 function require_admin(array $body = []): void
 {
+    require_https();
+    ensure_session();
     if (!is_admin()) {
         respond(['ok' => false, 'error' => '未登录或会话已过期'], 401);
     }
@@ -137,8 +233,8 @@ function default_config(): array
         'name' => 'Tianying',
         'intro' => '一个正在慢慢长大的个人小站。',
         'motto' => '月落乌啼霜满天',
-        'avatar' => 'assets/img/avatar.svg',
-        'background' => '',
+        'avatar' => 'assets/img/avatar.webp',
+        'background' => 'assets/img/background.webp',
         'github' => 'https://github.com/tianyingAquila',
         'steam' => [
             'id' => '76561199375770516',
@@ -149,15 +245,27 @@ function default_config(): array
             ['name' => '邮箱', 'url' => 'mailto:tianyingden@163.com', 'icon' => 'mail'],
         ],
         'music' => [
-            'title' => '未命名曲目',
-            'artist' => 'Tianying',
-            'src' => 'assets/music/track.wav',
-            'cover' => 'assets/img/music-cover.svg',
+            'title' => 'Ex-Otogibanashi',
+            'artist' => 'ryo (supercell) / 夏吉ゆうこ / 早見沙織',
+            'src' => 'assets/music/ex-otogibanashi.mp3',
+            'cover' => 'assets/img/music-cover.webp',
+            'tracks' => [
+                [
+                    'title' => 'Ex-Otogibanashi',
+                    'artist' => 'ryo (supercell) / 夏吉ゆうこ / 早見沙織',
+                    'src' => 'assets/music/ex-otogibanashi.mp3',
+                ],
+                [
+                    'title' => 'ワールドイズマイン (かぐや&月見ヤチヨ ver.) [CPK! Remix]',
+                    'artist' => 'ryo (supercell) / 夏吉ゆうこ / 早見沙織',
+                    'src' => 'assets/music/world-is-mine-cpk-remix.mp3',
+                ],
+            ],
         ],
         'gallery' => [
-            ['src' => 'assets/img/photo1.svg', 'caption' => '示例照片 1'],
-            ['src' => 'assets/img/photo2.svg', 'caption' => '示例照片 2'],
-            ['src' => 'assets/img/photo3.svg', 'caption' => '示例照片 3'],
+            ['src' => 'assets/img/photo1.webp', 'caption' => ''],
+            ['src' => 'assets/img/photo2.webp', 'caption' => ''],
+            ['src' => 'assets/img/photo3.webp', 'caption' => ''],
         ],
         'icp' => '',
     ];
@@ -238,16 +346,16 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 switch ($action) {
     case 'config':
-        respond(['ok' => true, 'data' => current_config()]);
+        respond(['ok' => true, 'data' => current_config()], 200, 300);
 
     case 'messages':
-        respond(['ok' => true, 'data' => read_json(messages_file(), [])]);
+        respond(['ok' => true, 'data' => read_json(messages_file(), [])], 200, 60);
 
     case 'archives':
-        respond(['ok' => true, 'data' => current_archives()]);
+        respond(['ok' => true, 'data' => current_archives()], 200, 300);
 
     case 'ms_scores':
-        respond(['ok' => true, 'data' => read_json(ms_scores_file(), [])]);
+        respond(['ok' => true, 'data' => read_json(ms_scores_file(), [])], 200, 60);
 
     case 'uptime':
         $startedFile = DATA_DIR . '/started_at.txt';
@@ -262,7 +370,7 @@ switch ($action) {
                 'uptimeSeconds' => $seconds,
                 'serverTime' => time(),
             ],
-        ]);
+        ], 200, 30);
 
     case 'steam_status':
         $steam = current_config()['steam'] ?? [];
@@ -279,7 +387,7 @@ switch ($action) {
         $cacheAge = time() - (int) ($cache['time'] ?? 0);
 
         if ($cachedData !== null && $cacheOwner === $steamId && $cacheAge <= 900) {
-            respond(['ok' => true, 'data' => $cachedData]);
+            respond(['ok' => true, 'data' => $cachedData], 200, 60);
         }
 
         if ($cachedData !== null) {
@@ -291,14 +399,29 @@ switch ($action) {
         $fresh = steam_fetch_status($steamId, true);
         if ($fresh !== null) {
             steam_write_cache($steamId, $fresh);
-            respond(['ok' => true, 'data' => $fresh]);
+            respond(['ok' => true, 'data' => $fresh], 200, 60);
         }
-        respond(['ok' => true, 'data' => steam_empty_status('状态获取中…')]);
+        respond(['ok' => true, 'data' => steam_empty_status('状态获取中…')], 200, 30);
 
     case 'steam_icon':
         $appid = (int) preg_replace('/\D/', '', (string) ($_GET['appid'] ?? ''));
         $hash = strtolower((string) preg_replace('/[^0-9a-f]/i', '', (string) ($_GET['hash'] ?? '')));
-        if ($appid <= 0 || $hash === '' || strlen($hash) > 64) {
+        if ($appid <= 0 || !preg_match('/^[0-9a-f]{40}$/', $hash)) {
+            http_response_code(404);
+            exit;
+        }
+        rate_limit('steam_icon', 120, 600);
+        $steamCache = read_json(steam_cache_file(), []);
+        $recentGames = is_array($steamCache['data']['recent'] ?? null) ? $steamCache['data']['recent'] : [];
+        $allowed = false;
+        foreach ($recentGames as $game) {
+            $icon = (string) ($game['icon'] ?? '');
+            if ((int) ($game['appid'] ?? 0) === $appid && str_contains($icon, $hash)) {
+                $allowed = true;
+                break;
+            }
+        }
+        if (!$allowed) {
             http_response_code(404);
             exit;
         }
@@ -310,13 +433,14 @@ switch ($action) {
         header('Content-Type: image/jpeg');
         header('Content-Length: ' . strlen($iconBytes));
         header('Cache-Control: public, max-age=2592000');
-        echo $iconBytes;
+            echo $iconBytes;
         exit;
-
     case 'message':
         if ($method !== 'POST') {
             respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
         }
+        require_json_fetch();
+        rate_limit('message', 5, 600);
         $body = request_body();
         $text = clean_text($body['message'] ?? '', 20);
         $name = clean_text($body['name'] ?? '访客', 12);
@@ -354,6 +478,8 @@ switch ($action) {
         if ($method !== 'POST') {
             respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
         }
+        require_json_fetch();
+        rate_limit('ms_score', 30, 600);
         $body = request_body();
         $name = clean_text($body['name'] ?? '', 12);
         if ($name === '') {
@@ -415,6 +541,9 @@ switch ($action) {
         if ($method !== 'POST') {
             respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
         }
+        require_https();
+        ensure_session();
+        rate_limit('admin_login', 8, 900);
         $body = request_body();
         $password = (string) ($body['password'] ?? '');
         if (hash_equals(ADMIN_PASSWORD, $password)) {
@@ -426,12 +555,16 @@ switch ($action) {
         respond(['ok' => false, 'error' => '密码不正确'], 403);
 
     case 'admin_state':
+        require_https();
+        ensure_session();
         if (!is_admin()) {
             respond(['ok' => false, 'error' => '未登录'], 401);
         }
         respond(['ok' => true, 'csrf' => $_SESSION['csrf'] ?? '']);
 
     case 'admin_logout':
+        require_https();
+        ensure_session();
         session_destroy();
         respond(['ok' => true]);
 
@@ -459,10 +592,19 @@ switch ($action) {
         }
 
         if (isset($input['music']) && is_array($input['music'])) {
-            $config['music']['title'] = clean_text($input['music']['title'] ?? '', 100);
-            $config['music']['artist'] = clean_text($input['music']['artist'] ?? '', 100);
-            $config['music']['src'] = clean_url($input['music']['src'] ?? '');
-            $config['music']['cover'] = clean_url($input['music']['cover'] ?? '');
+            $musicTitle = clean_text($input['music']['title'] ?? '', 100);
+            $musicArtist = clean_text($input['music']['artist'] ?? '', 100);
+            $musicSrc = clean_url($input['music']['src'] ?? '');
+            $musicCover = clean_url($input['music']['cover'] ?? '');
+            $config['music']['title'] = $musicTitle;
+            $config['music']['artist'] = $musicArtist;
+            $config['music']['src'] = $musicSrc;
+            $config['music']['cover'] = $musicCover;
+            if (isset($config['music']['tracks']) && is_array($config['music']['tracks']) && isset($config['music']['tracks'][0]) && is_array($config['music']['tracks'][0])) {
+                $config['music']['tracks'][0]['title'] = $musicTitle;
+                $config['music']['tracks'][0]['artist'] = $musicArtist;
+                $config['music']['tracks'][0]['src'] = $musicSrc;
+            }
         }
 
         if (isset($input['social']) && is_array($input['social'])) {
@@ -560,6 +702,22 @@ switch ($action) {
             respond(['ok' => false, 'error' => '不支持的文件类型：' . $extension], 400);
         }
 
+        if ($type === 'music') {
+            if (function_exists('finfo_open')) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime = $finfo ? (string) finfo_file($finfo, $file['tmp_name']) : '';
+                if ($finfo) {
+                    finfo_close($finfo);
+                }
+                $allowedMime = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/mp4', 'video/mp4'];
+                if ($mime !== '' && !in_array($mime, $allowedMime, true)) {
+                    respond(['ok' => false, 'error' => '音频内容与扩展名不匹配'], 415);
+                }
+            }
+        } elseif (@getimagesize($file['tmp_name']) === false) {
+            respond(['ok' => false, 'error' => '图片内容无效'], 415);
+        }
+
         if (!is_dir(UPLOAD_DIR)) {
             mkdir(UPLOAD_DIR, 0755, true);
         }
@@ -578,6 +736,9 @@ switch ($action) {
             $config['background'] = $relative;
         } elseif ($type === 'music') {
             $config['music']['src'] = $relative;
+            if (isset($config['music']['tracks']) && is_array($config['music']['tracks']) && isset($config['music']['tracks'][0]) && is_array($config['music']['tracks'][0])) {
+                $config['music']['tracks'][0]['src'] = $relative;
+            }
         } elseif ($type === 'music-cover') {
             $config['music']['cover'] = $relative;
         } elseif ($type === 'gallery') {

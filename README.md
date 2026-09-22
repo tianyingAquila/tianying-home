@@ -1,15 +1,11 @@
 # Tianying的巢
 
-一个个人网站首页，包含：
+一个个人网站，包含：
 
-- 个人简介与社交链接
-- 首页固定音乐播放器（支持多首歌曲切换）
-- 可编辑随笔
-- 留言板（每条最长 20 字，最多保留 5 条）
-- 图片集轮播
-- 项目卡片
-- 日间 / 夜间模式
-- 系统运行时间和当前时间
+- 首页：个人简介、社交链接、随笔、留言板、图片集、Steam 状态和音乐播放器
+- 项目页：`projects.html` 的 Three.js 档案终端
+- 扫雷页：`minesweeper.html` 的技能扫雷
+- 后台：`admin.php`，只允许通过 HTTPS 访问
 
 ## 技术栈
 
@@ -20,13 +16,17 @@
 ## 目录结构
 
 ```
-├── index.html          # 首页
-├── admin.php           # 网站管理后台
-├── api.php             # 接口
-├── config.php          # 公共配置
-├── assets/             # 样式、脚本、图片、音乐
-├── data/               # 网站内容和留言数据
-└── uploads/            # 后台上传的图片
+├── index.html / projects.html / minesweeper.html
+├── admin.php / api.php / config.php
+├── assets/              # 样式、脚本、图片、音乐
+├── data/                # 网站内容、留言、成绩和缓存
+├── uploads/             # 后台上传的图片/音频
+└── cron/                # Steam 状态定时刷新
 ```
 
-网站的文字、链接、图片集、项目等内容都可以在管理后台中修改，改完刷新首页即可生效。
+## 上线约定
+
+- 部署从本机执行 `G:\个人网页\deploy.ps1`，不要用服务器反向拉 GitHub。
+- `assets/` 走 Git 部署；`data/`、`uploads/` 和 `config.local.php` 不部署覆盖。
+- 页面静态资源带版本参数，修改 CSS/JS 后必须同步提升 `?v=N`。
+- 生产环境要求 HTTPS；后台登录和会话 Cookie 不能回退到明文 HTTP。

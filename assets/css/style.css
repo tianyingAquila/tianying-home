@@ -32,7 +32,7 @@ body[data-theme="light"] {
   --glass-border: rgba(60, 65, 105, 0.22);
   --text: #20233d;
   --muted: #5a6079;
-  --muted-2: #7e849e;
+  --muted-2: #61677f;
   --accent: #5a56e8;
   --accent-2: #d94f9c;
   --accent-soft: rgba(90, 86, 232, 0.14);
@@ -97,6 +97,8 @@ a {
   background-position: center, center;
   background-repeat: no-repeat, no-repeat;
 }
+
+body[data-theme="light"] .recent-game-time { color: #a32f72; }
 
 body[data-theme="dark"] .bg.has-image {
   background-image: linear-gradient(180deg, rgba(7, 10, 24, 0.18), rgba(7, 10, 24, 0.42)), var(--bg-image);
@@ -1013,65 +1015,6 @@ body[data-theme="light"] .carousel-dot {
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
 }
 
-.project-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.project-card {
-  display: block;
-  padding: 22px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.project-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(109, 109, 246, 0.65);
-  background: var(--glass-strong);
-}
-
-.project-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  font-family: var(--serif);
-  font-size: 22px;
-  font-weight: 500;
-}
-
-.project-title::after {
-  content: "↗";
-  color: var(--accent);
-  font-size: 18px;
-}
-
-.project-description {
-  margin: 10px 0 14px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.project-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.tag {
-  padding: 3px 9px;
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .site-footer {
   display: flex;
   align-items: center;
@@ -1186,9 +1129,6 @@ body[data-theme="light"] .carousel-dot {
     aspect-ratio: 16 / 10;
   }
 
-  .project-grid {
-    grid-template-columns: 1fr;
-  }
 
   .site-footer {
     flex-direction: column;

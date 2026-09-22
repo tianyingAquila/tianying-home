@@ -1,3 +1,10 @@
+<?php
+require_once __DIR__ . '/config.php';
+if (!is_https_request()) {
+    header('Location: https://tianying0.com/admin.php', true, 308);
+    exit;
+}
+?>
 <!doctype html>
 <html lang="zh-CN">
 <head>
@@ -5,6 +12,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>网站后台 · Tianying的巢</title>
   <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="assets/css/admin.css?v=3">
 </head>
 <body>
@@ -76,7 +84,7 @@
       <section class="admin-section">
         <div class="section-title">
           <h2>音乐</h2>
-          <p>首页固定播放一首歌。</p>
+          <p>这里编辑首页播放列表的第一首；其余多曲目仍由服务器 data/config.json 维护。</p>
         </div>
         <div class="form-grid">
           <label>歌名
@@ -137,6 +145,6 @@
     </main>
   </div>
 
-  <script src="assets/js/admin.js?v=2"></script>
+  <script src="assets/js/admin.js?v=3"></script>
 </body>
 </html>
