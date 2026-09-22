@@ -8,11 +8,6 @@ define('DATA_DIR', __DIR__ . '/data');
 define('UPLOAD_DIR', __DIR__ . '/uploads');
 require_once __DIR__ . '/steam.php';
 
-// ===== [功能开关 2026-09-21] 留言发言 / 扫雷成绩提交 总开关（当前关闭） =====
-// 恢复方法：把下面 false 改为 true，或删除本块以及 case 'message'、case 'ms_score' 中的判断块
-const INTERACTIVE_SUBMIT_ENABLED = false;
-// ===== [功能开关 2026-09-21] 结束 =====
-
 function respond(array $data, int $code = 200): never
 {
     http_response_code($code);
@@ -319,10 +314,6 @@ switch ($action) {
         exit;
 
     case 'message':
-        // [功能开关 2026-09-21] 留言提交暂时停用（恢复时删除本 if 块）
-        if (!INTERACTIVE_SUBMIT_ENABLED) {
-            respond(['ok' => false, 'error' => '留言功能暂时关闭'], 403);
-        }
         if ($method !== 'POST') {
             respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
         }
@@ -360,10 +351,6 @@ switch ($action) {
         respond(['ok' => true, 'data' => $messages]);
 
     case 'ms_score':
-        // [功能开关 2026-09-21] 成绩提交暂时停用（恢复时删除本 if 块）
-        if (!INTERACTIVE_SUBMIT_ENABLED) {
-            respond(['ok' => false, 'error' => '成绩提交暂时关闭'], 403);
-        }
         if ($method !== 'POST') {
             respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
         }
