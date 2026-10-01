@@ -815,6 +815,19 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
   border-color: rgba(20, 22, 26, 0.38);
 }
 
+
+.td-board-legacy {
+  flex: none;
+  padding: 2px 6px;
+  font-family: var(--tk-mono);
+  font-size: 10px;
+  color: var(--tk-muted);
+  background: var(--tk-bone-warm);
+  border: var(--tk-border) solid var(--tk-hair);
+  border-radius: var(--tk-radius);
+  white-space: nowrap;
+}
+
 .td-board-outcome { color: var(--tk-muted); white-space: nowrap; }
 .td-board-won { color: var(--tk-gold); font-weight: 600; }
 

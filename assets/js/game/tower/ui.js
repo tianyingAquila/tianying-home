@@ -771,7 +771,9 @@
         '<span class="td-board-rank">' + (self.boardTab === "rank" ? (idx + 1) : "·") + '</span>' +
         '<span class="td-board-player">' +
           '<span class="td-board-name"></span>' +
-          (s.hasDeployment === true ? '<button class="td-board-detail" type="button">详情</button>' : '') +
+          (s.hasDeployment === true
+            ? '<button class="td-board-detail" type="button">详情</button>'
+            : '<span class="td-board-legacy" title="旧成绩未保存终局部署">旧版</span>') +
         '</span>' +
         '<span class="td-board-outcome">' + outcome + '</span>' +
         '<span class="td-board-time">' + fmtTime(s.timeMs / 1000) + '</span>' +
