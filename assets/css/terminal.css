@@ -114,4 +114,13 @@
     padding-top: var(--tk-gap-4);
     margin-bottom: var(--tk-gap-4);
   }
+
+  /* 手机上标题不能折成三行（"TIANYING DEFENSE" 会断开，很难看）。
+     缩到 17px 让每行标题都能一行放下。 */
+  .term-brand strong {
+    font-size: 17px;
+    white-space: nowrap;
+  }
+
+  .term-brand span { font-size: 10px; letter-spacing: 0.12em; }
 }

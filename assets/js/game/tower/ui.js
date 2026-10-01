@@ -21,7 +21,7 @@
     this.last = 0;
     this.running = false;
     this.paused = false;        /* 因页面不可见而暂停 */
-    this.detailKey = null;      /* 详情面板的结构指纹，避免每帧重建 DOM */
+    this.statsKey = null;       /* 两侧属性栏的结构指纹，避免每帧重建 DOM */
 
     this.el = {
       lives: $("tdLives"),
@@ -30,9 +30,11 @@
       waveTotal: $("tdWaveTotal"),
       status: $("tdStatus"),
       shop: $("tdShop"),
-      detail: $("tdDetail"),
+      statsNow: $("tdStatsNow"),
+      statsNext: $("tdStatsNext"),
       hint: $("tdHint"),
       startBtn: $("tdStart"),
+      restartTopBtn: $("tdRestartTop"),
       pauseBtn: $("tdPause"),
       speedBtn: $("tdSpeed"),
       callBtn: $("tdCall"),
@@ -41,6 +43,7 @@
       resultSub: $("tdResultSub"),
       resultStats: $("tdResultStats"),
       restartBtn: $("tdRestart"),
+      resultCloseBtn: $("tdResultClose"),
       livesBox: $("tdLivesBox")
     };
 
@@ -89,14 +92,26 @@
     var self = this;
     var cv = this.canvas;
 
-    function cellFromEvent(ev) {
+    /* 画布坐标：返回格子 + 画布内像素（像素给塔顶操作钮做命中判定） */
+    function pointFromEvent(ev) {
       var rect = cv.getBoundingClientRect();
-      var pt = ev.touches ? ev.touches[0] : ev;
-      return self.rd.toCell(pt.clientX - rect.left, pt.clientY - rect.top);
+      var pt = ev.touches && ev.touches.length ? ev.touches[0] : ev;
+      var x = pt.clientX - rect.left;
+      var y = pt.clientY - rect.top;
+      return { x: x, y: y, cell: self.rd.toCell(x, y) };
     }
 
     cv.addEventListener("mousemove", function (ev) {
-      self.view.hover = cellFromEvent(ev);
+      var p = pointFromEvent(ev);
+      self.view.hover = p.cell;
+
+      /* 悬在塔顶操作钮上时换成手型，告诉玩家这里能点 */
+      var overBtn = false;
+      if (self.view.selected) {
+        var bx = self.rd.towerActionBoxes(self.view.selected);
+        overBtn = inBox(p.x, p.y, bx.up) || inBox(p.x, p.y, bx.sell);
+      }
+      cv.style.cursor = overBtn ? "pointer" : "crosshair";
     });
 
     cv.addEventListener("mouseleave", function () {
@@ -104,19 +119,30 @@
     });
 
     cv.addEventListener("click", function (ev) {
-      self.tap(cellFromEvent(ev));
+      var p = pointFromEvent(ev);
+      self.tap(p.cell, p.x, p.y);
     });
 
-    /* 触摸：先点一下显示预览，再点同格确认——避免手指挡住看不到就建错 */
+    /* 触摸：塔顶操作钮要能一下点中（不走"二次确认"），
+       否则升级要点两次很别扭。建造仍保留二次确认，避免手指挡住建错。 */
     cv.addEventListener("touchstart", function (ev) {
       ev.preventDefault();
-      var cell = cellFromEvent(ev);
+      var p = pointFromEvent(ev);
+
+      if (self.view.selected) {
+        var bx = self.rd.towerActionBoxes(self.view.selected);
+        if (inBox(p.x, p.y, bx.up) || inBox(p.x, p.y, bx.sell)) {
+          self.tap(p.cell, p.x, p.y);
+          return;
+        }
+      }
+
       var h = self.view.hover;
-      if (h && h.c === cell.c && h.r === cell.r) {
-        self.tap(cell);
+      if (h && h.c === p.cell.c && h.r === p.cell.r) {
+        self.tap(p.cell, p.x, p.y);
         self.view.hover = null;
       } else {
-        self.view.hover = cell;
+        self.view.hover = p.cell;
       }
     }, { passive: false });
 
@@ -141,28 +167,19 @@
       self.sync();
     });
 
-    /* 详情面板用事件委托绑一次：面板内容会被重建，所以不能绑在按钮本身上 */
-    this.el.detail.addEventListener("click", function (ev) {
-      var btn = ev.target.closest ? ev.target.closest("[data-act]") : null;
-      if (!btn) { return; }
-      var t = self.view.selected;
-      if (!t) { return; }
-
-      if (btn.dataset.act === "up") {
-        self.eng.upgrade(t);
-      } else if (btn.dataset.act === "sell") {
-        self.eng.sell(t);
-        self.view.selected = null;
-      }
-      self.sync();
-    });
-
-    this.el.restartBtn.addEventListener("click", function () {
+    function restart() {
       self.eng.reset();
       self.view = { hover: null, buildKey: null, selected: null };
-      self.detailKey = null;
       self.el.result.hidden = true;
       self.sync();
+    }
+
+    this.el.restartBtn.addEventListener("click", restart);
+    this.el.restartTopBtn.addEventListener("click", restart);
+
+    /* 结算卡的"查看战场"只收起卡片，留在本页，不跳回游戏终端 */
+    this.el.resultCloseBtn.addEventListener("click", function () {
+      self.el.result.hidden = true;
     });
 
     window.addEventListener("resize", function () { self.fit(); });
@@ -204,22 +221,55 @@
     });
   };
 
-  TowerGame.prototype.tap = function (cell) {
+  /* 画布点击。顺序很重要：
+     先判塔顶的操作钮（它画在最上层，就该最先响应），
+     再判建造，最后判选中/取消。 */
+  TowerGame.prototype.tap = function (cell, px, py) {
     var eng = this.eng;
 
+    /* --- 1. 选中塔时，优先处理塔顶的升级/拆除钮 --- */
+    if (this.view.selected && px !== undefined) {
+      var boxes = this.rd.towerActionBoxes(this.view.selected);
+      var t0 = this.view.selected;
+
+      if (inBox(px, py, boxes.up)) {
+        if (t0.upgradeCost() !== null) { this.eng.upgrade(t0); }
+        this.sync();
+        return;
+      }
+      if (inBox(px, py, boxes.sell)) {
+        this.eng.sell(t0);
+        this.view.selected = null;
+        this.sync();
+        return;
+      }
+    }
+
+    var onTower = eng.grid.towerAt(cell.c, cell.r);
+
+    /* --- 2. 建造态 --- */
     if (this.view.buildKey) {
-      if (eng.build(this.view.buildKey, cell.c, cell.r)) {
-        /* 建成后保持选中同类塔，方便连续布防 */
-        if (!eng.canAfford(cfg.TOWERS[this.view.buildKey].cost)) { this.view.buildKey = null; }
+      /* 点在能建的空地上就建；点别处（空白、路面、地形块、已有塔）一律取消建造态。
+         原来只有点回商店按钮才能取消，想放弃时很难受。 */
+      if (eng.grid.canBuild(cell.c, cell.r)) {
+        if (eng.build(this.view.buildKey, cell.c, cell.r)) {
+          if (!eng.canAfford(cfg.TOWERS[this.view.buildKey].cost)) { this.view.buildKey = null; }
+        }
+      } else {
+        this.view.buildKey = null;
       }
       this.sync();
       return;
     }
 
-    var t = eng.grid.towerAt(cell.c, cell.r);
-    this.view.selected = this.view.selected === t ? null : t;
+    /* --- 3. 选中 / 取消选中 --- */
+    this.view.selected = (onTower && onTower !== this.view.selected) ? onTower : null;
     this.sync();
   };
+
+  function inBox(x, y, b) {
+    return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
+  }
 
   /* ------------------------------------------------------------------ 布局 */
 
@@ -247,6 +297,7 @@
     el.livesBox.classList.toggle("is-alert", eng.lives <= 5);
 
     el.startBtn.hidden = eng.state !== "ready";
+    el.restartTopBtn.hidden = eng.state === "ready";
     el.pauseBtn.hidden = eng.state === "ready" || eng.state === "won" || eng.state === "lost";
     el.pauseBtn.textContent = eng.state === "paused" ? "继续" : "暂停";
     el.speedBtn.textContent = eng.speed + "×";
@@ -286,73 +337,101 @@
       items[i].classList.toggle("is-poor", !afford);
     }
 
-    this.syncDetail();
+    this.syncStats();
     this.syncHint();
   };
 
-  /* 选中塔的详情面板：升级、拆除、战绩。
-     注意：sync() 以 8Hz 跑，所以这里绝不能每次都重建 innerHTML 再绑事件——
-     那样每秒会多挂 8 组监听器，几十秒后就累积上千个，最终报错崩掉。
-     做法：结构只在"选中对象或等级变化"时重建一次，按钮用事件委托（bind 里绑一次），
-     每帧只更新会变的数字文本。 */
-  TowerGame.prototype.syncDetail = function () {
+  /* 地图两侧的属性栏：左=当前属性，右=升级后属性（增益用绿色）。
+     升级与拆除的按钮不在这里——它们画在画布上塔的正上方，手不离战场。
+
+     注意：sync() 以 8Hz 跑，所以这里只在"换塔或升级"时重建一次 DOM
+     （用 statsKey 做指纹），每帧只刷战绩数字。
+     初版每次都重建 innerHTML 并重新 addEventListener，几十秒累积上千个
+     监听器后崩掉，别再走回那条路。 */
+  TowerGame.prototype.syncStats = function () {
     var t = this.view.selected;
-    var box = this.el.detail;
+    var now = this.el.statsNow;
+    var next = this.el.statsNext;
 
     if (!t) {
-      if (!box.hidden) {
-        box.hidden = true;
-        box.innerHTML = "";
-        this.detailKey = null;
+      if (this.statsKey !== null) {
+        now.innerHTML = "";
+        next.innerHTML = "";
+        now.classList.remove("is-on");
+        next.classList.remove("is-on");
+        this.statsKey = null;
       }
       return;
     }
 
-    var st = t.stats();
-    var up = t.upgradeCost();
-    var max = t.level >= t.maxLevel();
     var key = t.id + ":" + t.level;
+    var st = t.stats();
+    var nx = t.nextStats();
 
-    /* 结构重建（只在换塔或升级后发生一次） */
-    if (this.detailKey !== key) {
-      this.detailKey = key;
-      box.hidden = false;
-      box.innerHTML =
-        '<div class="td-detail-head">' +
-          '<span class="td-detail-name">' + t.def.name + '</span>' +
-          '<span class="td-detail-lv">LV ' + t.level + ' / ' + t.maxLevel() + '</span>' +
-        '</div>' +
-        '<dl class="td-detail-stats">' +
-          row("伤害", st.damage) +
-          row("射速", st.rate.toFixed(2) + " /s") +
-          row("射程", st.range.toFixed(1) + " 格") +
-          (st.splash ? row("溅射", st.splash.toFixed(2) + " 格") : "") +
-          (st.slow ? row("减速", Math.round(st.slow * 100) + "%") : "") +
+    if (this.statsKey !== key) {
+      this.statsKey = key;
+      now.classList.add("is-on");
+      next.classList.add("is-on");
+
+      /* ---- 左：当前 ---- */
+      now.innerHTML =
+        '<p class="td-stats-eyebrow">CURRENT</p>' +
+        '<p class="td-stats-name">' + t.def.name + '</p>' +
+        '<p class="td-stats-lv">LV ' + t.level + ' / ' + t.maxLevel() + '</p>' +
+        '<dl class="td-stats-list">' +
+          srow("伤害", st.damage) +
+          srow("射程", st.range.toFixed(1)) +
+          (st.splash ? srow("溅射", st.splash.toFixed(2)) : "") +
+          (st.slow ? srow("减速", Math.round(st.slow * 100) + "%") : "") +
+          srow("射速", st.rate.toFixed(2) + "/s") +
+        '</dl>' +
+        '<dl class="td-stats-list td-stats-record">' +
           '<div><dt>击杀</dt><dd data-live="kills">' + t.kills + '</dd></div>' +
           '<div><dt>总伤害</dt><dd data-live="dmg">' + Math.round(t.damageDealt) + '</dd></div>' +
-        '</dl>' +
-        '<div class="td-detail-actions">' +
-          (max
-            ? '<span class="td-detail-max">已满级</span>'
-            : '<button type="button" class="td-btn primary" data-act="up">强化 ' + up + '</button>') +
-          '<button type="button" class="td-btn ghost" data-act="sell">拆除 +' + t.sellValue() + '</button>' +
-        '</div>';
+        '</dl>';
+
+      /* ---- 右：升级后 ---- */
+      if (nx) {
+        next.innerHTML =
+          '<p class="td-stats-eyebrow is-gain">AFTER UPGRADE</p>' +
+          '<p class="td-stats-name">LV ' + (t.level + 1) + '</p>' +
+          '<p class="td-stats-lv">费用 ' + t.upgradeCost() + '</p>' +
+          '<dl class="td-stats-list">' +
+            gainRow("伤害", st.damage, nx.damage, 0) +
+            gainRow("射程", st.range, nx.range, 1) +
+            (nx.splash ? gainRow("溅射", st.splash, nx.splash, 2) : "") +
+            (nx.slow ? gainRow("减速", st.slow * 100, nx.slow * 100, 0, "%") : "") +
+            srow("射速", nx.rate.toFixed(2) + "/s") +
+          '</dl>' +
+          '<p class="td-stats-foot">升级只提升伤害与射程<br>射速恒定不变</p>';
+      } else {
+        next.innerHTML =
+          '<p class="td-stats-eyebrow">MAX LEVEL</p>' +
+          '<p class="td-stats-name td-stats-maxed">已满级</p>' +
+          '<p class="td-stats-foot">这座塔已达到最高等级</p>';
+      }
     }
 
-    /* 每帧只刷会变的部分 */
-    var kills = box.querySelector('[data-live="kills"]');
-    var dmg = box.querySelector('[data-live="dmg"]');
-    if (kills) { kills.textContent = t.kills; }
-    if (dmg) { dmg.textContent = Math.round(t.damageDealt); }
+    /* 每帧只刷战绩 */
+    var k = now.querySelector('[data-live="kills"]');
+    var d = now.querySelector('[data-live="dmg"]');
+    if (k) { k.textContent = t.kills; }
+    if (d) { d.textContent = Math.round(t.damageDealt); }
 
-    var upBtn = box.querySelector('[data-act="up"]');
-    if (upBtn) { upBtn.disabled = !this.eng.canAfford(up); }
+    function srow(label, val) {
+      return '<div><dt>' + label + '</dt><dd>' + val + '</dd></div>';
+    }
 
-    var sellBtn = box.querySelector('[data-act="sell"]');
-    if (sellBtn) { sellBtn.textContent = "拆除 +" + t.sellValue(); }
-
-    function row(k, v) {
-      return '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>';
+    /* 升级后的值用绿色，并把增量写在后面 */
+    function gainRow(label, from, to, digits, suffix) {
+      var sfx = suffix || "";
+      var delta = to - from;
+      var shown = digits ? to.toFixed(digits) : Math.round(to);
+      var dShown = digits ? delta.toFixed(digits) : Math.round(delta);
+      return '<div><dt>' + label + '</dt>' +
+        '<dd class="is-gain">' + shown + sfx +
+        (delta > 0 ? '<span class="td-delta">+' + dShown + '</span>' : '') +
+        '</dd></div>';
     }
   };
 
@@ -361,9 +440,9 @@
     var txt;
 
     if (v.buildKey) {
-      txt = "点空地放置 " + cfg.TOWERS[v.buildKey].name + "，Esc 取消";
+      txt = "点空地放置 " + cfg.TOWERS[v.buildKey].name + "，点其它任意位置取消";
     } else if (v.selected) {
-      txt = "可强化或拆除，点别处取消选中";
+      txt = "塔顶两个小框：左升级、右拆除；两侧显示当前与升级后属性";
     } else {
       txt = "数字键 1-4 选塔 · 空格 暂停 · S 倍速";
     }

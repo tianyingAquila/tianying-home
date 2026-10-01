@@ -44,6 +44,13 @@
     return this.def.levels.length;
   };
 
+  /* 下一级的属性，满级返回 null。
+     给侧栏的"升级后"对比和画布上的升级射程预览用。 */
+  Tower.prototype.nextStats = function () {
+    if (this.level >= this.maxLevel()) { return null; }
+    return this.def.levels[this.level];
+  };
+
   Tower.prototype.upgradeCost = function () {
     if (this.level >= this.maxLevel()) { return null; }
     return this.def.levels[this.level].cost;

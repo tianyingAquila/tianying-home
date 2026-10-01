@@ -63,7 +63,20 @@
   /* ------------------------------------------------------------------ 塔 */
 
   /* 每种塔有明确战术角色，不是"造价和射程不同的同质塔"。
-     range 单位是格；rate 是每秒发射次数；dps 由 damage × rate 得出。 */
+     range 单位是格；rate 是每秒发射次数；dps 由 damage × rate 得出。
+
+     ---- 升级规则（刻意设计，改之前先读完） ----
+     升级**只提升伤害与射程，射速恒定**。这样升级面板上只有两个数字在动，
+     玩家一眼就知道自己花钱买到了什么，不必比对一堆属性。
+
+     伤害固定按 1 / 2.6 / 3.9 倍递增，且**每级升级费 = 建造费**，于是：
+       花 2 倍钱：升级得 2.6 倍伤害，另建一座得 2 倍 → 升级高 30%
+       花 3 倍钱：升级得 3.9 倍伤害，另建两座得 3 倍 → 升级高 30%
+     即「总是升级」在同等经济下总 DPS 恒定比「总是铺塔」高 30%。
+     铺塔换来的是覆盖面（能同时拦不同路段），两条路线各有用处。
+
+     例外：霜滞环的减速随等级提升。它的全部价值是控制而非伤害，
+     若只长伤害，升级它等于花钱买 +6 伤害，会变成纯陷阱选项。 */
   var TOWERS = {
     bolt: {
       key: "bolt",
@@ -74,9 +87,9 @@
       cost: 60,
       shape: "bolt",
       levels: [
-        { damage: 9, rate: 2.2, range: 2.6, cost: 0 },
-        { damage: 15, rate: 2.6, range: 2.9, cost: 55 },
-        { damage: 24, rate: 3.0, range: 3.2, cost: 95 }
+        { damage: 10, rate: 2.2, range: 2.6, cost: 0 },
+        { damage: 26, rate: 2.2, range: 3.0, cost: 60 },
+        { damage: 39, rate: 2.2, range: 3.4, cost: 60 }
       ]
     },
     mortar: {
@@ -89,9 +102,9 @@
       shape: "mortar",
       splash: true,
       levels: [
-        { damage: 14, rate: 0.75, range: 3.2, splash: 1.05, cost: 0 },
-        { damage: 22, rate: 0.85, range: 3.5, splash: 1.2, cost: 90 },
-        { damage: 34, rate: 0.95, range: 3.8, splash: 1.4, cost: 150 }
+        { damage: 20, rate: 0.75, range: 3.2, splash: 1.05, cost: 0 },
+        { damage: 52, rate: 0.75, range: 3.5, splash: 1.25, cost: 110 },
+        { damage: 78, rate: 0.75, range: 3.8, splash: 1.45, cost: 110 }
       ]
     },
     frost: {
@@ -103,9 +116,9 @@
       cost: 90,
       shape: "frost",
       levels: [
-        { damage: 4, rate: 1.4, range: 2.4, slow: 0.42, slowTime: 1.5, cost: 0 },
-        { damage: 7, rate: 1.6, range: 2.7, slow: 0.52, slowTime: 1.9, cost: 75 },
-        { damage: 11, rate: 1.8, range: 3.0, slow: 0.62, slowTime: 2.4, cost: 130 }
+        { damage: 10, rate: 1.4, range: 2.4, slow: 0.42, slowTime: 1.5, cost: 0 },
+        { damage: 26, rate: 1.4, range: 2.8, slow: 0.52, slowTime: 1.9, cost: 90 },
+        { damage: 39, rate: 1.4, range: 3.2, slow: 0.62, slowTime: 2.4, cost: 90 }
       ]
     },
     rail: {
@@ -113,16 +126,16 @@
       name: "长轨炮",
       en: "RAIL",
       role: "远程狙击",
-      desc: "射程覆盖半张图，单发极重还能贯穿。但 DPS 低于穿甲钉，怕被小怪淹。",
+      desc: "射程覆盖半张图，单发极重还能贯穿三个。但 DPS 低于穿甲钉，怕被小怪淹。",
       cost: 165,
       shape: "rail",
       pierce: true,
       /* 平衡要点：射程是它唯一的优势，DPS 必须明显低于穿甲钉，
          否则它严格优于其他塔，玩家只会一直造它（实测过，会无脑通关）。 */
       levels: [
-        { damage: 32, rate: 0.42, range: 5.6, cost: 0 },
-        { damage: 52, rate: 0.46, range: 6.2, cost: 140 },
-        { damage: 82, rate: 0.5, range: 6.8, cost: 230 }
+        { damage: 35, rate: 0.42, range: 5.6, cost: 0 },
+        { damage: 91, rate: 0.42, range: 6.3, cost: 165 },
+        { damage: 136, rate: 0.42, range: 7.0, cost: 165 }
       ]
     }
   };
@@ -233,7 +246,8 @@
     accent: "#b4794a",
     steel: "#4a6b82",
     gold: "#9a7b3f",
-    alert: "#9c4a3f"
+    alert: "#9c4a3f",
+    gain: "#5f7a4f"
   };
 
   /* ------------------------------------------------------------------ 性能 */

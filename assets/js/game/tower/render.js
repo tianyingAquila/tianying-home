@@ -76,12 +76,24 @@
     this.drawBlocks(ctx, eng);
     this.drawEndpoints(ctx, eng);
     if (view.hover) { this.drawHover(ctx, eng, view); }
-    if (view.selected) { this.drawRange(ctx, view.selected.c, view.selected.r, view.selected.stats().range, P.accent); }
+
+    if (view.selected) {
+      var sel = view.selected;
+      /* 先画升级后的射程（更大更淡的松散虚线），再画当前射程，
+         这样"升级能多覆盖多少"一眼可见 */
+      var next = sel.nextStats();
+      if (next) { this.drawNextRange(ctx, sel.c, sel.r, next.range); }
+      this.drawRange(ctx, sel.c, sel.r, sel.stats().range, P.accent);
+    }
+
     this.drawTowers(ctx, eng, view);
     this.drawEnemies(ctx, eng);
     this.drawBullets(ctx, eng);
     this.drawParticles(ctx, eng);
     this.drawFloaters(ctx, eng);
+
+    /* 塔顶操作钮画在最上层，不能被敌人盖住 */
+    if (view.selected) { this.drawTowerActions(ctx, eng, view); }
 
     ctx.restore();
   };
@@ -318,6 +330,133 @@
       ctx.stroke();
     }
 
+    ctx.restore();
+  };
+
+  /* 升级后的射程：更大、更淡、更松散的虚线，用"更好"的绿表示增益 */
+  Renderer.prototype.drawNextRange = function (ctx, c, r, range) {
+    ctx.save();
+    ctx.strokeStyle = P.gain;
+    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 7]);          /* 松散：和当前射程的短弧区分开 */
+    ctx.beginPath();
+    ctx.arc(this.px(c), this.py(r), range * this.cell, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  /* 塔顶两个操作钮：左升级、右拆除。
+     放在塔正上方是为了手不离战场——原来做在右侧栏里，
+     每次升级都要把视线和鼠标甩到屏幕另一头，玩起来很难受。
+     返回命中区给 ui.js 做点击判定，渲染与判定共用同一套几何。 */
+  Renderer.prototype.towerActionBoxes = function (tower) {
+    var cell = this.cell;
+    /* 下限不是美学选择而是硬要求：文字小于 10px 没法读，
+       触摸目标小于 30px 点不准。所以小格子下按钮会比格子还宽，这是对的——
+       它只在选中塔时出现，挡一下棋盘换来能点能看，值得。 */
+    var w = Math.max(31, cell * 0.68);
+    var h = Math.max(23, cell * 0.50);
+    var gap = Math.max(3, cell * 0.08);
+    var cx = this.px(tower.c);
+    var cy = this.py(tower.r);
+
+    /* 默认在塔上方；最上面一行的塔会顶出画布，这时翻到下方。
+       横向也要夹回画布内，否则最左/最右列的塔有一个钮会被切掉。
+       小格子时按钮比格子高，所以让开的距离按"按钮高度"算而不是按格子算，
+       否则按钮会压在塔身上。 */
+    var clear = cell * 0.46 + 5;      /* 塔基座半高 (cell*0.38) 再留 5px 呼吸 */
+    var y = cy - clear - h;           /* y 是按钮上边，所以要整个减掉高度 */
+    if (y < 2) { y = cy + clear; }
+
+    var pairW = w * 2 + gap;
+    var left = cx - pairW / 2;
+    var minX = 2;
+    var maxX = this.w - pairW - 2;
+    if (left < minX) { left = minX; }
+    if (left > maxX) { left = Math.max(minX, maxX); }
+
+    return {
+      up: { x: left, y: y, w: w, h: h },
+      sell: { x: left + w + gap, y: y, w: w, h: h }
+    };
+  };
+
+  Renderer.prototype.drawTowerActions = function (ctx, eng, view) {
+    var t = view.selected;
+    var boxes = this.towerActionBoxes(t);
+    var upCost = t.upgradeCost();
+    var maxed = upCost === null;
+    var canAfford = !maxed && eng.canAfford(upCost);
+
+    /* ---- 升级钮 ---- */
+    var b = boxes.up;
+    var upColor = maxed ? P.faint : (canAfford ? P.gain : P.muted);
+    this.actionBox(ctx, b, upColor, maxed || !canAfford ? 0.45 : 1);
+
+    ctx.save();
+    ctx.globalAlpha = maxed || !canAfford ? 0.5 : 1;
+    ctx.strokeStyle = upColor;
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+
+    /* 顺时针转 90° 的「《」= 向上的双箭头，一眼读作"升级" */
+    var ax = b.x + b.w / 2;
+    var ay = b.y + b.h * 0.42;
+    var aw = b.w * 0.17;
+    var ah = b.h * 0.15;
+    ctx.beginPath();
+    ctx.moveTo(ax - aw, ay);
+    ctx.lineTo(ax, ay - ah);
+    ctx.lineTo(ax + aw, ay);
+    ctx.moveTo(ax - aw, ay + ah * 1.45);
+    ctx.lineTo(ax, ay + ah * 0.45);
+    ctx.lineTo(ax + aw, ay + ah * 1.45);
+    ctx.stroke();
+
+    ctx.fillStyle = upColor;
+    ctx.font = "600 " + Math.max(10, Math.round(this.cell * 0.19)) + "px " + sans();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(maxed ? "满级" : "升级", ax, b.y + b.h - Math.max(3, this.cell * 0.075));
+    ctx.restore();
+
+    /* ---- 拆除钮 ---- */
+    var s = boxes.sell;
+    this.actionBox(ctx, s, P.alert, 1);
+
+    ctx.save();
+    ctx.strokeStyle = P.alert;
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = "round";
+    var sx = s.x + s.w / 2;
+    var sy = s.y + s.h * 0.38;
+    var sr = Math.min(s.w, s.h) * 0.17;
+    ctx.beginPath();
+    ctx.moveTo(sx - sr, sy - sr); ctx.lineTo(sx + sr, sy + sr);
+    ctx.moveTo(sx + sr, sy - sr); ctx.lineTo(sx - sr, sy + sr);
+    ctx.stroke();
+
+    ctx.fillStyle = P.alert;
+    ctx.font = "600 " + Math.max(10, Math.round(this.cell * 0.19)) + "px " + sans();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText("拆除", sx, s.y + s.h - Math.max(3, this.cell * 0.075));
+    ctx.restore();
+  };
+
+  /* 操作钮的底板：白面 + 偏移硬阴影 + 彩色细边，和塔基座同一手法 */
+  Renderer.prototype.actionBox = function (ctx, b, color, alpha) {
+    ctx.save();
+    ctx.fillStyle = "rgba(20, 22, 26, 0.14)";
+    ctx.fillRect(b.x + 1.5, b.y + 2, b.w, b.h);
+    ctx.fillStyle = P.file;
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
     ctx.restore();
   };
 
@@ -609,16 +748,52 @@
       var y = this.py(b.r);
 
       if (b.kind === "rail") {
-        /* 轨炮：瞬时射线，沿命中方向一条暗金细线，随余量淡出 */
-        var k = Math.max(0, b.life / 0.16);
+        /* 轨炮弹道：一条深灰褐的射线，0.26 秒内淡出。
+           用灰褐而不是纯黑——纯黑在骨白上像把页面划开一刀。
+           射线必须画出来：这是玩家判断"这一发贯穿了谁"的唯一依据。 */
+        var k = Math.max(0, b.life / (b.maxLife || 0.26));
+        var x0 = this.px(b.fromC);
+        var y0 = this.py(b.fromR);
+        var x1 = this.px(b.beamC);
+        var y1 = this.py(b.beamR);
+
         ctx.save();
-        ctx.globalAlpha = k * 0.85;
-        ctx.strokeStyle = P.gold;
-        ctx.lineWidth = 1.6;
+
+        /* 外层：更宽更淡的一层，给射线一点厚度，不用发光 */
+        ctx.globalAlpha = k * 0.22;
+        ctx.strokeStyle = "#5a5048";
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
         ctx.beginPath();
-        ctx.moveTo(this.px(b.fromC), this.py(b.fromR));
-        ctx.lineTo(x, y);
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
         ctx.stroke();
+
+        /* 芯线 */
+        ctx.globalAlpha = k * 0.92;
+        ctx.strokeStyle = "#4a423b";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.stroke();
+
+        /* 贯穿点：每个被打到的目标上画一个小十字，一眼看清穿了几个 */
+        if (b.marks) {
+          ctx.globalAlpha = k;
+          ctx.strokeStyle = P.gold;
+          ctx.lineWidth = 1.6;
+          var m, mx, my, ms = this.cell * 0.14;
+          for (m = 0; m < b.marks.length; m++) {
+            mx = this.px(b.marks[m].c);
+            my = this.py(b.marks[m].r);
+            ctx.beginPath();
+            ctx.moveTo(mx - ms, my); ctx.lineTo(mx + ms, my);
+            ctx.moveTo(mx, my - ms); ctx.lineTo(mx, my + ms);
+            ctx.stroke();
+          }
+        }
+
         ctx.restore();
       } else if (b.kind === "mortar") {
         /* 臼炮弹：实心小圆 + 短尾 */
@@ -702,5 +877,9 @@
 
   function mono() {
     return 'ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace';
+  }
+
+  function sans() {
+    return '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
   }
 })(window);

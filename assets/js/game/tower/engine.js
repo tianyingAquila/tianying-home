@@ -219,12 +219,18 @@
     /* 轨炮是瞬时命中的射线，不飞行；其余按速度飞 */
     if (spec.kind === "rail") {
       b.instant = true;
-      b.life = 0.16;
+      b.life = 0.26;        /* 射线可见时长：够看清贯穿了谁，又不拖影 */
+      b.maxLife = 0.26;
       b.speed = 0;
+      /* 射线的几何由 resolveHit 填：终点 + 贯穿到的每个命中点 */
+      b.beamC = spec.fromC;
+      b.beamR = spec.fromR;
+      b.marks = [];
     } else {
       b.instant = false;
       b.speed = spec.kind === "mortar" ? 7.5 : 13.5;
       b.life = 2.2;
+      b.maxLife = 2.2;
     }
 
     this.bullets.push(b);
@@ -250,22 +256,42 @@
       }
       this.pushParticles(hitC, hitR, 12, cfg.PALETTE.accent, 1.35);
     } else if (b.pierce) {
-      /* 穿透：沿射线打到的第一个之后继续，但伤害衰减 */
+      /* 穿透：沿射线打到的第一个之后继续，但伤害衰减。
+         这里要把射线几何写回子弹，否则渲染时起点终点相同，
+         画出来是一条零长度的线——等于什么都没画（这正是初版的 bug）。 */
       var ang = Math.atan2(hitR - b.fromR, hitC - b.fromC);
       var hits = 0;
+      var maxProj = 0;
+      var candidates = [];
+
       for (i = 0; i < this.enemies.length; i++) {
         var t = this.enemies[i];
-        if (!t.alive || hits >= 3) { continue; }
-        /* 点到射线的垂距，够近就算被贯穿 */
+        if (!t.alive) { continue; }
         var vx = t.c - b.fromC;
         var vy = t.r - b.fromR;
         var proj = vx * Math.cos(ang) + vy * Math.sin(ang);
         if (proj < 0) { continue; }
         var perp = Math.abs(-vx * Math.sin(ang) + vy * Math.cos(ang));
         if (perp > t.radius + 0.14) { continue; }
-        this.damage(t, b.damage * (hits === 0 ? 1 : 0.6), b, b.fromC, b.fromR);
+        candidates.push({ e: t, proj: proj });
+      }
+
+      /* 按距离排序，近的先吃全额伤害——"贯穿"在视觉和逻辑上才一致 */
+      candidates.sort(function (a, b2) { return a.proj - b2.proj; });
+
+      for (i = 0; i < candidates.length && hits < 3; i++) {
+        var cand = candidates[i];
+        this.damage(cand.e, b.damage * (hits === 0 ? 1 : 0.6), b, b.fromC, b.fromR);
+        b.marks.push({ c: cand.e.c, r: cand.e.r });
+        maxProj = cand.proj;
         hits += 1;
       }
+
+      /* 射线画到最后一个命中点稍远处；没命中任何东西就画满射程 */
+      var reach = hits > 0 ? maxProj + 0.5 : (this.towerRange(b.owner) || 5);
+      b.beamC = b.fromC + Math.cos(ang) * reach;
+      b.beamR = b.fromR + Math.sin(ang) * reach;
+
       this.pushParticles(hitC, hitR, 6, cfg.PALETTE.gold, 1.1);
     } else if (target && target.alive) {
       this.damage(target, b.damage, b, b.fromC, b.fromR);
@@ -278,6 +304,10 @@
     }
 
     b.dead = true;
+  };
+
+  Engine.prototype.towerRange = function (tower) {
+    return tower ? tower.stats().range : 0;
   };
 
   Engine.prototype.damage = function (e, amount, b, fromC, fromR) {

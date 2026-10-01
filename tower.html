@@ -6,10 +6,10 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>网格塔防 · Tianying的巢</title>
   <meta name="description" content="Tianying 的小站塔防：正交网格布防，四类防御塔三级强化，十五波推进。">
-  <link rel="stylesheet" href="assets/css/tokens.css?v=1">
+  <link rel="stylesheet" href="assets/css/tokens.css?v=2">
   <link rel="stylesheet" href="assets/css/style.css?v=18">
-  <link rel="stylesheet" href="assets/css/terminal.css?v=1">
-  <link rel="stylesheet" href="assets/css/tower.css?v=1">
+  <link rel="stylesheet" href="assets/css/terminal.css?v=2">
+  <link rel="stylesheet" href="assets/css/tower.css?v=2">
 </head>
 <body class="tower-page" data-theme="light">
 
@@ -63,13 +63,22 @@
           <div class="td-hud-spacer"></div>
 
           <button class="td-btn primary" id="tdStart" type="button">开始防守</button>
+          <button class="td-btn ghost" id="tdRestartTop" type="button">再来一局</button>
           <button class="td-btn ghost" id="tdCall" type="button" hidden>提前开始</button>
           <button class="td-btn ghost" id="tdPause" type="button" hidden>暂停</button>
           <button class="td-btn ghost td-speed" id="tdSpeed" type="button" title="切换倍速（S）">1×</button>
         </div>
 
-        <div class="td-canvas-box">
-          <canvas id="tdCanvas" aria-label="塔防战场"></canvas>
+        <!-- 战场与两侧属性栏：地图左右的空白正好用来放"当前/升级后"对比，
+             不必把视线甩到屏幕另一头 -->
+        <div class="td-arena">
+          <aside class="td-stats td-stats-now" id="tdStatsNow" aria-live="off"></aside>
+
+          <div class="td-canvas-box">
+            <canvas id="tdCanvas" aria-label="塔防战场"></canvas>
+          </div>
+
+          <aside class="td-stats td-stats-next" id="tdStatsNext" aria-live="off"></aside>
         </div>
 
         <p class="td-hint" id="tdHint">数字键 1-4 选塔 · 空格 暂停 · S 倍速</p>
@@ -80,8 +89,6 @@
           <h3 class="td-card-title"><span>防御塔</span><span class="td-card-note">点选后放置</span></h3>
           <div class="td-shop" id="tdShop"></div>
         </section>
-
-        <section class="td-card td-detail" id="tdDetail" hidden></section>
 
         <section class="td-card td-legend">
           <h3 class="td-card-title"><span>敌军识别</span></h3>
@@ -104,20 +111,22 @@
       <h3 class="td-result-title" id="tdResultTitle">防线稳固</h3>
       <p class="td-result-sub" id="tdResultSub"></p>
       <div class="td-result-stats" id="tdResultStats"></div>
+      <!-- 结算后留在本页：关闭只是收起结算卡，不跳走。
+           要回终端有顶部那个返回链接，不必在这里逼玩家离开 -->
       <div class="td-result-actions">
         <button class="td-btn primary" id="tdRestart" type="button">再来一局</button>
-        <a class="td-btn ghost" href="games.html">返回终端</a>
+        <button class="td-btn ghost" id="tdResultClose" type="button">查看战场</button>
       </div>
     </div>
   </div>
 
   <script src="assets/js/clock.js?v=1"></script>
-  <script src="assets/js/game/tower/config.js?v=1"></script>
-  <script src="assets/js/game/tower/grid.js?v=1"></script>
-  <script src="assets/js/game/tower/enemies.js?v=1"></script>
-  <script src="assets/js/game/tower/towers.js?v=1"></script>
-  <script src="assets/js/game/tower/engine.js?v=1"></script>
-  <script src="assets/js/game/tower/render.js?v=1"></script>
-  <script src="assets/js/game/tower/ui.js?v=1"></script>
+  <script src="assets/js/game/tower/config.js?v=2"></script>
+  <script src="assets/js/game/tower/grid.js?v=2"></script>
+  <script src="assets/js/game/tower/enemies.js?v=2"></script>
+  <script src="assets/js/game/tower/towers.js?v=2"></script>
+  <script src="assets/js/game/tower/engine.js?v=2"></script>
+  <script src="assets/js/game/tower/render.js?v=2"></script>
+  <script src="assets/js/game/tower/ui.js?v=2"></script>
 </body>
 </html>
