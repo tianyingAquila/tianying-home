@@ -9,6 +9,7 @@
 
    敌人靠形状区分族类，不靠颜色：
      圆 = 巡飞  三角 = 疾突  方 = 重载  带环 = 监护者
+     三叶 = 分裂者  碎点 = 分裂体  菱 + 卫星 = 召唤者
    ========================================================================== */
 (function (root) {
   "use strict";
@@ -26,7 +27,15 @@
     this.oy = 0;
     this.w = 0;
     this.h = 0;
+    this.cols = 15;
+    this.rows = 11;
   }
+
+  /* 换地图时告诉渲染器新的格数（地图 3 是 20×11） */
+  Renderer.prototype.setGrid = function (cols, rows) {
+    this.cols = cols;
+    this.rows = rows;
+  };
 
   /* 按容器尺寸算格子边长与居中偏移。DPR 封顶 2，手机上 3 倍像素纯属浪费带宽和帧率。 */
   Renderer.prototype.resize = function (cssW, cssH) {
@@ -40,13 +49,14 @@
     this.canvas.style.width = cssW + "px";
     this.canvas.style.height = cssH + "px";
 
-    var pad = 26;
-    var cw = (cssW - pad * 2) / cfg.GRID.cols;
-    var ch = (cssH - pad * 2) / cfg.GRID.rows;
-    this.cell = Math.max(18, Math.floor(Math.min(cw, ch)));
+    /* 边距随画布缩放：大屏 26px 留白好看，手机横屏寸土寸金只留 6px */
+    var pad = Math.max(6, Math.min(26, Math.round(Math.min(cssW, cssH) * 0.04)));
+    var cw = (cssW - pad * 2) / this.cols;
+    var ch = (cssH - pad * 2) / this.rows;
+    this.cell = Math.max(14, Math.floor(Math.min(cw, ch)));
 
-    this.ox = Math.round((cssW - this.cell * cfg.GRID.cols) / 2);
-    this.oy = Math.round((cssH - this.cell * cfg.GRID.rows) / 2);
+    this.ox = Math.round((cssW - this.cell * this.cols) / 2);
+    this.oy = Math.round((cssH - this.cell * this.rows) / 2);
   };
 
   /* 格坐标 → 像素（格心） */
@@ -102,8 +112,8 @@
 
   Renderer.prototype.drawGrid = function (ctx) {
     var cell = this.cell;
-    var w = cell * cfg.GRID.cols;
-    var h = cell * cfg.GRID.rows;
+    var w = cell * this.cols;
+    var h = cell * this.rows;
     var i;
 
     /* 场地底面：比画面底色稍暖一点，划出"这是棋盘"的边界 */
@@ -113,12 +123,12 @@
     ctx.strokeStyle = P.hair;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    for (i = 0; i <= cfg.GRID.cols; i++) {
+    for (i = 0; i <= this.cols; i++) {
       var x = Math.round(this.ox + i * cell) + 0.5;
       ctx.moveTo(x, this.oy);
       ctx.lineTo(x, this.oy + h);
     }
-    for (i = 0; i <= cfg.GRID.rows; i++) {
+    for (i = 0; i <= this.rows; i++) {
       var y = Math.round(this.oy + i * cell) + 0.5;
       ctx.moveTo(this.ox, y);
       ctx.lineTo(this.ox + w, y);
@@ -149,50 +159,55 @@
 
   Renderer.prototype.drawPath = function (ctx, eng) {
     var cell = this.cell;
-    var path = eng.grid.path;
-    var i;
+    var grid = eng.grid;
+    var i, p;
 
     /* 路面：必须明显深于场地。塔防最核心的信息是"怪从哪来、往哪走"，
-       实测 0.055 的填充和场地几乎一样，走向要盯着虚线才看得出来。 */
+       实测 0.055 的填充和场地几乎一样，走向要盯着虚线才看得出来。
+       多条路共用的格子只铺一次，所以交汇处不会更深。 */
     ctx.fillStyle = "rgba(20, 22, 26, 0.105)";
-    for (var key in eng.grid.pathCells) {
+    for (var key in grid.pathCells) {
       var parts = key.split(",");
       var c = parseInt(parts[0], 10);
       var r = parseInt(parts[1], 10);
-      if (c < 0 || c >= cfg.GRID.cols || r < 0 || r >= cfg.GRID.rows) { continue; }
+      if (!grid.inBounds(c, r)) { continue; }
       ctx.fillRect(this.ox + c * cell, this.oy + r * cell, cell, cell);
     }
 
-    /* 中心引导线：虚线，细，说明"怪从这走" */
-    ctx.save();
-    ctx.strokeStyle = P.faint;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 5]);
-    ctx.beginPath();
-    for (i = 0; i < path.length; i++) {
-      var x = this.px(path[i].c);
-      var y = this.py(path[i].r);
-      if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
-    }
-    ctx.stroke();
-    ctx.restore();
+    for (p = 0; p < grid.paths.length; p++) {
+      var path = grid.paths[p].points;
 
-    /* 转角的方向标记：小直角箭头，比画整条带箭头的路干净 */
-    ctx.strokeStyle = P.faint;
-    ctx.lineWidth = 1.4;
-    for (i = 1; i < path.length - 1; i++) {
-      var p = path[i];
-      if (p.c < 0 || p.c >= cfg.GRID.cols) { continue; }
-      var nx = this.px(p.c);
-      var ny = this.py(p.r);
-      var ndc = Math.sign(path[i + 1].c - p.c);
-      var ndr = Math.sign(path[i + 1].r - p.r);
-      var s = cell * 0.17;
+      /* 中心引导线：虚线，细，说明"怪从这走" */
+      ctx.save();
+      ctx.strokeStyle = P.faint;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 5]);
       ctx.beginPath();
-      ctx.moveTo(nx + ndc * s - ndr * s, ny + ndr * s - ndc * s);
-      ctx.lineTo(nx + ndc * s * 1.7, ny + ndr * s * 1.7);
-      ctx.lineTo(nx + ndc * s + ndr * s, ny + ndr * s + ndc * s);
+      for (i = 0; i < path.length; i++) {
+        var x = this.px(path[i].c);
+        var y = this.py(path[i].r);
+        if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+      }
       ctx.stroke();
+      ctx.restore();
+
+      /* 转角的方向标记：小直角箭头，比画整条带箭头的路干净 */
+      ctx.strokeStyle = P.faint;
+      ctx.lineWidth = 1.4;
+      for (i = 1; i < path.length - 1; i++) {
+        var pt = path[i];
+        if (!grid.inBounds(pt.c, pt.r)) { continue; }
+        var nx = this.px(pt.c);
+        var ny = this.py(pt.r);
+        var ndc = Math.sign(path[i + 1].c - pt.c);
+        var ndr = Math.sign(path[i + 1].r - pt.r);
+        var s = cell * 0.17;
+        ctx.beginPath();
+        ctx.moveTo(nx + ndc * s - ndr * s, ny + ndr * s - ndc * s);
+        ctx.lineTo(nx + ndc * s * 1.7, ny + ndr * s * 1.7);
+        ctx.lineTo(nx + ndc * s + ndr * s, ny + ndr * s + ndc * s);
+        ctx.stroke();
+      }
     }
   };
 
@@ -202,9 +217,10 @@
     var cell = this.cell;
     var i;
 
-    for (i = 0; i < cfg.BLOCKS.length; i++) {
-      var c = cfg.BLOCKS[i][0];
-      var r = cfg.BLOCKS[i][1];
+    var list = eng.grid.blockList;
+    for (i = 0; i < list.length; i++) {
+      var c = list[i][0];
+      var r = list[i][1];
       if (!eng.grid.inBounds(c, r)) { continue; }
 
       var x = this.ox + c * cell;
@@ -235,30 +251,78 @@
     }
   };
 
-  /* 入口与终点：等宽小字标签，不用图标 */
+  /* 出怪口与防御点。
+     出怪口：钢蓝淡底 + 指向行进方向的小三角 + IN；
+     防御点：褐色淡底 + 褐色描边 + 中央实心小方块 + BASE（要守的地方）。
+     地图 1 的出入口在棋盘外：出怪口夹回最靠边那一格，防御点画成棋盘边缘的褐色竖条。
+     几条路共用一个防御点（地图 3 的中央）时只画一次。 */
   Renderer.prototype.drawEndpoints = function (ctx, eng) {
     var cell = this.cell;
-    var path = eng.grid.path;
-    var first = path[0];
-    var last = path[path.length - 1];
+    var grid = eng.grid;
+    var drawnBase = Object.create(null);
+    var i;
 
-    ctx.font = "600 " + Math.max(8, Math.round(cell * 0.23)) + "px " + mono();
+    ctx.font = "600 " + Math.max(8, Math.round(cell * 0.21)) + "px " + mono();
     ctx.textBaseline = "middle";
 
-    /* 入口 */
-    var ex = this.ox + Math.max(0, first.c) * cell;
-    var ey = this.py(first.r);
-    ctx.fillStyle = P.muted;
-    ctx.textAlign = "left";
-    ctx.fillText("IN", ex + 3, ey - cell * 0.42);
+    for (i = 0; i < grid.paths.length; i++) {
+      var p = grid.paths[i];
+      var seg0 = p.segs[0];
 
-    /* 终点：要守的地方，用褐色竖条标出来 */
-    var lx = this.ox + Math.min(cfg.GRID.cols - 1, last.c) * cell;
-    var ly = this.py(last.r);
-    ctx.fillStyle = P.accent;
-    ctx.fillRect(this.ox + cfg.GRID.cols * cell - 3, ly - cell * 0.5, 3, cell);
-    ctx.textAlign = "right";
-    ctx.fillText("OUT", this.ox + cfg.GRID.cols * cell - 7, ly - cell * 0.42);
+      /* ---- 出怪口 ---- */
+      var sc = clamp(p.start.c, 0, grid.cols - 1);
+      var sr = clamp(p.start.r, 0, grid.rows - 1);
+      var sx = this.ox + sc * cell;
+      var sy = this.oy + sr * cell;
+      ctx.fillStyle = "rgba(74, 107, 130, 0.16)";
+      ctx.fillRect(sx, sy, cell, cell);
+
+      var tz = cell * 0.16;
+      ctx.save();
+      ctx.translate(sx + cell / 2, sy + cell / 2);
+      ctx.rotate(Math.atan2(seg0.dr, seg0.dc));
+      ctx.fillStyle = P.steel;
+      ctx.beginPath();
+      ctx.moveTo(tz, 0);
+      ctx.lineTo(-tz * 0.7, -tz * 0.8);
+      ctx.lineTo(-tz * 0.7, tz * 0.8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = P.muted;
+      ctx.textAlign = "left";
+      ctx.fillText("IN", sx + 3, sy + cell * 0.17);
+
+      /* ---- 防御点 ---- */
+      var key = p.end.c + "," + p.end.r;
+      if (drawnBase[key]) { continue; }
+      drawnBase[key] = true;
+
+      if (!grid.inBounds(p.end.c, p.end.r)) {
+        var ly = this.py(p.end.r);
+        var right = p.end.c >= grid.cols;
+        var edgeX = right ? this.ox + grid.cols * cell - 3 : this.ox;
+        ctx.fillStyle = P.accent;
+        ctx.fillRect(edgeX, ly - cell * 0.5, 3, cell);
+        ctx.textAlign = right ? "right" : "left";
+        ctx.fillText("BASE", right ? edgeX - 4 : edgeX + 7, ly - cell * 0.38);
+        continue;
+      }
+
+      var bx = this.ox + p.end.c * cell;
+      var by = this.oy + p.end.r * cell;
+      ctx.fillStyle = "rgba(180, 121, 74, 0.16)";
+      ctx.fillRect(bx, by, cell, cell);
+      ctx.strokeStyle = P.accent;
+      ctx.lineWidth = 1.6;
+      ctx.strokeRect(bx + 1.5, by + 1.5, cell - 3, cell - 3);
+      var core = cell * 0.22;
+      ctx.fillStyle = P.accent;
+      ctx.fillRect(bx + cell / 2 - core / 2, by + cell * 0.56 - core / 2, core, core);
+      ctx.textAlign = "center";
+      ctx.fillText("BASE", bx + cell / 2, by + cell * 0.2);
+    }
   };
 
   /* ------------------------------------------------------------- 悬停预览 */
@@ -603,6 +667,47 @@
         ctx.lineTo(u * 2.3, 0);
         ctx.stroke();
       }
+    } else if (shape === "aura") {
+      /* 光环塔 · 褐色空心环 + 墨色实心核：没有炮管，因为它不瞄准，四面一起打 */
+      ctx.strokeStyle = P.accent;
+      ctx.lineWidth = Math.max(2, u * 0.26);
+      ctx.beginPath();
+      ctx.arc(0, 0, u * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = P.ink;
+      ctx.beginPath();
+      ctx.arc(0, 0, u * 0.24, 0, Math.PI * 2);
+      ctx.fill();
+      if (flash > 0) {
+        ctx.globalAlpha = alpha * (flash / 0.12);
+        ctx.strokeStyle = P.accent;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, u * 1.05, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (shape === "chain") {
+      /* 连锁塔 · 墨色实心三角（尖朝目标）+ 尖端一颗暗金电极 */
+      ctx.rotate(aim);
+      ctx.fillStyle = P.ink;
+      ctx.beginPath();
+      ctx.moveTo(u * 0.78, 0);
+      ctx.lineTo(-u * 0.5, -u * 0.62);
+      ctx.lineTo(-u * 0.5, u * 0.62);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = P.gold;
+      ctx.beginPath();
+      ctx.arc(u * 0.78, 0, u * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      if (flash > 0) {
+        ctx.globalAlpha = alpha * (flash / 0.12);
+        ctx.strokeStyle = P.gold;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(u * 0.78, 0, u * 0.42, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
 
     ctx.restore();
@@ -638,7 +743,7 @@
       var fill = hurt ? P.alert : (e.slowTime > 0 ? "#7d98ab" : P.steel);
       var stroke = hurt ? "#7d3a31" : "#36505f";
 
-      ctx.lineWidth = e.boss ? 2 : 1.4;
+      ctx.lineWidth = (e.boss || e.elite) ? 2 : (e.minion ? 1 : 1.4);
       ctx.strokeStyle = stroke;
       ctx.fillStyle = fill;
 
@@ -707,11 +812,67 @@
           ctx.stroke();
         }
         ctx.restore();
+      } else if (e.shape === "trefoil") {
+        /* 分裂者：三个小圆抱成一团，一胀一缩地呼吸并缓慢自转——像随时要裂开 */
+        ctx.rotate(v.spin);
+        var lobe = rad * 0.52;
+        var off = rad * 0.48;
+        var q;
+        ctx.beginPath();
+        for (q = 0; q < 3; q++) {
+          var la = (q / 3) * Math.PI * 2;
+          ctx.moveTo(Math.cos(la) * off + lobe, Math.sin(la) * off);
+          ctx.arc(Math.cos(la) * off, Math.sin(la) * off, lobe, 0, Math.PI * 2);
+        }
+        ctx.fill();
+        ctx.stroke();
+        /* 中心一点骨白：三块的接缝，暗示"会从这里裂开" */
+        ctx.fillStyle = "rgba(246, 245, 243, 0.8)";
+        ctx.beginPath();
+        ctx.arc(0, 0, rad * 0.16, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (e.shape === "mote") {
+        /* 分裂体：一颗小菱形，靠高频抖动显得躁动 */
+        ctx.rotate(Math.PI / 4);
+        var m2 = rad * 1.25;
+        ctx.fillRect(-m2 / 2, -m2 / 2, m2, m2);
+        ctx.strokeRect(-m2 / 2, -m2 / 2, m2, m2);
+      } else if (e.shape === "summoner") {
+        /* 召唤者：自转的菱形本体 + 三颗绕身公转的墨色卫星。
+           它免疫减速，所以永远不会变成"被减速的淡蓝"——一眼就能认出它不吃霜塔 */
+        ctx.save();
+        ctx.rotate(v.spin);
+        ctx.beginPath();
+        ctx.moveTo(0, -rad * 0.86);
+        ctx.lineTo(rad * 0.86, 0);
+        ctx.lineTo(0, rad * 0.86);
+        ctx.lineTo(-rad * 0.86, 0);
+        ctx.closePath();
+        ctx.fillStyle = hurt ? P.alert : P.steel;
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "rgba(246, 245, 243, 0.85)";
+        ctx.beginPath();
+        ctx.arc(0, 0, rad * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        var sat;
+        ctx.fillStyle = hurt ? P.alert : P.ink;
+        for (sat = 0; sat < 3; sat++) {
+          var oa = v.orbit + (sat / 3) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.arc(Math.cos(oa) * rad * 1.22, Math.sin(oa) * rad * 1.22, Math.max(1.6, rad * 0.15), 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       ctx.restore();
 
-      this.drawHealthBar(ctx, x, y - rad - (e.boss ? 9 : 6), rad * 2, e);
+      /* 分裂体一碰就碎，满屏血条只会是噪音，所以不画 */
+      if (!e.minion) {
+        this.drawHealthBar(ctx, x, y - rad - ((e.boss || e.elite) ? 9 : 6), rad * 2, e);
+      }
     }
   };
 
@@ -721,7 +882,7 @@
     if (ratio >= 1) { return; }
 
     var bw = Math.max(14, w * 0.95);
-    var bh = e.boss ? 3.5 : 2.5;
+    var bh = (e.boss || e.elite) ? 3.5 : 2.5;
     var bx = x - bw / 2;
 
     ctx.fillStyle = "rgba(20, 22, 26, 0.14)";
@@ -731,7 +892,7 @@
     ctx.fillStyle = ratio < 0.35 ? P.alert : P.steel;
     ctx.fillRect(bx, y, bw * ratio, bh);
 
-    if (e.boss) {
+    if (e.boss || e.elite) {
       ctx.strokeStyle = P.line;
       ctx.lineWidth = 1;
       ctx.strokeRect(bx - 0.5, y - 0.5, bw + 1, bh + 1);
@@ -795,6 +956,51 @@
         }
 
         ctx.restore();
+      } else if (b.kind === "aura") {
+        /* 光环脉冲：从塔身向外扩到射程边缘的褐色圆环，越扩越淡。
+           扩散的那一下就是"这一圈都挨打了"，不需要再给每个敌人加特效 */
+        var ka = 1 - Math.max(0, b.life / (b.maxLife || 0.42));
+        var ar = this.cell * (0.35 + (b.range - 0.35) * ease(Math.min(1, ka * 1.25)));
+        ctx.save();
+        ctx.globalAlpha = (1 - ka) * 0.55;
+        ctx.fillStyle = "rgba(180, 121, 74, 0.10)";
+        ctx.beginPath();
+        ctx.arc(this.px(b.fromC), this.py(b.fromR), ar, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = (1 - ka) * 0.9;
+        ctx.strokeStyle = P.accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      } else if (b.kind === "chain") {
+        /* 连锁闪电：从塔折到主目标、再折到每个跳跃目标的锯齿线，暗金色。
+           锯齿的抖动用固定种子算，不每帧乱跳——闪烁会显得廉价 */
+        if (b.marks && b.marks.length) {
+          var kc = Math.max(0, b.life / (b.maxLife || 0.34));
+          var pts = [{ x: this.px(b.fromC), y: this.py(b.fromR) }];
+          var mi;
+          for (mi = 0; mi < b.marks.length; mi++) {
+            pts.push({ x: this.px(b.marks[mi].c), y: this.py(b.marks[mi].r) });
+          }
+          ctx.save();
+          ctx.lineJoin = "round";
+          ctx.lineCap = "round";
+          ctx.strokeStyle = P.gold;
+          for (mi = 0; mi < pts.length - 1; mi++) {
+            /* 主目标那一段粗，跳跃段细：伤害减半，线也细一半 */
+            ctx.globalAlpha = kc * (mi === 0 ? 0.95 : 0.75);
+            ctx.lineWidth = mi === 0 ? 2.2 : 1.4;
+            this.zigzag(ctx, pts[mi], pts[mi + 1], mi + 1);
+          }
+          ctx.globalAlpha = kc;
+          ctx.fillStyle = P.gold;
+          for (mi = 1; mi < pts.length; mi++) {
+            ctx.beginPath();
+            ctx.arc(pts[mi].x, pts[mi].y, mi === 1 ? 3 : 2.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
       } else if (b.kind === "mortar") {
         /* 臼炮弹：实心小圆 + 短尾 */
         ctx.fillStyle = P.accent;
@@ -821,6 +1027,27 @@
         ctx.restore();
       }
     }
+  };
+
+  /* 两点之间画一条锯齿闪电。偏移量由段号决定（固定种子），所以同一道闪电不会闪烁 */
+  Renderer.prototype.zigzag = function (ctx, a, b, seed) {
+    var dx = b.x - a.x;
+    var dy = b.y - a.y;
+    var len = Math.hypot(dx, dy) || 1;
+    var nx = -dy / len;
+    var ny = dx / len;
+    var n = Math.max(3, Math.round(len / 9));
+    var amp = Math.min(6, len * 0.12);
+    var k;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    for (k = 1; k < n; k++) {
+      var t = k / n;
+      var off = Math.sin(seed * 12.9898 + k * 78.233) * amp * (k % 2 ? 1 : -1);
+      ctx.lineTo(a.x + dx * t + nx * off, a.y + dy * t + ny * off);
+    }
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
   };
 
   /* ------------------------------------------------------------- 粒子与飘字 */
@@ -873,6 +1100,10 @@
 
   function ease(t) {
     return 1 - Math.pow(1 - t, 3);
+  }
+
+  function clamp(v, lo, hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 
   function mono() {

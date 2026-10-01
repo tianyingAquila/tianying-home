@@ -2,14 +2,14 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>网格塔防 · Tianying的巢</title>
-  <meta name="description" content="Tianying 的小站塔防：正交网格布防，四类防御塔三级强化，十八波推进。">
+  <meta name="description" content="Tianying 的小站塔防：三张地图，正交网格布防，六类防御塔三级强化，每张图最后三波才是真正的考验。">
   <link rel="stylesheet" href="assets/css/tokens.css?v=2">
   <link rel="stylesheet" href="assets/css/style.css?v=18">
   <link rel="stylesheet" href="assets/css/terminal.css?v=2">
-  <link rel="stylesheet" href="assets/css/tower.css?v=3">
+  <link rel="stylesheet" href="assets/css/tower.css?v=5">
 </head>
 <body class="tower-page" data-theme="light">
 
@@ -44,6 +44,11 @@
       </div>
     </div>
 
+    <!-- 地图选择：三张图随时切换，不需要按顺序解锁 -->
+    <nav class="td-maps" id="tdMaps" aria-label="选择地图"></nav>
+
+    <p class="td-rotate">地图 3 较宽，手机建议横屏游玩</p>
+
     <div class="td-layout">
       <section class="td-field">
         <div class="td-hud">
@@ -53,20 +58,22 @@
           </div>
           <div class="td-hud-item">
             <span class="td-hud-label">GOLD</span>
-            <span class="td-hud-value" id="tdGold">260</span>
+            <span class="td-hud-value" id="tdGold">230</span>
           </div>
           <div class="td-hud-item">
             <span class="td-hud-label">WAVE</span>
-            <span class="td-hud-value"><span id="tdWave">01</span><small> / <span id="tdWaveTotal">15</span></small></span>
+            <span class="td-hud-value"><span id="tdWave">01</span><small> / <span id="tdWaveTotal">18</span></small></span>
           </div>
 
           <div class="td-hud-spacer"></div>
 
-          <button class="td-btn primary" id="tdStart" type="button">开始防守</button>
-          <button class="td-btn ghost" id="tdRestartTop" type="button">再来一局</button>
-          <button class="td-btn ghost" id="tdCall" type="button" hidden>提前开始</button>
-          <button class="td-btn ghost" id="tdPause" type="button" hidden>暂停</button>
-          <button class="td-btn ghost td-speed" id="tdSpeed" type="button" title="切换倍速（S）">1×</button>
+          <div class="td-hud-actions">
+            <button class="td-btn primary" id="tdStart" type="button">开始防守</button>
+            <button class="td-btn ghost" id="tdRestartTop" type="button">再来一局</button>
+            <button class="td-btn ghost" id="tdCall" type="button" hidden>提前开始</button>
+            <button class="td-btn ghost" id="tdPause" type="button" hidden>暂停</button>
+            <button class="td-btn ghost td-speed" id="tdSpeed" type="button" title="切换倍速（S）">1×</button>
+          </div>
         </div>
 
         <!-- 战场与两侧属性栏：地图左右的空白正好用来放"当前/升级后"对比，
@@ -74,7 +81,7 @@
         <div class="td-arena">
           <aside class="td-stats td-stats-now" id="tdStatsNow" aria-live="off"></aside>
 
-          <div class="td-canvas-box">
+          <div class="td-canvas-box" id="tdCanvasBox">
             <canvas id="tdCanvas" aria-label="塔防战场"></canvas>
           </div>
 
@@ -85,34 +92,49 @@
       </section>
 
       <aside class="td-side">
-        <section class="td-card">
+        <section class="td-card td-shop-card">
           <h3 class="td-card-title"><span>防御塔</span><span class="td-card-note">点选后放置</span></h3>
           <div class="td-shop" id="tdShop"></div>
         </section>
 
         <section class="td-card td-legend">
           <h3 class="td-card-title"><span>敌军识别</span></h3>
-          <ul class="td-legend-list">
-            <li><span class="td-gl td-gl-circle" aria-hidden="true"></span><span class="td-gl-name">巡飞</span><span class="td-gl-en">DRONE</span><span class="td-gl-note">常规，成群出现</span></li>
-            <li><span class="td-gl td-gl-triangle" aria-hidden="true"></span><span class="td-gl-name">疾突</span><span class="td-gl-en">RUSHER</span><span class="td-gl-note">极快，血薄</span></li>
-            <li><span class="td-gl td-gl-square" aria-hidden="true"></span><span class="td-gl-name">重载</span><span class="td-gl-en">HAULER</span><span class="td-gl-note">厚甲，迟缓</span></li>
-            <li><span class="td-gl td-gl-ringed" aria-hidden="true"></span><span class="td-gl-name">监护者</span><span class="td-gl-en">WARDEN</span><span class="td-gl-note">首领，漏掉扣 3 生命</span></li>
-          </ul>
+          <ul class="td-legend-list" id="tdLegend"></ul>
         </section>
       </aside>
     </div>
+
+    <!-- 记录榜：和扫雷同一套模式。失败也记录 -->
+    <section class="td-card td-board" id="tdBoard">
+      <h3 class="td-card-title">
+        <span>记录榜 · <span id="tdBoardMap">回廊</span></span>
+        <span class="td-board-tabs" role="tablist">
+          <button class="td-board-tab is-active" data-tab="rank" type="button" role="tab" aria-selected="true">最高记录</button>
+          <button class="td-board-tab" data-tab="latest" type="button" role="tab" aria-selected="false">最新</button>
+        </span>
+      </h3>
+      <p class="td-board-rule" id="tdBoardRule">排名依据：打到的波数 → 剩余生命 → 用时（越短越好）</p>
+      <ol class="td-board-list" id="tdBoardList"></ol>
+      <p class="td-board-state" id="tdBoardState">正在读取记录…</p>
+    </section>
 
     <p class="td-foot">POWERED BY TIANYING ARCHIVE <span class="td-foot-rule" aria-hidden="true"></span></p>
   </main>
 
   <div class="td-result" id="tdResult" hidden>
     <div class="td-result-card" role="dialog" aria-modal="true" aria-label="本局结算">
-      <p class="td-result-eyebrow">DEFENSE REPORT</p>
+      <p class="td-result-eyebrow" id="tdResultEyebrow">DEFENSE REPORT</p>
       <h3 class="td-result-title" id="tdResultTitle">防线稳固</h3>
       <p class="td-result-sub" id="tdResultSub"></p>
       <div class="td-result-stats" id="tdResultStats"></div>
-      <!-- 结算后留在本页：关闭只是收起结算卡，不跳走。
-           要回终端有顶部那个返回链接，不必在这里逼玩家离开 -->
+
+      <form class="td-save" id="tdSave">
+        <input id="tdSaveName" type="text" maxlength="12" placeholder="留个名字（最多 12 字）" autocomplete="nickname">
+        <button class="td-btn primary" id="tdSaveBtn" type="submit">保存成绩</button>
+      </form>
+      <p class="td-save-status" id="tdSaveStatus" role="status"></p>
+
+      <!-- 结算后留在本页：关闭只是收起结算卡，不跳走 -->
       <div class="td-result-actions">
         <button class="td-btn primary" id="tdRestart" type="button">再来一局</button>
         <button class="td-btn ghost" id="tdResultClose" type="button">查看战场</button>
@@ -120,13 +142,26 @@
     </div>
   </div>
 
+  <!-- 进行中切换地图的确认：用和结算卡同一套样式，不用浏览器自带的 confirm 弹窗 -->
+  <div class="td-result td-confirm" id="tdConfirm" hidden>
+    <div class="td-result-card" role="dialog" aria-modal="true" aria-label="切换地图">
+      <p class="td-result-eyebrow">SWITCH SECTOR</p>
+      <h3 class="td-result-title td-confirm-title" id="tdConfirmTitle">切换地图？</h3>
+      <p class="td-result-sub">当前这局还没打完，切换后进度不会保留。</p>
+      <div class="td-result-actions">
+        <button class="td-btn primary" id="tdConfirmYes" type="button">切换</button>
+        <button class="td-btn ghost" id="tdConfirmNo" type="button">继续这局</button>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/js/clock.js?v=1"></script>
-  <script src="assets/js/game/tower/config.js?v=3"></script>
-  <script src="assets/js/game/tower/grid.js?v=3"></script>
-  <script src="assets/js/game/tower/enemies.js?v=3"></script>
-  <script src="assets/js/game/tower/towers.js?v=3"></script>
-  <script src="assets/js/game/tower/engine.js?v=3"></script>
-  <script src="assets/js/game/tower/render.js?v=3"></script>
-  <script src="assets/js/game/tower/ui.js?v=3"></script>
+  <script src="assets/js/game/tower/config.js?v=4"></script>
+  <script src="assets/js/game/tower/grid.js?v=4"></script>
+  <script src="assets/js/game/tower/enemies.js?v=4"></script>
+  <script src="assets/js/game/tower/towers.js?v=4"></script>
+  <script src="assets/js/game/tower/engine.js?v=4"></script>
+  <script src="assets/js/game/tower/render.js?v=4"></script>
+  <script src="assets/js/game/tower/ui.js?v=4"></script>
 </body>
 </html>

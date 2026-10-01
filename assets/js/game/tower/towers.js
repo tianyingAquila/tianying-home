@@ -1,7 +1,7 @@
 /* ==========================================================================
    塔 · 索敌与开火
    --------------------------------------------------------------------------
-   四种塔各有战术角色（见 config.js）。这里只管三件事：
+   六种塔各有战术角色（见 config.js）。这里只管三件事：
      选目标（沿路径最靠前的那个，也就是最接近终点的威胁）
      冷却与开火
      子弹生成（子弹本体在 engine 里走，命中结算在 engine）
@@ -68,12 +68,17 @@
   };
 
   /* 目标选择：射程内沿路径走得最远的那个。
-     这是塔防里最经典也最合理的策略——优先打最快漏出去的。 */
-  Tower.prototype.pickTarget = function (enemies) {
+     这是塔防里最经典也最合理的策略——优先打最快漏出去的。
+     多条路时"走得最远"按各自路线的剩余距离比较（剩得越少越危险）。
+     霜滞环会尽量避开免疫减速的召唤者，打别人才有意义；射程里只剩它时照样打。 */
+  Tower.prototype.pickTarget = function (enemies, grid) {
     var st = this.stats();
     var range = st.range;
+    var avoidImmune = !!st.slow;
     var best = null;
-    var bestDist = -1;
+    var bestLeft = Infinity;
+    var fallback = null;
+    var fallbackLeft = Infinity;
     var i;
 
     for (i = 0; i < enemies.length; i++) {
@@ -84,22 +89,28 @@
       var dy = e.r - this.r;
       if (dx * dx + dy * dy > range * range) { continue; }
 
-      if (e.dist > bestDist) {
-        bestDist = e.dist;
+      var left = grid ? grid.paths[e.path].length - e.dist : -e.dist;
+
+      if (avoidImmune && e.slowImmune) {
+        if (left < fallbackLeft) { fallbackLeft = left; fallback = e; }
+        continue;
+      }
+      if (left < bestLeft) {
+        bestLeft = left;
         best = e;
       }
     }
 
-    return best;
+    return best || fallback;
   };
 
   /* 返回要生成的子弹描述，或 null（还在冷却 / 没目标） */
-  Tower.prototype.tryFire = function (dt, enemies) {
+  Tower.prototype.tryFire = function (dt, enemies, grid) {
     if (this.cooldown > 0) { this.cooldown -= dt; }
     if (this.flash > 0) { this.flash -= dt; }
     if (this.cooldown > 0) { return null; }
 
-    var target = this.pickTarget(enemies);
+    var target = this.pickTarget(enemies, grid);
     if (!target) { return null; }
 
     var st = this.stats();
@@ -113,10 +124,14 @@
       fromR: this.r,
       target: target,
       damage: st.damage,
+      range: st.range,
       splash: st.splash || 0,
       slow: st.slow || 0,
       slowTime: st.slowTime || 0,
       pierce: !!this.def.pierce,
+      aoe: !!this.def.aoe,
+      chain: this.def.chain || null,
+      instant: !!this.def.instant,
       owner: this
     };
   };

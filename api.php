@@ -286,6 +286,14 @@ function ms_scores_file(): string
     return DATA_DIR . '/ms_scores.json';
 }
 
+// 塔防记录榜。三张地图的总波数要和前端 config.js 保持一致。
+function td_scores_file(): string
+{
+    return DATA_DIR . '/td_scores.json';
+}
+
+const TD_MAP_WAVES = [1 => 18, 2 => 18, 3 => 20];
+
 // 项目页的档案数据：仓库里的 assets/data/archives.json 是种子，
 // 后台改过的四个字段（名称/类型/状态/概述）存在 data/archives.json，
 // 由 api.php 合并后给前端。data/ 不进 Git、不被 deploy.ps1 覆盖，所以改动不会丢。
@@ -356,6 +364,87 @@ switch ($action) {
 
     case 'ms_scores':
         respond(['ok' => true, 'data' => read_json(ms_scores_file(), [])], 200, 60);
+
+    case 'td_scores':
+        respond(['ok' => true, 'data' => read_json(td_scores_file(), [])], 200, 30);
+
+    case 'td_score':
+        if ($method !== 'POST') {
+            respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
+        }
+        require_json_fetch();
+        rate_limit('td_score', 30, 600);
+        $body = request_body();
+        $name = clean_text($body['name'] ?? '', 12);
+        if ($name === '') {
+            $name = '匿名玩家';
+        }
+        $map = (int) ($body['map'] ?? 0);
+        if (!isset(TD_MAP_WAVES[$map])) {
+            respond(['ok' => false, 'error' => '地图不正确'], 400);
+        }
+        $total = TD_MAP_WAVES[$map];
+        $wave = (int) ($body['wave'] ?? 0);
+        $lives = (int) ($body['lives'] ?? -1);
+        $won = ($body['won'] ?? false) === true;
+        $timeMs = (int) ($body['timeMs'] ?? 0);
+        if ($wave < 1 || $wave > $total || $lives < 0 || $lives > 20) {
+            respond(['ok' => false, 'error' => '成绩数据不合法'], 400);
+        }
+        // 胜负和数据要自洽：赢了必须打满全部波次且还有命；输了生命一定是 0
+        if ($won && ($wave !== $total || $lives < 1)) {
+            respond(['ok' => false, 'error' => '成绩数据不合法'], 400);
+        }
+        if (!$won && $lives !== 0) {
+            respond(['ok' => false, 'error' => '成绩数据不合法'], 400);
+        }
+        // 每波至少几秒：打到第 N 波不可能少于这个时间
+        if ($timeMs < $wave * 3000 || $timeMs > 14400000) {
+            respond(['ok' => false, 'error' => '用时不合法'], 400);
+        }
+        $record = [
+            'id' => bin2hex(random_bytes(6)),
+            'name' => $name,
+            'map' => $map,
+            'wave' => $wave,
+            'total' => $total,
+            'lives' => $lives,
+            'won' => $won,
+            'timeMs' => $timeMs,
+            'createdAt' => time(),
+        ];
+        $scores = with_file_lock(td_scores_file(), function ($fp) use ($record) {
+            $scores = is_resource($fp)
+                ? read_json_from_handle($fp, [])
+                : read_json(td_scores_file(), []);
+            array_unshift($scores, $record);
+            // 最多留 300 条；超出时删最旧的，但每张图排行前 20 名永远保留，免得好成绩被刷掉
+            if (count($scores) > 300) {
+                $keep = [];
+                foreach (array_keys(TD_MAP_WAVES) as $m) {
+                    $ofMap = array_values(array_filter($scores, static fn ($s): bool => (int) ($s['map'] ?? 0) === $m));
+                    usort($ofMap, static fn ($a, $b): int =>
+                        [$b['wave'], $b['lives'], $a['timeMs']] <=> [$a['wave'], $a['lives'], $b['timeMs']]);
+                    foreach (array_slice($ofMap, 0, 20) as $s) {
+                        $keep[$s['id']] = true;
+                    }
+                }
+                $out = [];
+                foreach ($scores as $s) {
+                    if (count($out) < 300 || isset($keep[$s['id']])) {
+                        $out[] = $s;
+                    }
+                }
+                $scores = $out;
+            }
+            if (is_resource($fp)) {
+                write_json_to_handle($fp, $scores);
+            } else {
+                write_json(td_scores_file(), $scores);
+            }
+            return $scores;
+        });
+        respond(['ok' => true, 'data' => $scores]);
 
     case 'uptime':
         $startedFile = DATA_DIR . '/started_at.txt';

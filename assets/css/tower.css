@@ -37,6 +37,95 @@ body.tower-page .site-header { z-index: 40; }
 
 .td-back:hover { color: var(--tk-ink); }
 
+/* 地图 3 是 20 列：舞台放宽，否则 1320 的上限会把格子压到 25px 以下 */
+body.is-wide-map .td-stage { max-width: 1600px; }
+
+/* 宽地图下右侧商店栏收窄：只留塔名和价格，描述藏起来，把宽度让给棋盘 */
+body.is-wide-map .td-layout { grid-template-columns: minmax(0, 1fr) 210px; }
+body.is-wide-map .td-shop-desc { display: none; }
+body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; }
+
+/* ----------------------------------------------------------------- 地图选择 */
+
+/* 三张地图做成档案页那种编号卡：等宽编号 + 名称 + 一行说明，当前选中的长出褐色竖条 */
+.td-maps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--tk-gap-2);
+  margin-bottom: var(--tk-gap-3);
+}
+
+.td-map {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: var(--tk-gap-3);
+  padding: var(--tk-gap-2) var(--tk-gap-3);
+  background: var(--tk-file);
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--tk-dur-fast) var(--tk-ease-soft),
+    transform var(--tk-dur-fast) var(--tk-ease);
+}
+
+.td-map:hover { border-color: rgba(20, 22, 26, 0.34); transform: translateY(-1px); }
+
+.td-map::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: var(--tk-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform var(--tk-dur) var(--tk-ease);
+}
+
+.td-map.is-active { border-color: var(--tk-accent); }
+.td-map.is-active::before { transform: scaleY(1); }
+
+.td-map-no {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: 0.1em;
+  color: var(--tk-faint);
+}
+
+.td-map.is-active .td-map-no { color: var(--tk-accent); }
+
+.td-map-body { display: grid; gap: 2px; min-width: 0; }
+
+.td-map-name {
+  font-size: var(--tk-body);
+  font-weight: 700;
+}
+
+.td-map-name i {
+  margin-left: 6px;
+  font-style: normal;
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--tk-faint);
+}
+
+.td-map-desc {
+  font-size: 11.5px;
+  color: var(--tk-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 手机竖屏时提示横屏（只在窄屏竖屏出现） */
+.td-rotate { display: none; }
+
 /* ----------------------------------------------------------------- 布局 */
 
 .td-layout {
@@ -60,6 +149,7 @@ body.tower-page .site-header { z-index: 40; }
 
 .td-hud-item { display: flex; flex-direction: column; gap: 2px; }
 .td-hud-spacer { flex: 1; }
+.td-hud-actions { display: flex; gap: var(--tk-gap-2); flex-wrap: wrap; }
 
 .td-hud-label {
   font-family: var(--tk-mono);
@@ -254,6 +344,22 @@ body.tower-page .site-header { z-index: 40; }
 
 .td-shop-name { font-size: var(--tk-body); font-weight: 700; }
 
+/* 数字快捷键的小方块，提示"按 3 就是它" */
+.td-shop-name kbd {
+  display: inline-block;
+  min-width: 15px;
+  margin-right: 6px;
+  padding: 0 3px;
+  font-family: var(--tk-mono);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 15px;
+  text-align: center;
+  color: var(--tk-faint);
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: 2px;
+}
+
 .td-shop-cost {
   font-family: var(--tk-mono);
   font-size: var(--tk-body);
@@ -430,6 +536,47 @@ body.tower-page .site-header { z-index: 40; }
   background: var(--tk-steel-soft);
 }
 
+/* 分裂者：三个小圆抱成一团 */
+.td-gl-trefoil {
+  border: none;
+  background:
+    radial-gradient(circle at 50% 28%, var(--tk-steel) 0 3px, transparent 3.4px),
+    radial-gradient(circle at 27% 70%, var(--tk-steel) 0 3px, transparent 3.4px),
+    radial-gradient(circle at 73% 70%, var(--tk-steel) 0 3px, transparent 3.4px);
+}
+
+/* 分裂体：一颗小菱形 */
+.td-gl-mote {
+  width: 7px;
+  height: 7px;
+  border: none;
+  background: var(--tk-steel);
+  transform: rotate(45deg);
+}
+
+/* 召唤者：菱形本体 + 两颗卫星 */
+.td-gl-summoner {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border: none;
+  background: var(--tk-steel);
+  transform: rotate(45deg);
+}
+
+.td-gl-summoner::before,
+.td-gl-summoner::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--tk-ink);
+}
+
+.td-gl-summoner::before { top: -4px; left: -4px; }
+.td-gl-summoner::after { bottom: -4px; right: -4px; }
+
 .td-gl-name { font-weight: 600; }
 
 .td-gl-en {
@@ -480,6 +627,9 @@ body.tower-page .site-header { z-index: 40; }
 
 .td-result-card {
   width: min(460px, 100%);
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
   padding: var(--tk-gap-5) var(--tk-gap-5) var(--tk-gap-4);
   background: var(--tk-file);
   border: var(--tk-border) solid var(--tk-line);
@@ -541,6 +691,126 @@ body.tower-page .site-header { z-index: 40; }
 .td-result-actions { display: flex; gap: var(--tk-gap-2); }
 .td-result-actions .td-btn { flex: 1; }
 
+/* 结算卡里的保存表单：和扫雷同一套模式，失败也能保存 */
+.td-save {
+  display: flex;
+  gap: var(--tk-gap-2);
+  margin-bottom: var(--tk-gap-2);
+}
+
+.td-save[hidden] { display: none; }
+
+.td-save input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 var(--tk-gap-3);
+  font: inherit;
+  font-size: 13px;
+  color: var(--tk-ink);
+  background: var(--tk-bone);
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+}
+
+.td-save input:focus { outline: none; border-color: var(--tk-accent); }
+
+.td-save-status {
+  min-height: 1.4em;
+  margin: 0 0 var(--tk-gap-3);
+  font-size: 12px;
+  color: var(--tk-muted);
+}
+
+.td-confirm-title { color: var(--tk-ink); }
+
+/* ----------------------------------------------------------------- 记录榜 */
+
+.td-board { margin-top: var(--tk-gap-4); }
+
+.td-board-tabs { display: flex; gap: 4px; }
+
+.td-board-tab {
+  padding: 3px 9px;
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: 0.06em;
+  color: var(--tk-muted);
+  background: none;
+  border: var(--tk-border) solid transparent;
+  border-radius: var(--tk-radius);
+  cursor: pointer;
+}
+
+.td-board-tab.is-active {
+  color: var(--tk-ink);
+  border-color: var(--tk-line);
+}
+
+.td-board-rule {
+  margin: -6px 0 var(--tk-gap-3);
+  font-size: 11px;
+  color: var(--tk-faint);
+}
+
+.td-board-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  column-gap: var(--tk-gap-5);
+}
+
+.td-board-row {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto auto auto;
+  align-items: baseline;
+  gap: var(--tk-gap-3);
+  padding: 6px 0;
+  border-bottom: var(--tk-border) solid var(--tk-hair);
+  font-size: 12.5px;
+}
+
+.td-board-rank {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  color: var(--tk-faint);
+  text-align: right;
+}
+
+.td-board-row.is-first .td-board-rank { color: var(--tk-gold); font-weight: 600; }
+
+.td-board-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-board-outcome { color: var(--tk-muted); white-space: nowrap; }
+.td-board-won { color: var(--tk-gold); font-weight: 600; }
+
+.td-board-time {
+  font-family: var(--tk-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.td-board-map {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  color: var(--tk-faint);
+}
+
+.td-board-state {
+  margin: var(--tk-gap-2) 0 0;
+  font-size: 12px;
+  color: var(--tk-faint);
+}
+
+.td-board-state:empty { display: none; }
+
 @keyframes tdFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes tdRise {
   from { opacity: 0; transform: translateY(10px); }
@@ -550,10 +820,12 @@ body.tower-page .site-header { z-index: 40; }
 /* ----------------------------------------------------------------- 响应式 */
 
 @media (max-width: 1240px) {
-  /* 地图两侧放不下属性栏时，改成战场在上、两栏并排在下 */
-  .td-arena { grid-template-columns: minmax(0, 1fr); }
+  /* 地图两侧放不下属性栏时，改成战场在上、当前 / 升级后两栏在下并排。
+     宽地图（20 列）下画布宽度不再被两侧 148px 栏挤占，格子能大一圈。 */
+  .td-arena,
+  body.is-wide-map .td-arena { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 
-  .td-canvas-box { grid-row: 1; }
+  .td-canvas-box { grid-row: 1; grid-column: 1 / -1; }
 
   .td-stats {
     grid-row: 2;
@@ -563,8 +835,7 @@ body.tower-page .site-header { z-index: 40; }
   .td-stats-now { grid-column: 1; }
 
   .td-stats-next {
-    grid-column: 1;
-    grid-row: 3;
+    grid-column: 2;
     text-align: left;
   }
 
@@ -574,12 +845,18 @@ body.tower-page .site-header { z-index: 40; }
 }
 
 @media (max-width: 1080px) {
-  .td-layout { grid-template-columns: minmax(0, 1fr); }
+  .td-layout,
+  body.is-wide-map .td-layout { grid-template-columns: minmax(0, 1fr); }
 
   .td-side {
     position: static;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   }
+}
+
+@media (max-width: 760px) {
+  .td-maps { grid-template-columns: minmax(0, 1fr); }
+  .td-map-desc { white-space: normal; }
 }
 
 @media (max-width: 620px) {
@@ -594,6 +871,169 @@ body.tower-page .site-header { z-index: 40; }
   .td-hud-spacer { display: none; }
   .td-hud-value { font-size: 17px; }
   .td-side { grid-template-columns: minmax(0, 1fr); }
+  .td-arena,
+  body.is-wide-map .td-arena { grid-template-columns: minmax(0, 1fr); }
+  .td-stats-next { grid-column: 1; grid-row: 3; }
+  .td-board-row { grid-template-columns: 22px minmax(0, 1fr) auto auto; }
+  .td-board-map { display: none; }
+}
+
+/* 手机竖屏：宽地图会被压得很小，提示横屏 */
+@media (orientation: portrait) and (max-width: 620px) {
+  body.is-wide-map .td-rotate {
+    display: block;
+    margin: 0 0 var(--tk-gap-3);
+    padding: var(--tk-gap-2) var(--tk-gap-3);
+    font-size: 12px;
+    color: var(--tk-muted);
+    border: var(--tk-border) dashed var(--tk-line);
+    border-radius: var(--tk-radius);
+  }
+}
+
+/* ------------------------------------------------- 手机横屏：紧凑布局
+   横屏的瓶颈是高度（网页可用大约 300~340px），所以：
+   网站导航、大标题、提示、页脚、图例全部收起，地图占满一屏的高度；
+   左边一列放 HUD + 地图切换，右边一列放商店；选中塔时右列换成升级对比。
+   记录榜放在这一屏下面，往下滑就能看到。
+   条件要和 ui.js 里的 COMPACT_MQ 保持一致。 */
+@media (orientation: landscape) and (max-height: 560px) {
+  body.tower-page .site-header,
+  .term-head,
+  .td-hint,
+  .td-foot,
+  .td-legend,
+  .td-rotate,
+  .td-stats-now,
+  .td-stats-foot,
+  .td-shop-en,
+  .td-shop-desc,
+  .td-map-desc,
+  .td-map-name i { display: none !important; }
+
+  .td-stage {
+    max-width: none;
+    padding: 0 max(8px, env(safe-area-inset-right)) var(--tk-gap-4) max(8px, env(safe-area-inset-left));
+  }
+
+  /* 一屏三列：左 HUD / 中地图 / 右商店。两侧尽量窄，把宽度让给棋盘 */
+  .td-layout,
+  body.is-wide-map .td-layout {
+    display: grid;
+    grid-template-columns: 118px minmax(0, 1fr) 128px;
+    grid-template-rows: 100svh;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  .td-field { display: contents; }
+
+  .td-hud {
+    grid-column: 1;
+    grid-row: 1;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin: 8px 0;
+    padding: 8px;
+    overflow-y: auto;
+  }
+
+  .td-hud-item { flex-direction: row; justify-content: space-between; align-items: baseline; }
+  .td-hud-value { font-size: 15px; }
+  .td-hud-spacer { display: none; }
+  .td-hud-actions { flex-direction: column; gap: 5px; }
+  .td-hud-actions .td-btn { width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .td-btn { height: 30px; font-size: 12px; padding: 0 6px; }
+  .td-hud { overflow-x: hidden; }
+
+  /* 地图切换：在紧凑布局里改成固定在左列底部的三个小号按钮。
+     它在 DOM 里不属于 .td-layout，所以用 fixed 贴过去，不然会横跨整屏顶部、把地图往下挤 */
+  .td-maps {
+    position: fixed;
+    left: max(8px, env(safe-area-inset-left));
+    bottom: 8px;
+    width: 118px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin: 0;
+    z-index: 4;
+  }
+
+  .td-map { padding: 5px 4px; justify-content: center; }
+  .td-map:hover { transform: none; }
+  .td-map-body { display: none; }
+
+  /* HUD 底部给地图切换留出位置 */
+  .td-hud { margin-bottom: 44px !important; }
+
+  .td-arena {
+    grid-column: 2;
+    grid-row: 1;
+    display: block;
+    margin: 0;
+    padding: 4px 0;
+    box-sizing: border-box;
+    height: 100svh;
+  }
+
+  .td-canvas-box {
+    height: 100%;
+    margin: 0;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .td-side {
+    grid-column: 3;
+    grid-row: 1;
+    position: static;
+    display: block;
+    padding: 8px 0;
+    overflow-y: auto;
+    max-height: 100svh;
+    box-sizing: border-box;
+  }
+
+  .td-card { padding: 8px; }
+  .td-card-title { margin-bottom: 6px; font-size: 12px; }
+  .td-card-note { display: none; }
+  .td-shop { gap: 4px; }
+  .td-shop-item { padding: 5px 7px; }
+  .td-shop-item:hover { transform: none; }
+
+  /* 选中塔时：右列的商店换成"升级后"对比（升级/拆除钮仍在塔顶）。
+     属性栏在 DOM 里属于中间那列，所以用 fixed 把它贴到右列的位置上。 */
+  .td-stats-next { display: none; }
+
+  body.has-selection .td-shop-card { display: none; }
+
+  body.has-selection .td-stats-next.is-on {
+    display: block;
+    position: fixed;
+    top: 8px;
+    right: max(8px, env(safe-area-inset-right));
+    width: 128px;
+    max-height: calc(100svh - 16px);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 8px;
+    background: var(--tk-file);
+    border: var(--tk-border) solid var(--tk-line);
+    border-radius: var(--tk-radius);
+    text-align: left;
+    opacity: 1;
+    z-index: 5;
+  }
+
+  body.has-selection .td-stats-next .td-stats-list > div { flex-direction: row; }
+  .td-stats-name { font-size: 13px; }
+  .td-stats-lv { margin-bottom: 6px; }
+
+  .td-board { margin-top: var(--tk-gap-3); }
 }
 
 @media (prefers-reduced-motion: reduce) {
