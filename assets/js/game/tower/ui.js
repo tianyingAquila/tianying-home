@@ -558,6 +558,7 @@
     var st = t.stats();
     var nx = t.nextStats();
     var chain = t.def.chain;
+    var frostUpgrade = t.key === "frost" && !!nx;
 
     if (this.statsKey !== key) {
       this.statsKey = key;
@@ -593,9 +594,15 @@
             gainRow("射程", st.range, nx.range, 1) +
             (nx.splash ? gainRow("溅射", st.splash, nx.splash, 2) : "") +
             (nx.slow ? gainRow("减速", st.slow * 100, nx.slow * 100, 0, "%") : "") +
-            srow("射速", nx.rate.toFixed(2) + "/s") +
+            (frostUpgrade
+              ? gainRow("射速", st.rate, nx.rate, 2, "/s")
+              : srow("射速", nx.rate.toFixed(2) + "/s")) +
           '</dl>' +
-          '<p class="td-stats-foot">升级只提升伤害与射程<br>射速恒定不变</p>';
+          '<p class="td-stats-foot">' +
+            (frostUpgrade
+              ? '升级提升伤害、射程与射速<br>减速值同步提高'
+              : '升级只提升伤害与射程<br>射速恒定不变') +
+          '</p>';
       } else {
         next.innerHTML =
           '<p class="td-stats-eyebrow">MAX LEVEL</p>' +
