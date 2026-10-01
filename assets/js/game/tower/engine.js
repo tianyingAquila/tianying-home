@@ -219,8 +219,9 @@
     /* 轨炮是瞬时命中的射线，不飞行；其余按速度飞 */
     if (spec.kind === "rail") {
       b.instant = true;
-      b.life = 0.26;        /* 射线可见时长：够看清贯穿了谁，又不拖影 */
-      b.maxLife = 0.26;
+      /* 射线可见时长（游戏内时间，2× 倍速下实际减半）：够看清贯穿了谁，又不拖影 */
+      b.life = 0.34;
+      b.maxLife = 0.34;
       b.speed = 0;
       /* 射线的几何由 resolveHit 填：终点 + 贯穿到的每个命中点 */
       b.beamC = spec.fromC;
@@ -303,7 +304,10 @@
       }
     }
 
-    b.dead = true;
+    /* 瞬时射线（轨炮）不能在这里标死：它开火的同一步就会结算，
+       若标死，紧接着的子弹循环会当场移除它，渲染时射线已经不在了——
+       这正是"轨炮看不到弹道"的根因。射线只靠 life 自然淡出。 */
+    if (!b.instant) { b.dead = true; }
   };
 
   Engine.prototype.towerRange = function (tower) {

@@ -751,7 +751,7 @@
         /* 轨炮弹道：一条深灰褐的射线，0.26 秒内淡出。
            用灰褐而不是纯黑——纯黑在骨白上像把页面划开一刀。
            射线必须画出来：这是玩家判断"这一发贯穿了谁"的唯一依据。 */
-        var k = Math.max(0, b.life / (b.maxLife || 0.26));
+        var k = Math.max(0, b.life / (b.maxLife || 0.34));
         var x0 = this.px(b.fromC);
         var y0 = this.py(b.fromR);
         var x1 = this.px(b.beamC);
@@ -772,7 +772,7 @@
         /* 芯线 */
         ctx.globalAlpha = k * 0.92;
         ctx.strokeStyle = "#4a423b";
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(x0, y0);
         ctx.lineTo(x1, y1);

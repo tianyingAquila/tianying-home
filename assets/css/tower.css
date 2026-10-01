@@ -357,16 +357,15 @@ body.tower-page .site-header { z-index: 40; }
 }
 
 /* 升级后的数值用鼠尾草绿，增量跟在后面 */
-.td-stats-list dd.is-gain { color: var(--tk-gain); }
+.td-stats-list .is-gain { color: var(--tk-gain); }
 
-.td-delta {
-  margin-left: 5px;
-  font-size: 10.5px;
+/* 「35 →」灰色小字在前，升级后的绿色数字在后：不会被误读成"现在已经是 91" */
+.td-from {
+  margin-right: 5px;
+  font-size: 11px;
   font-weight: 500;
-  opacity: 0.8;
+  color: var(--tk-faint);
 }
-
-.td-stats-next .td-delta { margin: 0 5px 0 0; }
 
 .td-stats-record { margin-top: var(--tk-gap-3); }
 .td-stats-record dd { color: var(--tk-muted); font-weight: 500; }
@@ -570,7 +569,6 @@ body.tower-page .site-header { z-index: 40; }
   }
 
   .td-stats-next .td-stats-list > div { flex-direction: row; }
-  .td-stats-next .td-delta { margin: 0 0 0 5px; }
 
   .td-stats:not(.is-on) { display: none; }
 }

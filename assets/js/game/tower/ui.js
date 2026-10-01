@@ -184,6 +184,19 @@
 
     window.addEventListener("resize", function () { self.fit(); });
 
+    /* 点网页上任意空白处都取消当前操作（建造态 / 选中塔）。
+       画布内的点击由 tap() 自己处理；按钮、链接、商店卡、属性栏这些
+       可交互或有内容的地方不算"空白"，点它们不应顺带取消。 */
+    document.addEventListener("click", function (ev) {
+      if (!self.view.buildKey && !self.view.selected) { return; }
+      var el = ev.target;
+      if (el === cv) { return; }
+      if (el.closest && el.closest("button, a, input, .td-shop-item, .td-stats, .td-result")) { return; }
+      self.view.buildKey = null;
+      self.view.selected = null;
+      self.sync();
+    });
+
     /* 键盘：1-4 选塔，空格暂停，Esc 取消，S 倍速 */
     window.addEventListener("keydown", function (ev) {
       if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) { return; }
@@ -422,16 +435,15 @@
       return '<div><dt>' + label + '</dt><dd>' + val + '</dd></div>';
     }
 
-    /* 升级后的值用绿色，并把增量写在后面 */
+    /* 升级后的值写成「当前 → 升级后」，升级后的数用绿色。
+       初版写成「91+56」，会被读成"现在 91、再升 +56"，以为左侧没刷新。 */
     function gainRow(label, from, to, digits, suffix) {
       var sfx = suffix || "";
-      var delta = to - from;
+      var fromShown = digits ? from.toFixed(digits) : Math.round(from);
       var shown = digits ? to.toFixed(digits) : Math.round(to);
-      var dShown = digits ? delta.toFixed(digits) : Math.round(delta);
       return '<div><dt>' + label + '</dt>' +
-        '<dd class="is-gain">' + shown + sfx +
-        (delta > 0 ? '<span class="td-delta">+' + dShown + '</span>' : '') +
-        '</dd></div>';
+        '<dd><span class="td-from">' + fromShown + sfx + ' →</span>' +
+        '<span class="is-gain">' + shown + sfx + '</span></dd></div>';
     }
   };
 
@@ -458,7 +470,7 @@
 
     el.resultTitle.textContent = won ? "防线稳固" : "防线失守";
     el.resultSub.textContent = won
-      ? "十五波全部清除，终点未被突破。"
+      ? "十八波全部清除，终点未被突破。"
       : "第 " + pad2(eng.currentWaveNo()) + " 波时生命耗尽。";
 
     el.result.classList.toggle("is-lost", !won);
