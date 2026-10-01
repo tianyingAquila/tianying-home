@@ -37,7 +37,7 @@
      升级主要提升伤害与射程，除霜滞环外射速恒定。这样升级面板上通常只有两个数字在动，
      玩家一眼就知道自己花钱买到了什么，不必比对一堆属性。
 
-     伤害基准按 1 / 2.6 / 3.9 倍递增；长轨炮的每级伤害增量在此基础上再 +35%。
+     伤害基准按 1 / 2.6 / 3.9 倍递增；长轨炮每级伤害增量再 +35%，穿甲钉每级伤害增量再 -3。
      每级升级费 = 建造费，于是：
        花 2 倍钱：升级得 2.6 倍伤害，另建一座得 2 倍 → 升级高 30%
        花 3 倍钱：升级得 3.9 倍伤害，另建两座得 3 倍 → 升级高 30%
@@ -60,8 +60,8 @@
       shape: "bolt",
       levels: [
         { damage: 10, rate: 2.2, range: 2.6, cost: 0 },
-        { damage: 26, rate: 2.2, range: 3.0, cost: 60 },
-        { damage: 39, rate: 2.2, range: 3.4, cost: 60 }
+        { damage: 23, rate: 2.2, range: 3.0, cost: 60 },
+        { damage: 33, rate: 2.2, range: 3.4, cost: 60 }
       ]
     },
     mortar: {
@@ -85,12 +85,12 @@
       en: "FROST",
       role: "减速控制",
       desc: "命中后大幅拖慢目标。自身伤害低，靠配合别的塔输出。",
-      cost: 90,
+      cost: 125,
       shape: "frost",
       levels: [
         { damage: 10, rate: 1.4, range: 2.4, slow: 0.52, slowTime: 1.5, cost: 0 },
-        { damage: 26, rate: 1.6, range: 2.6, slow: 0.62, slowTime: 1.9, cost: 90 },
-        { damage: 39, rate: 1.8, range: 2.8, slow: 0.72, slowTime: 2.4, cost: 90 }
+        { damage: 26, rate: 1.6, range: 2.6, slow: 0.62, slowTime: 1.9, cost: 125 },
+        { damage: 39, rate: 1.8, range: 2.8, slow: 0.72, slowTime: 2.4, cost: 125 }
       ]
     },
     rail: {
@@ -99,7 +99,7 @@
       en: "RAIL",
       role: "远程狙击",
       desc: "射程覆盖半张图，单发极重还能贯穿三个。但 DPS 低于穿甲钉，怕被小怪淹。",
-      cost: 165,
+      cost: 150,
       shape: "rail",
       pierce: true,
       instant: true,
@@ -107,8 +107,8 @@
          否则它严格优于其他塔，玩家只会一直造它（实测过，会无脑通关）。 */
       levels: [
         { damage: 35, rate: 0.42, range: 5.6, cost: 0 },
-        { damage: 110.6, rate: 0.42, range: 6.8, cost: 165 },
-        { damage: 171.35, rate: 0.42, range: 8.0, cost: 165 }
+        { damage: 110.6, rate: 0.42, range: 6.8, cost: 150 },
+        { damage: 171.35, rate: 0.42, range: 8.0, cost: 150 }
       ]
     },
     aura: {
@@ -117,15 +117,15 @@
       en: "AURA",
       role: "近身全覆盖",
       desc: "射程很短，但每次脉冲对范围内全部敌人造成伤害，专克成群的小怪。",
-      cost: 120,
+      cost: 140,
       shape: "aura",
       aoe: true,
       instant: true,
       /* 和散爆臼分开定位：光环塔打身边、必中、没有弹道；散爆臼打远处、落点有延迟 */
       levels: [
         { damage: 16, rate: 0.8, range: 1.55, cost: 0 },
-        { damage: 42, rate: 0.8, range: 1.85, cost: 120 },
-        { damage: 62, rate: 0.8, range: 2.15, cost: 120 }
+        { damage: 42, rate: 0.8, range: 1.85, cost: 140 },
+        { damage: 62, rate: 0.8, range: 2.15, cost: 140 }
       ]
     },
     chain: {
