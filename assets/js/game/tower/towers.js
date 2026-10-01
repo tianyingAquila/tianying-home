@@ -70,11 +70,14 @@
   /* 目标选择：射程内沿路径走得最远的那个。
      这是塔防里最经典也最合理的策略——优先打最快漏出去的。
      多条路时"走得最远"按各自路线的剩余距离比较（剩得越少越危险）。
-     霜滞环会尽量避开免疫减速的召唤者，打别人才有意义；射程里只剩它时照样打。 */
+     霜滞环优先打可减速、当前尚未减速的敌人，让减速覆盖更多目标；
+     都已减速时再按常规策略选择。免疫减速的召唤者仍放在最后，射程里只剩它时才打。 */
   Tower.prototype.pickTarget = function (enemies, grid) {
     var st = this.stats();
     var range = st.range;
-    var avoidImmune = !!st.slow;
+    var prioritizeUnslowed = !!st.slow;
+    var bestUnslowed = null;
+    var bestUnslowedLeft = Infinity;
     var best = null;
     var bestLeft = Infinity;
     var fallback = null;
@@ -91,7 +94,14 @@
 
       var left = grid ? grid.paths[e.path].length - e.dist : -e.dist;
 
-      if (avoidImmune && e.slowImmune) {
+      if (prioritizeUnslowed && !e.slowImmune && e.slowTime <= 0) {
+        if (left < bestUnslowedLeft) {
+          bestUnslowedLeft = left;
+          bestUnslowed = e;
+        }
+        continue;
+      }
+      if (prioritizeUnslowed && e.slowImmune) {
         if (left < fallbackLeft) { fallbackLeft = left; fallback = e; }
         continue;
       }
@@ -101,7 +111,7 @@
       }
     }
 
-    return best || fallback;
+    return bestUnslowed || best || fallback;
   };
 
   /* 返回要生成的子弹描述，或 null（还在冷却 / 没目标） */

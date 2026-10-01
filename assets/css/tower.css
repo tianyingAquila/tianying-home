@@ -726,7 +726,8 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
 
 /* ----------------------------------------------------------------- 记录榜 */
 
-.td-board { margin-top: var(--tk-gap-4); }
+/* 记录榜属于地图列，右栏只保留商店和敌军识别，避免榜单把整页横向切开。 */
+.td-board { margin-top: var(--tk-gap-3); }
 
 .td-board-tabs { display: flex; gap: 4px; }
 
@@ -921,7 +922,7 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
   body.is-wide-map .td-layout {
     display: grid;
     grid-template-columns: 118px minmax(0, 1fr) 128px;
-    grid-template-rows: 100svh;
+    grid-template-rows: 100svh auto;
     gap: 6px;
     align-items: stretch;
   }
@@ -1033,7 +1034,11 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
   .td-stats-name { font-size: 13px; }
   .td-stats-lv { margin-bottom: 6px; }
 
-  .td-board { margin-top: var(--tk-gap-3); }
+  .td-board {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: var(--tk-gap-3);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

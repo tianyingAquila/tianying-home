@@ -46,8 +46,8 @@
      例外：霜滞环的减速随等级提升。它的全部价值是控制而非伤害，
      若只长伤害，升级它等于花钱买 +6 伤害，会变成纯陷阱选项。
 
-     范围类塔（散爆臼、光环塔）的射程涨幅刻意压小：
-     覆盖面积按射程的平方增长，射程涨多了实际收益会远超 30%。 */
+     散爆臼的射程涨幅刻意压小：覆盖面积按射程的平方增长，
+     射程涨多了实际收益会远超 30%。光环塔则按指定平衡目标每级 +0.3 格。 */
   var TOWERS = {
     bolt: {
       key: "bolt",
@@ -87,9 +87,9 @@
       cost: 90,
       shape: "frost",
       levels: [
-        { damage: 10, rate: 1.4, range: 2.4, slow: 0.42, slowTime: 1.5, cost: 0 },
-        { damage: 26, rate: 1.4, range: 2.8, slow: 0.52, slowTime: 1.9, cost: 90 },
-        { damage: 39, rate: 1.4, range: 3.2, slow: 0.62, slowTime: 2.4, cost: 90 }
+        { damage: 10, rate: 1.4, range: 2.4, slow: 0.52, slowTime: 1.5, cost: 0 },
+        { damage: 26, rate: 1.4, range: 2.8, slow: 0.62, slowTime: 1.9, cost: 90 },
+        { damage: 39, rate: 1.4, range: 3.2, slow: 0.72, slowTime: 2.4, cost: 90 }
       ]
     },
     rail: {
@@ -106,8 +106,8 @@
          否则它严格优于其他塔，玩家只会一直造它（实测过，会无脑通关）。 */
       levels: [
         { damage: 35, rate: 0.42, range: 5.6, cost: 0 },
-        { damage: 91, rate: 0.42, range: 6.3, cost: 165 },
-        { damage: 136, rate: 0.42, range: 7.0, cost: 165 }
+        { damage: 91, rate: 0.42, range: 6.8, cost: 165 },
+        { damage: 136, rate: 0.42, range: 8.0, cost: 165 }
       ]
     },
     aura: {
@@ -123,8 +123,8 @@
       /* 和散爆臼分开定位：光环塔打身边、必中、没有弹道；散爆臼打远处、落点有延迟 */
       levels: [
         { damage: 16, rate: 0.8, range: 1.55, cost: 0 },
-        { damage: 42, rate: 0.8, range: 1.7, cost: 120 },
-        { damage: 62, rate: 0.8, range: 1.85, cost: 120 }
+        { damage: 42, rate: 0.8, range: 1.85, cost: 120 },
+        { damage: 62, rate: 0.8, range: 2.15, cost: 120 }
       ]
     },
     chain: {

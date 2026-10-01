@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="assets/css/tokens.css?v=2">
   <link rel="stylesheet" href="assets/css/style.css?v=18">
   <link rel="stylesheet" href="assets/css/terminal.css?v=2">
-  <link rel="stylesheet" href="assets/css/tower.css?v=5">
+  <link rel="stylesheet" href="assets/css/tower.css?v=6">
 </head>
 <body class="tower-page" data-theme="light">
 
@@ -89,6 +89,20 @@
         </div>
 
         <p class="td-hint" id="tdHint">数字键 1-4 选塔 · 空格 暂停 · S 倍速</p>
+
+        <!-- 记录榜跟着地图列走，右栏留给商店与敌军识别 -->
+        <section class="td-card td-board" id="tdBoard">
+          <h3 class="td-card-title">
+            <span>记录榜 · <span id="tdBoardMap">回廊</span></span>
+            <span class="td-board-tabs" role="tablist">
+              <button class="td-board-tab is-active" data-tab="rank" type="button" role="tab" aria-selected="true">最高记录</button>
+              <button class="td-board-tab" data-tab="latest" type="button" role="tab" aria-selected="false">最新</button>
+            </span>
+          </h3>
+          <p class="td-board-rule" id="tdBoardRule">排名依据：打到的波数 → 剩余生命 → 用时（越短越好）</p>
+          <ol class="td-board-list" id="tdBoardList"></ol>
+          <p class="td-board-state" id="tdBoardState">正在读取记录…</p>
+        </section>
       </section>
 
       <aside class="td-side">
@@ -103,20 +117,6 @@
         </section>
       </aside>
     </div>
-
-    <!-- 记录榜：和扫雷同一套模式。失败也记录 -->
-    <section class="td-card td-board" id="tdBoard">
-      <h3 class="td-card-title">
-        <span>记录榜 · <span id="tdBoardMap">回廊</span></span>
-        <span class="td-board-tabs" role="tablist">
-          <button class="td-board-tab is-active" data-tab="rank" type="button" role="tab" aria-selected="true">最高记录</button>
-          <button class="td-board-tab" data-tab="latest" type="button" role="tab" aria-selected="false">最新</button>
-        </span>
-      </h3>
-      <p class="td-board-rule" id="tdBoardRule">排名依据：打到的波数 → 剩余生命 → 用时（越短越好）</p>
-      <ol class="td-board-list" id="tdBoardList"></ol>
-      <p class="td-board-state" id="tdBoardState">正在读取记录…</p>
-    </section>
 
     <p class="td-foot">POWERED BY TIANYING ARCHIVE <span class="td-foot-rule" aria-hidden="true"></span></p>
   </main>
@@ -156,10 +156,10 @@
   </div>
 
   <script src="assets/js/clock.js?v=1"></script>
-  <script src="assets/js/game/tower/config.js?v=4"></script>
+  <script src="assets/js/game/tower/config.js?v=5"></script>
   <script src="assets/js/game/tower/grid.js?v=4"></script>
   <script src="assets/js/game/tower/enemies.js?v=4"></script>
-  <script src="assets/js/game/tower/towers.js?v=4"></script>
+  <script src="assets/js/game/tower/towers.js?v=5"></script>
   <script src="assets/js/game/tower/engine.js?v=4"></script>
   <script src="assets/js/game/tower/render.js?v=4"></script>
   <script src="assets/js/game/tower/ui.js?v=4"></script>
