@@ -1,0 +1,549 @@
+/* ==========================================================================
+   网格塔防（tower.html）
+   --------------------------------------------------------------------------
+   设计语言同项目档案页：骨白底、等宽小标签、细描边、硬朗直角、克制留白。
+   一律不用发光/霓虹/模糊阴影——深度靠偏移的实色投影表达。
+   色彩职责见 tokens.css 顶部说明。
+   ========================================================================== */
+
+body.tower-page {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--tk-bone);
+  color: var(--tk-ink);
+  font-family: var(--tk-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body.tower-page .site-header { z-index: 40; }
+.tower-page a { color: inherit; text-decoration: none; }
+.tower-page button { font: inherit; color: inherit; }
+
+.td-stage {
+  position: relative;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 var(--tk-edge) var(--tk-gap-5);
+  box-sizing: border-box;
+}
+
+.td-back {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-label);
+  letter-spacing: var(--tk-track-label);
+  color: var(--tk-muted);
+  transition: color var(--tk-dur-fast) var(--tk-ease-soft);
+}
+
+.td-back:hover { color: var(--tk-ink); }
+
+/* ----------------------------------------------------------------- 布局 */
+
+.td-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--tk-gap-4);
+  align-items: start;
+}
+
+/* ----------------------------------------------------------------- HUD */
+
+.td-hud {
+  display: flex;
+  align-items: center;
+  gap: var(--tk-gap-4);
+  padding: var(--tk-gap-3) var(--tk-gap-4);
+  background: var(--tk-file);
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+}
+
+.td-hud-item { display: flex; flex-direction: column; gap: 2px; }
+.td-hud-spacer { flex: 1; }
+
+.td-hud-label {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: var(--tk-track-label);
+  color: var(--tk-faint);
+}
+
+.td-hud-value {
+  font-family: var(--tk-mono);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.td-hud-value small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--tk-faint);
+}
+
+/* 生命告急：唯一会亮暗红的地方之一 */
+#tdLivesBox.is-alert .td-hud-value { color: var(--tk-alert); }
+#tdLivesBox.is-alert .td-hud-label { color: var(--tk-alert); }
+
+/* ----------------------------------------------------------------- 按钮 */
+
+.td-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tk-gap-2);
+  height: 34px;
+  padding: 0 var(--tk-gap-3);
+  background: none;
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color var(--tk-dur-fast) var(--tk-ease-soft),
+    background var(--tk-dur-fast) var(--tk-ease-soft),
+    color var(--tk-dur-fast) var(--tk-ease-soft);
+}
+
+/* display: inline-flex 会盖掉浏览器默认的 [hidden] { display: none }，
+   所以必须显式写回来，否则 JS 里设 hidden 的按钮照样显示 */
+.td-btn[hidden] { display: none; }
+
+.td-btn:hover { border-color: rgba(20, 22, 26, 0.38); }
+
+.td-btn.primary {
+  background: var(--tk-ink);
+  border-color: var(--tk-ink);
+  color: var(--tk-bone);
+}
+
+.td-btn.primary:hover { background: #22262c; }
+
+.td-btn.primary:disabled {
+  background: var(--tk-line);
+  border-color: transparent;
+  color: var(--tk-faint);
+  cursor: not-allowed;
+}
+
+.td-btn.ghost { color: var(--tk-muted); }
+.td-btn.ghost:hover { color: var(--tk-ink); }
+
+.td-speed {
+  font-family: var(--tk-mono);
+  min-width: 46px;
+  font-variant-numeric: tabular-nums;
+}
+
+.td-speed.is-on {
+  border-color: var(--tk-accent);
+  color: var(--tk-accent);
+}
+
+/* ----------------------------------------------------------------- 战场 */
+
+.td-canvas-box {
+  margin-top: var(--tk-gap-3);
+  background: var(--tk-file);
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+  overflow: hidden;
+  line-height: 0;
+}
+
+#tdCanvas {
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.td-hint {
+  margin: var(--tk-gap-2) 0 0;
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: 0.06em;
+  color: var(--tk-faint);
+}
+
+/* ----------------------------------------------------------------- 侧栏卡 */
+
+.td-side {
+  display: grid;
+  gap: var(--tk-gap-3);
+  position: sticky;
+  top: var(--tk-gap-4);
+}
+
+.td-card {
+  padding: var(--tk-gap-3) var(--tk-gap-3) var(--tk-gap-4);
+  background: var(--tk-file);
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+}
+
+.td-card-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 var(--tk-gap-3);
+  font-size: var(--tk-body);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.td-card-note {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: var(--tk-track-label);
+  color: var(--tk-faint);
+  font-weight: 400;
+}
+
+/* ----------------------------------------------------------------- 商店 */
+
+.td-shop { display: grid; gap: var(--tk-gap-2); }
+
+.td-shop-item {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  padding: var(--tk-gap-2) var(--tk-gap-3) var(--tk-gap-3);
+  background: none;
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--tk-dur-fast) var(--tk-ease-soft),
+    background var(--tk-dur-fast) var(--tk-ease-soft),
+    transform var(--tk-dur-fast) var(--tk-ease);
+}
+
+.td-shop-item:hover {
+  border-color: rgba(20, 22, 26, 0.34);
+  transform: translateX(3px);
+}
+
+/* 选中态：左侧褐色竖条 + 淡底，和游戏终端卡片同一手势 */
+.td-shop-item.is-active {
+  border-color: var(--tk-accent);
+  background: var(--tk-accent-soft);
+}
+
+.td-shop-item.is-active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: var(--tk-accent);
+}
+
+/* 买不起：整体压暗，但不禁用（玩家仍可看属性） */
+.td-shop-item.is-poor { opacity: 0.45; }
+
+.td-shop-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--tk-gap-2);
+}
+
+.td-shop-name { font-size: var(--tk-body); font-weight: 700; }
+
+.td-shop-cost {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-body);
+  color: var(--tk-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.td-shop-en {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tk-faint);
+}
+
+.td-shop-desc {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--tk-muted);
+}
+
+/* ----------------------------------------------------------------- 塔详情 */
+
+.td-detail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--tk-gap-3);
+}
+
+.td-detail-name { font-size: var(--tk-body); font-weight: 700; }
+
+.td-detail-lv {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: var(--tk-track-label);
+  color: var(--tk-gold);
+}
+
+.td-detail-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--tk-gap-2) var(--tk-gap-3);
+  margin: 0 0 var(--tk-gap-3);
+}
+
+.td-detail-stats > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--tk-gap-2);
+  padding-bottom: 3px;
+  border-bottom: var(--tk-border) solid var(--tk-hair);
+}
+
+.td-detail-stats dt {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--tk-muted);
+}
+
+.td-detail-stats dd {
+  margin: 0;
+  font-family: var(--tk-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.td-detail-actions {
+  display: flex;
+  gap: var(--tk-gap-2);
+}
+
+.td-detail-actions .td-btn { flex: 1; }
+
+.td-detail-max {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  font-family: var(--tk-mono);
+  font-size: var(--tk-label);
+  letter-spacing: var(--tk-track-label);
+  color: var(--tk-gold);
+  border: var(--tk-border) solid var(--tk-gold-soft);
+  border-radius: var(--tk-radius);
+}
+
+/* ----------------------------------------------------------------- 图例 */
+
+.td-legend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--tk-gap-2);
+}
+
+.td-legend-list li {
+  display: grid;
+  grid-template-columns: 18px auto 1fr;
+  align-items: center;
+  gap: var(--tk-gap-2);
+  font-size: 12px;
+}
+
+/* 图例的小图形用纯 CSS 画，和 canvas 里的形状语法一致 */
+.td-gl {
+  width: 14px;
+  height: 14px;
+  justify-self: center;
+  border: 1.5px solid var(--tk-steel);
+  box-sizing: border-box;
+}
+
+.td-gl-circle { border-radius: 50%; }
+.td-gl-square { border-radius: 1px; }
+
+.td-gl-triangle {
+  width: 0;
+  height: 0;
+  border: none;
+  border-left: 8px solid var(--tk-steel);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+.td-gl-ringed {
+  border-radius: 50%;
+  position: relative;
+  border-style: dashed;
+}
+
+.td-gl-ringed::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--tk-steel-soft);
+}
+
+.td-gl-name { font-weight: 600; }
+
+.td-gl-en {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: 0.06em;
+  color: var(--tk-faint);
+  justify-self: start;
+}
+
+.td-legend-list .td-gl-note {
+  grid-column: 2 / -1;
+  font-size: 11.5px;
+  color: var(--tk-muted);
+}
+
+/* ----------------------------------------------------------------- 页脚 */
+
+.td-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--tk-gap-3);
+  margin: var(--tk-gap-4) 0 0;
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: var(--tk-track-label);
+  color: var(--tk-faint);
+}
+
+.td-foot-rule { display: block; width: 34px; height: 2px; background: var(--tk-ink); }
+
+/* ----------------------------------------------------------------- 结算 */
+
+.td-result {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--tk-gap-4);
+  background: rgba(246, 245, 243, 0.86);
+  backdrop-filter: blur(3px);
+  animation: tdFade var(--tk-dur) var(--tk-ease-soft);
+}
+
+.td-result[hidden] { display: none; }
+
+.td-result-card {
+  width: min(460px, 100%);
+  padding: var(--tk-gap-5) var(--tk-gap-5) var(--tk-gap-4);
+  background: var(--tk-file);
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+  box-shadow: 0 30px 60px -40px rgba(20, 22, 26, 0.5);
+  animation: tdRise var(--tk-dur) var(--tk-ease);
+}
+
+.td-result-eyebrow {
+  margin: 0 0 var(--tk-gap-2);
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: var(--tk-track-label);
+  color: var(--tk-faint);
+}
+
+.td-result-title {
+  margin: 0 0 var(--tk-gap-2);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  /* 胜利用暗金：强化与胜利是同一个语义色 */
+  color: var(--tk-gold);
+}
+
+.td-result.is-lost .td-result-title { color: var(--tk-alert); }
+
+.td-result-sub {
+  margin: 0 0 var(--tk-gap-4);
+  font-size: var(--tk-body);
+  line-height: 1.7;
+  color: var(--tk-muted);
+}
+
+.td-result-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: var(--tk-gap-3);
+  padding: var(--tk-gap-3) 0;
+  border-top: var(--tk-border) solid var(--tk-line);
+  border-bottom: var(--tk-border) solid var(--tk-line);
+  margin-bottom: var(--tk-gap-4);
+}
+
+.td-result-stats > div { display: flex; flex-direction: column; gap: 3px; }
+
+.td-result-k {
+  font-size: 11px;
+  color: var(--tk-faint);
+}
+
+.td-result-v {
+  font-family: var(--tk-mono);
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.td-result-actions { display: flex; gap: var(--tk-gap-2); }
+.td-result-actions .td-btn { flex: 1; }
+
+@keyframes tdFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tdRise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ----------------------------------------------------------------- 响应式 */
+
+@media (max-width: 1080px) {
+  .td-layout { grid-template-columns: minmax(0, 1fr); }
+
+  .td-side {
+    position: static;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .td-stage { padding: 0 var(--tk-gap-3) var(--tk-gap-5); }
+
+  .td-hud {
+    flex-wrap: wrap;
+    gap: var(--tk-gap-3);
+    padding: var(--tk-gap-3);
+  }
+
+  .td-hud-spacer { display: none; }
+  .td-hud-value { font-size: 17px; }
+  .td-side { grid-template-columns: minmax(0, 1fr); }
+  .td-detail-stats { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .td-shop-item,
+  .td-btn,
+  .td-back { transition: none !important; }
+
+  .td-result,
+  .td-result-card { animation: none !important; }
+}

@@ -1,0 +1,117 @@
+/* ==========================================================================
+   终端顶部构件 · 游戏页共用
+   ------------------------------------------------------------------------
+   左上角三行巨号标题 + 右上角走秒读数，是"同一台设备"的视觉锚点。
+   项目档案页（archive.css 里的 .hud-brand / .hud-tools）是这套构件的原型，
+   它的舞台是 position: fixed，所以那边用绝对定位压在画布上；
+   游戏页是正常文档流，所以这里做成流式的一行，靠和吸顶导航的间距对齐。
+
+   对齐依据（实测）：档案页标题距视口顶 103px，吸顶导航高 65px，
+   也就是标题在导航下方 38px。游戏页用 --tk-gap-5(34px) 的上间距取得同样观感，
+   切页时视线落点不动——统一感就来自这个，不是来自多摆几个装饰。
+
+   首页不用这套：首页是"人"的页面（资料卡、随笔、留言），不穿仪器外壳。
+   ========================================================================== */
+
+.term-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--tk-gap-4);
+  padding-top: var(--tk-gap-5);
+  margin-bottom: var(--tk-gap-5);
+}
+
+/* ----------------------------------------------------------------- 左上标题 */
+
+.term-brand {
+  font-weight: 800;
+  letter-spacing: var(--tk-track-display);
+  line-height: 1.08;
+  text-transform: uppercase;
+}
+
+.term-brand strong {
+  display: block;
+  font-size: var(--tk-display);
+}
+
+.term-brand span {
+  display: block;
+  margin: var(--tk-gap-1) 0 2px;
+  font-size: var(--tk-label);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--tk-muted);
+}
+
+/* ----------------------------------------------------------------- 右上工具 */
+
+.term-tools {
+  display: flex;
+  gap: var(--tk-gap-4);
+  align-items: flex-start;
+  font-size: var(--tk-label);
+  letter-spacing: var(--tk-track-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.term-tools button {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: var(--tk-label);
+  letter-spacing: var(--tk-track-label);
+  text-transform: uppercase;
+  color: var(--tk-ink);
+  transition: opacity var(--tk-dur-fast) var(--tk-ease-soft);
+}
+
+.term-tools button:hover { opacity: 0.6; }
+
+/* 读数区：时钟在上，页面自己的状态行在下。
+   同一个构件在不同页面承载不同信息——游戏终端显示程序数量，
+   塔防页显示 WAVE 03 / 15，这比每页放个装饰时钟更像真设备。 */
+.term-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  font-family: var(--tk-mono);
+  font-size: var(--tk-label);
+  letter-spacing: 0.08em;
+}
+
+.term-clock {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-label);
+  letter-spacing: 0.08em;
+  color: var(--tk-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.term-status {
+  color: var(--tk-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.term-status.is-alert { color: var(--tk-alert); }
+
+/* ----------------------------------------------------------------- 移动端 */
+
+@media (max-width: 900px) {
+  .term-brand strong { font-size: 22px; }
+}
+
+@media (max-width: 620px) {
+  .term-head {
+    padding-top: var(--tk-gap-4);
+    margin-bottom: var(--tk-gap-4);
+  }
+}

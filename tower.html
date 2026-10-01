@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <title>网格塔防 · Tianying的巢</title>
+  <meta name="description" content="Tianying 的小站塔防：正交网格布防，四类防御塔三级强化，十五波推进。">
+  <link rel="stylesheet" href="assets/css/tokens.css?v=1">
+  <link rel="stylesheet" href="assets/css/style.css?v=18">
+  <link rel="stylesheet" href="assets/css/terminal.css?v=1">
+  <link rel="stylesheet" href="assets/css/tower.css?v=1">
+</head>
+<body class="tower-page" data-theme="light">
+
+  <header class="site-header">
+    <a class="site-brand" href="index.html">
+      <span class="brand-mark"></span>
+      <span>Tianying的巢</span>
+    </a>
+    <div class="header-actions">
+      <nav class="site-nav-links" aria-label="主导航">
+        <a class="nav-link" href="index.html">首页</a>
+        <a class="nav-link" href="projects.html">项目</a>
+        <a class="nav-link is-current" href="games.html" aria-current="page">游戏</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="td-stage">
+    <div class="term-head">
+      <div class="term-brand">
+        <strong>TIANYING DEFENSE</strong>
+        <span>TACTICAL DEPLOYMENT</span>
+        <strong>DEFENSE OS</strong>
+      </div>
+
+      <div class="term-tools">
+        <a class="td-back" href="games.html">← 游戏终端</a>
+        <div class="term-readout">
+          <span class="term-clock" id="termClock">--:--:--</span>
+          <span class="term-status" id="tdStatus">正在准备…</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="td-layout">
+      <section class="td-field">
+        <div class="td-hud">
+          <div class="td-hud-item" id="tdLivesBox">
+            <span class="td-hud-label">LIVES</span>
+            <span class="td-hud-value" id="tdLives">20</span>
+          </div>
+          <div class="td-hud-item">
+            <span class="td-hud-label">GOLD</span>
+            <span class="td-hud-value" id="tdGold">260</span>
+          </div>
+          <div class="td-hud-item">
+            <span class="td-hud-label">WAVE</span>
+            <span class="td-hud-value"><span id="tdWave">01</span><small> / <span id="tdWaveTotal">15</span></small></span>
+          </div>
+
+          <div class="td-hud-spacer"></div>
+
+          <button class="td-btn primary" id="tdStart" type="button">开始防守</button>
+          <button class="td-btn ghost" id="tdCall" type="button" hidden>提前开始</button>
+          <button class="td-btn ghost" id="tdPause" type="button" hidden>暂停</button>
+          <button class="td-btn ghost td-speed" id="tdSpeed" type="button" title="切换倍速（S）">1×</button>
+        </div>
+
+        <div class="td-canvas-box">
+          <canvas id="tdCanvas" aria-label="塔防战场"></canvas>
+        </div>
+
+        <p class="td-hint" id="tdHint">数字键 1-4 选塔 · 空格 暂停 · S 倍速</p>
+      </section>
+
+      <aside class="td-side">
+        <section class="td-card">
+          <h3 class="td-card-title"><span>防御塔</span><span class="td-card-note">点选后放置</span></h3>
+          <div class="td-shop" id="tdShop"></div>
+        </section>
+
+        <section class="td-card td-detail" id="tdDetail" hidden></section>
+
+        <section class="td-card td-legend">
+          <h3 class="td-card-title"><span>敌军识别</span></h3>
+          <ul class="td-legend-list">
+            <li><span class="td-gl td-gl-circle" aria-hidden="true"></span><span class="td-gl-name">巡飞</span><span class="td-gl-en">DRONE</span><span class="td-gl-note">常规，成群出现</span></li>
+            <li><span class="td-gl td-gl-triangle" aria-hidden="true"></span><span class="td-gl-name">疾突</span><span class="td-gl-en">RUSHER</span><span class="td-gl-note">极快，血薄</span></li>
+            <li><span class="td-gl td-gl-square" aria-hidden="true"></span><span class="td-gl-name">重载</span><span class="td-gl-en">HAULER</span><span class="td-gl-note">厚甲，迟缓</span></li>
+            <li><span class="td-gl td-gl-ringed" aria-hidden="true"></span><span class="td-gl-name">监护者</span><span class="td-gl-en">WARDEN</span><span class="td-gl-note">首领，漏掉扣 3 生命</span></li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+
+    <p class="td-foot">POWERED BY TIANYING ARCHIVE <span class="td-foot-rule" aria-hidden="true"></span></p>
+  </main>
+
+  <div class="td-result" id="tdResult" hidden>
+    <div class="td-result-card" role="dialog" aria-modal="true" aria-label="本局结算">
+      <p class="td-result-eyebrow">DEFENSE REPORT</p>
+      <h3 class="td-result-title" id="tdResultTitle">防线稳固</h3>
+      <p class="td-result-sub" id="tdResultSub"></p>
+      <div class="td-result-stats" id="tdResultStats"></div>
+      <div class="td-result-actions">
+        <button class="td-btn primary" id="tdRestart" type="button">再来一局</button>
+        <a class="td-btn ghost" href="games.html">返回终端</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/clock.js?v=1"></script>
+  <script src="assets/js/game/tower/config.js?v=1"></script>
+  <script src="assets/js/game/tower/grid.js?v=1"></script>
+  <script src="assets/js/game/tower/enemies.js?v=1"></script>
+  <script src="assets/js/game/tower/towers.js?v=1"></script>
+  <script src="assets/js/game/tower/engine.js?v=1"></script>
+  <script src="assets/js/game/tower/render.js?v=1"></script>
+  <script src="assets/js/game/tower/ui.js?v=1"></script>
+</body>
+</html>

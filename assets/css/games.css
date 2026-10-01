@@ -1,0 +1,205 @@
+/* ==========================================================================
+   游戏终端首页（games.html）
+   设计语言同项目档案页：骨白底、等宽编号、细线、悬停位移。
+   ========================================================================== */
+
+body.games-page {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--tk-bone);
+  color: var(--tk-ink);
+  font-family: var(--tk-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body.games-page .site-header { z-index: 40; }
+.games-page a { color: inherit; text-decoration: none; }
+
+.hub-stage {
+  position: relative;
+  min-height: 100vh;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--tk-edge) var(--tk-gap-5);
+  box-sizing: border-box;
+}
+
+/* 标题与右上读数用 terminal.css 的绝对定位构件，这里只给列表留出让位空间 */
+.hub-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--tk-gap-3);
+}
+
+/* ----------------------------------------------------------------- 档案卡 */
+
+.hub-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--tk-gap-4);
+  padding: var(--tk-gap-4) var(--tk-gap-4) var(--tk-gap-4) var(--tk-gap-3);
+  background: var(--tk-file);
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+  box-shadow: 0 12px 24px -22px rgba(20, 22, 26, 0.5);
+  transition:
+    transform var(--tk-dur-fast) var(--tk-ease),
+    border-color var(--tk-dur-fast) var(--tk-ease-soft),
+    box-shadow var(--tk-dur-fast) var(--tk-ease-soft);
+}
+
+/* 左侧那道褐色竖条平时收起，悬停时长出来——唯一的强调色用在"可进入" */
+.hub-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--tk-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform var(--tk-dur) var(--tk-ease);
+}
+
+.hub-card:hover,
+.hub-card:focus-visible {
+  transform: translateX(6px);
+  border-color: rgba(20, 22, 26, 0.34);
+  box-shadow: 0 18px 30px -24px rgba(20, 22, 26, 0.55);
+  outline: none;
+}
+
+.hub-card:hover::before,
+.hub-card:focus-visible::before { transform: scaleY(1); }
+
+.hub-no {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: 0.1em;
+  color: var(--tk-faint);
+  align-self: start;
+  padding-top: 3px;
+}
+
+.hub-body { display: block; }
+
+.hub-title {
+  display: block;
+  font-size: var(--tk-title);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.hub-en {
+  display: block;
+  margin: 3px 0 var(--tk-gap-2);
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: var(--tk-track-label);
+  text-transform: uppercase;
+  color: var(--tk-faint);
+}
+
+.hub-desc {
+  display: block;
+  max-width: 56ch;
+  font-size: var(--tk-body);
+  line-height: 1.7;
+  color: var(--tk-muted);
+}
+
+.hub-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--tk-gap-3);
+  white-space: nowrap;
+}
+
+.hub-tag {
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: var(--tk-track-label);
+  color: var(--tk-muted);
+  padding: 3px 8px;
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+}
+
+.hub-enter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tk-gap-2);
+  font-family: var(--tk-mono);
+  font-size: var(--tk-label);
+  letter-spacing: var(--tk-track-label);
+  color: var(--tk-ink);
+}
+
+/* ACCESS 后面那条线，悬停时伸长：借档案页 ACCESS FILE 的手势 */
+.hub-enter i {
+  display: block;
+  width: 26px;
+  height: 1px;
+  background: var(--tk-ink);
+  transition: width var(--tk-dur) var(--tk-ease);
+}
+
+.hub-card:hover .hub-enter i,
+.hub-card:focus-visible .hub-enter i { width: 44px; }
+
+/* ----------------------------------------------------------------- 页脚 */
+
+.hub-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--tk-gap-3);
+  margin: var(--tk-gap-5) 0 0;
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: var(--tk-track-label);
+  color: var(--tk-faint);
+}
+
+.hub-foot-rule {
+  display: block;
+  width: 34px;
+  height: 2px;
+  background: var(--tk-ink);
+}
+
+/* ----------------------------------------------------------------- 移动端 */
+
+@media (max-width: 760px) {
+  .hub-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .hub-meta {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: var(--tk-gap-3);
+  }
+}
+
+@media (max-width: 620px) {
+  .hub-stage {
+    padding: 0 var(--tk-gap-3) var(--tk-gap-5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-card,
+  .hub-card::before,
+  .hub-enter i { transition: none !important; }
+}

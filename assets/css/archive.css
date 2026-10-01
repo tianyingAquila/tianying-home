@@ -4,16 +4,18 @@
    Copyright (c) 2026 LBEILC — 原许可证全文见 assets/data/RHINELABUI-LICENSE.txt
    ========================================================================== */
 
+/* 档案页的变量现在指向全站令牌（assets/css/tokens.css）。
+   保留 --arc-* 这层别名是为了不动下面 800 行选择器；令牌是唯一改色入口。 */
 :root {
-  --arc-bg: #f6f5f3;
-  --arc-ink: #14161a;
-  --arc-muted: rgba(20, 22, 26, 0.46);
-  --arc-faint: rgba(20, 22, 26, 0.26);
-  --arc-line: rgba(20, 22, 26, 0.16);
-  --arc-file: #ffffff;
-  --arc-accent: #b4794a;
-  --arc-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
-  --arc-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+  --arc-bg: var(--tk-bone);
+  --arc-ink: var(--tk-ink);
+  --arc-muted: var(--tk-muted);
+  --arc-faint: var(--tk-faint);
+  --arc-line: var(--tk-line);
+  --arc-file: var(--tk-file);
+  --arc-accent: var(--tk-accent);
+  --arc-sans: var(--tk-sans);
+  --arc-mono: var(--tk-mono);
 }
 
 body.archive-page .site-header { z-index: 40; }
