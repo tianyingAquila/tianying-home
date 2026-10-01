@@ -766,11 +766,18 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
 .td-board-row {
   display: grid;
   grid-template-columns: 26px minmax(0, 1fr) auto auto auto;
-  align-items: baseline;
+  align-items: center;
   gap: var(--tk-gap-3);
   padding: 6px 0;
   border-bottom: var(--tk-border) solid var(--tk-hair);
   font-size: 12.5px;
+}
+
+.td-board-player {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
 }
 
 .td-board-rank {
@@ -783,10 +790,29 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
 .td-board-row.is-first .td-board-rank { color: var(--tk-gold); font-weight: 600; }
 
 .td-board-name {
+  flex: 1;
+  min-width: 0;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.td-board-detail {
+  flex: none;
+  padding: 2px 6px;
+  font-family: var(--tk-mono);
+  font-size: 10px;
+  color: var(--tk-muted);
+  background: none;
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+  cursor: pointer;
+}
+
+.td-board-detail:hover {
+  color: var(--tk-ink);
+  border-color: rgba(20, 22, 26, 0.38);
 }
 
 .td-board-outcome { color: var(--tk-muted); white-space: nowrap; }
@@ -811,6 +837,46 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
 }
 
 .td-board-state:empty { display: none; }
+
+/* ----------------------------------------------------------------- 最终部署详情 */
+
+.td-deployment-card {
+  width: min(960px, 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.td-deployment-card .td-result-title {
+  margin-bottom: var(--tk-gap-2);
+  color: var(--tk-ink);
+}
+
+.td-deployment-card .td-result-sub {
+  margin-bottom: var(--tk-gap-3);
+}
+
+.td-deployment-canvas-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: min(58svh, 540px);
+  min-height: 220px;
+  padding: 8px;
+  box-sizing: border-box;
+  background: var(--tk-bone);
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+  overflow: hidden;
+}
+
+#tdDeploymentCanvas { display: block; }
+
+.td-deployment-state {
+  min-height: 1.4em;
+  margin: var(--tk-gap-2) 0 0;
+  font-size: 12px;
+  color: var(--tk-muted);
+}
 
 @keyframes tdFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes tdRise {

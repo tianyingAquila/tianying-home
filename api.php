@@ -293,6 +293,57 @@ function td_scores_file(): string
 }
 
 const TD_MAP_WAVES = [1 => 18, 2 => 18, 3 => 20];
+const TD_MAP_SIZE = [1 => [15, 11], 2 => [15, 11], 3 => [20, 11]];
+const TD_MAP_TOWERS = [
+    1 => ['bolt', 'mortar', 'frost', 'rail'],
+    2 => ['bolt', 'mortar', 'frost', 'rail', 'aura'],
+    3 => ['bolt', 'mortar', 'frost', 'rail', 'aura', 'chain'],
+];
+
+// 最终部署允许为空（例如把塔全拆了），但不接受非法塔种、越界坐标、重复格或未知等级。
+function normalize_td_deployment($raw, int $map): ?array
+{
+    if (!is_array($raw) || count($raw) > 80 || !isset(TD_MAP_SIZE[$map], TD_MAP_TOWERS[$map])) {
+        return null;
+    }
+    [$cols, $rows] = TD_MAP_SIZE[$map];
+    $allowed = TD_MAP_TOWERS[$map];
+    $seen = [];
+    $out = [];
+    foreach ($raw as $item) {
+        if (!is_array($item)) {
+            return null;
+        }
+        $type = (string) ($item['type'] ?? '');
+        $c = filter_var($item['c'] ?? null, FILTER_VALIDATE_INT);
+        $r = filter_var($item['r'] ?? null, FILTER_VALIDATE_INT);
+        $level = filter_var($item['level'] ?? null, FILTER_VALIDATE_INT);
+        if (!in_array($type, $allowed, true) || $c === false || $r === false || $level === false) {
+            return null;
+        }
+        if ($c < 0 || $c >= $cols || $r < 0 || $r >= $rows || $level < 1 || $level > 3) {
+            return null;
+        }
+        $key = $c . ',' . $r;
+        if (isset($seen[$key])) {
+            return null;
+        }
+        $seen[$key] = true;
+        $out[] = ['type' => $type, 'c' => $c, 'r' => $r, 'level' => $level];
+    }
+    return $out;
+}
+
+function public_td_score(array $score): array
+{
+    unset($score['deployment']);
+    return $score;
+}
+
+function public_td_scores(array $scores): array
+{
+    return array_map('public_td_score', $scores);
+}
 
 // 项目页的档案数据：仓库里的 assets/data/archives.json 是种子，
 // 后台改过的四个字段（名称/类型/状态/概述）存在 data/archives.json，
@@ -366,7 +417,30 @@ switch ($action) {
         respond(['ok' => true, 'data' => read_json(ms_scores_file(), [])], 200, 60);
 
     case 'td_scores':
-        respond(['ok' => true, 'data' => read_json(td_scores_file(), [])], 200, 30);
+        respond(['ok' => true, 'data' => public_td_scores(read_json(td_scores_file(), []))], 200, 30);
+
+    case 'td_deployment':
+        $id = (string) ($_GET['id'] ?? '');
+        if (!preg_match('/^[a-f0-9]{12}$/', $id)) {
+            respond(['ok' => false, 'error' => '记录编号不正确'], 400);
+        }
+        foreach (read_json(td_scores_file(), []) as $score) {
+            if (($score['id'] ?? '') !== $id) {
+                continue;
+            }
+            if (($score['hasDeployment'] ?? false) !== true || !is_array($score['deployment'] ?? null)) {
+                respond(['ok' => false, 'error' => '这条记录没有部署详情'], 404);
+            }
+            respond([
+                'ok' => true,
+                'data' => [
+                    'id' => $id,
+                    'map' => (int) ($score['map'] ?? 0),
+                    'deployment' => $score['deployment'],
+                ],
+            ], 200, 300);
+        }
+        respond(['ok' => false, 'error' => '找不到这条记录'], 404);
 
     case 'td_score':
         if ($method !== 'POST') {
@@ -388,6 +462,14 @@ switch ($action) {
         $lives = (int) ($body['lives'] ?? -1);
         $won = ($body['won'] ?? false) === true;
         $timeMs = (int) ($body['timeMs'] ?? 0);
+        $hasDeployment = array_key_exists('deployment', $body);
+        $deployment = null;
+        if ($hasDeployment) {
+            $deployment = normalize_td_deployment($body['deployment'], $map);
+            if ($deployment === null) {
+                respond(['ok' => false, 'error' => '部署数据不合法'], 400);
+            }
+        }
         if ($wave < 1 || $wave > $total || $lives < 0 || $lives > 20) {
             respond(['ok' => false, 'error' => '成绩数据不合法'], 400);
         }
@@ -412,7 +494,11 @@ switch ($action) {
             'won' => $won,
             'timeMs' => $timeMs,
             'createdAt' => time(),
+            'hasDeployment' => $hasDeployment,
         ];
+        if ($hasDeployment) {
+            $record['deployment'] = $deployment;
+        }
         $scores = with_file_lock(td_scores_file(), function ($fp) use ($record) {
             $scores = is_resource($fp)
                 ? read_json_from_handle($fp, [])
@@ -444,7 +530,7 @@ switch ($action) {
             }
             return $scores;
         });
-        respond(['ok' => true, 'data' => $scores]);
+        respond(['ok' => true, 'data' => public_td_scores($scores)]);
 
     case 'uptime':
         $startedFile = DATA_DIR . '/started_at.txt';

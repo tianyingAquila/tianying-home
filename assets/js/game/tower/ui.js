@@ -31,6 +31,8 @@
     this.boardTab = "rank";
     this.saved = false;         /* 本局成绩是否已保存（一局只能存一次） */
     this.pendingMap = null;     /* 等待确认要切去的地图 */
+    this.deployEng = null;      /* 排行榜详情里的只读部署 */
+    this.deployRd = new TD.Renderer($("tdDeploymentCanvas"));
 
     this.el = {
       maps: $("tdMaps"),
@@ -67,7 +69,14 @@
       confirm: $("tdConfirm"),
       confirmTitle: $("tdConfirmTitle"),
       confirmYes: $("tdConfirmYes"),
-      confirmNo: $("tdConfirmNo")
+      confirmNo: $("tdConfirmNo"),
+      deployment: $("tdDeployment"),
+      deploymentTitle: $("tdDeploymentTitle"),
+      deploymentMeta: $("tdDeploymentMeta"),
+      deploymentBox: $("tdDeploymentBox"),
+      deploymentCanvas: $("tdDeploymentCanvas"),
+      deploymentState: $("tdDeploymentState"),
+      deploymentClose: $("tdDeploymentClose")
     };
 
     this.buildMaps();
@@ -329,6 +338,20 @@
       self.el.confirm.hidden = true;
     });
 
+    this.el.deploymentClose.addEventListener("click", function () {
+      self.closeDeployment();
+    });
+
+    this.el.deployment.addEventListener("click", function (ev) {
+      if (ev.target === self.el.deployment) { self.closeDeployment(); }
+    });
+
+    this.el.boardList.addEventListener("click", function (ev) {
+      var btn = ev.target && ev.target.closest ? ev.target.closest(".td-board-detail") : null;
+      if (!btn || !btn.dataset.id) { return; }
+      self.openDeployment(btn.dataset.id);
+    });
+
     var tabs = document.querySelectorAll(".td-board-tab");
     Array.prototype.forEach.call(tabs, function (tab) {
       tab.addEventListener("click", function () {
@@ -342,7 +365,10 @@
       });
     });
 
-    window.addEventListener("resize", function () { self.fit(); });
+    window.addEventListener("resize", function () {
+      self.fit();
+      self.fitDeployment();
+    });
     window.addEventListener("orientationchange", function () {
       window.setTimeout(function () { self.fit(); }, 120);
     });
@@ -363,6 +389,11 @@
     /* 键盘：1-N 选塔（N = 这张图的塔数），空格暂停，Esc 取消，S 倍速 */
     window.addEventListener("keydown", function (ev) {
       if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) { return; }
+
+      if (ev.key === "Escape" && !self.el.deployment.hidden) {
+        self.closeDeployment();
+        return;
+      }
 
       var keys = self.eng.towerKeys();
       var n = parseInt(ev.key, 10);
@@ -738,12 +769,17 @@
         : '第 ' + s.wave + ' / ' + s.total + ' 波';
       li.innerHTML =
         '<span class="td-board-rank">' + (self.boardTab === "rank" ? (idx + 1) : "·") + '</span>' +
-        '<span class="td-board-name"></span>' +
+        '<span class="td-board-player">' +
+          '<span class="td-board-name"></span>' +
+          (s.hasDeployment === true ? '<button class="td-board-detail" type="button">详情</button>' : '') +
+        '</span>' +
         '<span class="td-board-outcome">' + outcome + '</span>' +
         '<span class="td-board-time">' + fmtTime(s.timeMs / 1000) + '</span>' +
         (self.boardTab === "latest" ? '<span class="td-board-map">' + m.name + '</span>' : '');
       /* 名字是访客输入的，用 textContent 写入，不拼进 HTML */
       li.querySelector(".td-board-name").textContent = s.name || "匿名玩家";
+      var detailBtn = li.querySelector(".td-board-detail");
+      if (detailBtn) { detailBtn.dataset.id = s.id; }
       li.title = "保存时间：" + new Date(s.createdAt * 1000).toLocaleString("zh-CN", { hour12: false });
       list.appendChild(li);
     });
@@ -770,7 +806,10 @@
         wave: eng.reachedWave(),
         lives: eng.lives,
         won: eng.state === "won",
-        timeMs: Math.round(eng.realTime * 1000)
+        timeMs: Math.round(eng.realTime * 1000),
+        deployment: eng.towers.map(function (t) {
+          return { type: t.key, c: t.c, r: t.r, level: t.level };
+        })
       })
     })
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
@@ -786,6 +825,66 @@
         el.saveStatus.textContent = (err && err.message) || "保存失败，稍后再试。";
         el.saveBtn.disabled = false;
       });
+  };
+
+  /* 排行榜详情：从服务器拿到某一局的最终塔位，用只读引擎重绘。 */
+  TowerGame.prototype.openDeployment = function (id) {
+    var self = this;
+    var record = this.scores.find(function (s) { return s.id === id; });
+    var el = this.el;
+    el.deployment.hidden = false;
+    el.deploymentTitle.textContent = (record && record.name ? record.name : "匿名玩家") + "的最终部署";
+    el.deploymentMeta.textContent = record
+      ? cfg.mapById(record.map).name + " · 第 " + record.wave + " / " + record.total + " 波 · 余 " + record.lives + " 命"
+      : "";
+    el.deploymentState.textContent = "正在读取部署…";
+
+    fetch("api.php?action=td_deployment&id=" + encodeURIComponent(id), { credentials: "same-origin" })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.d.ok || !res.d.data || !Array.isArray(res.d.data.deployment)) {
+          throw new Error(res.d.error || "读取失败");
+        }
+        var eng = new TD.Engine(res.d.data.map);
+        eng.gold = 999999;
+        res.d.data.deployment.forEach(function (item) {
+          if (!eng.build(item.type, item.c, item.r)) { throw new Error("部署数据不完整"); }
+          var t = eng.grid.towerAt(item.c, item.r);
+          while (t && t.level < item.level) {
+            if (!eng.upgrade(t)) { throw new Error("部署等级数据不完整"); }
+          }
+        });
+        self.deployEng = eng;
+        el.deploymentState.textContent = "共 " + res.d.data.deployment.length + " 座塔";
+        self.fitDeployment();
+      })
+      .catch(function (err) {
+        self.deployEng = null;
+        el.deploymentState.textContent = (err && err.message) || "部署读取失败，请稍后再试。";
+      });
+  };
+
+  TowerGame.prototype.closeDeployment = function () {
+    this.el.deployment.hidden = true;
+    this.deployEng = null;
+  };
+
+  TowerGame.prototype.fitDeployment = function () {
+    if (this.el.deployment.hidden || !this.deployEng) { return; }
+    var map = this.deployEng.map;
+    var box = this.el.deploymentBox;
+    var availW = Math.max(180, box.clientWidth - 16);
+    var availH = Math.max(140, box.clientHeight - 16);
+    var ratio = map.rows / map.cols;
+    var w = availW;
+    var h = Math.round(w * ratio);
+    if (h > availH) {
+      h = availH;
+      w = Math.round(h / ratio);
+    }
+    this.deployRd.setGrid(map.cols, map.rows);
+    this.deployRd.resize(w, h);
+    this.deployRd.draw(this.deployEng, { hover: null, buildKey: null, selected: null });
   };
 
   /* ------------------------------------------------------------------ 循环 */
