@@ -21,6 +21,7 @@
   function TowerGame() {
     this.eng = new TD.Engine(initialMap());
     this.eng.enableActionLog();
+    this.submissionId = newSubmissionId();
     this.canvas = $("tdCanvas");
     this.rd = new TD.Renderer(this.canvas);
 
@@ -103,6 +104,15 @@
     try { window.localStorage.setItem(k, v); } catch (e) { /* 隐私模式下忽略 */ }
   }
 
+  function newSubmissionId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID().replace(/-/g, "");
+    }
+    var bytes = [];
+    for (var i = 0; i < 16; i++) { bytes.push(Math.floor(Math.random() * 256)); }
+    return bytes.map(function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+  }
+
   /* ------------------------------------------------------------------ 地图 */
 
   TowerGame.prototype.buildMaps = function () {
@@ -143,6 +153,7 @@
   TowerGame.prototype.switchMap = function (id) {
     this.eng.setMap(id);
     this.eng.enableActionLog();
+    this.submissionId = newSubmissionId();
     storeSet(MAP_KEY, String(id));
     /* 地址栏同步，刷新或分享链接都会停在这张图 */
     if (window.history && window.history.replaceState) {
@@ -311,6 +322,7 @@
     function restart() {
       self.eng.reset();
       self.eng.enableActionLog();
+      self.submissionId = newSubmissionId();
       self.view = { hover: null, buildKey: null, selected: null };
       self.saved = false;
       self.el.result.hidden = true;
@@ -817,6 +829,7 @@
       body: JSON.stringify({
         name: name,
         version: cfg.VERSION,
+        submissionId: self.submissionId,
         map: eng.map.id,
         wave: eng.reachedWave(),
         lives: eng.lives,

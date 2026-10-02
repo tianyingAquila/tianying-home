@@ -354,7 +354,7 @@ function public_td_score(array $score): array
     if (!isset($score['replayStatus']) || !is_string($score['replayStatus'])) {
         $score['replayStatus'] = 'none';
     }
-    unset($score['deployment'], $score['actions'], $score['replayResult']);
+    unset($score['deployment'], $score['actions'], $score['replayResult'], $score['submissionId'], $score['dedupeKey'], $score['replayBackfilledAt']);
     return $score;
 }
 
@@ -421,6 +421,25 @@ function normalize_td_actions($raw, int $map): ?array
         $lastTick = $tick;
     }
     return $out;
+}
+
+function find_td_duplicate(array $scores, array $record): ?array
+{
+    $submissionId = (string) ($record['submissionId'] ?? '');
+    $dedupeKey = (string) ($record['dedupeKey'] ?? '');
+    $createdAt = (int) ($record['createdAt'] ?? time());
+    foreach ($scores as $score) {
+        if (!is_array($score)) {
+            continue;
+        }
+        if ($submissionId !== '' && ($score['submissionId'] ?? '') === $submissionId) {
+            return $score;
+        }
+        if ($dedupeKey !== '' && ($score['dedupeKey'] ?? '') === $dedupeKey && abs($createdAt - (int) ($score['createdAt'] ?? 0)) <= 600) {
+            return $score;
+        }
+    }
+    return null;
 }
 
 // 一次性 Node CLI 复核。服务端不常驻进程、不开端口；出错一律返回 null，
@@ -733,6 +752,30 @@ switch ($action) {
             respond(['ok' => false, 'error' => '用时不合法'], 400);
         }
 
+        $submissionId = strtolower(trim((string) ($body['submissionId'] ?? '')));
+        if ($submissionId !== '' && !preg_match('/^[a-f0-9-]{16,64}$/', $submissionId)) {
+            respond(['ok' => false, 'error' => '提交编号不正确'], 400);
+        }
+        if ($submissionId === '') {
+            // 兼容旧页面：没有提交编号时仍生成一个，主要依靠内容指纹防重。
+            $submissionId = bin2hex(random_bytes(12));
+        }
+        $dedupeKey = hash('sha256', json_encode([
+            'version' => TD_CURRENT_VERSION,
+            'name' => $name,
+            'map' => $map,
+            'wave' => $wave,
+            'lives' => $lives,
+            'gold' => $gold,
+            'kills' => $kills,
+            'leaked' => $leaked,
+            'built' => $built,
+            'won' => $won,
+            'timeMs' => $timeMs,
+            'deployment' => $deployment,
+            'actions' => $actions ?? [],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '');
+
         $record = [
             'id' => bin2hex(random_bytes(6)),
             'name' => $name,
@@ -748,11 +791,18 @@ switch ($action) {
             'won' => $won,
             'timeMs' => $timeMs,
             'createdAt' => time(),
+            'submissionId' => $submissionId,
+            'dedupeKey' => $dedupeKey,
             'hasDeployment' => true,
             'deployment' => $deployment,
             'hasReplay' => $hasReplay,
             'replayStatus' => 'none',
         ];
+        $currentScores = read_json(td_scores_file(), []);
+        if (find_td_duplicate($currentScores, $record) !== null) {
+            respond(['ok' => true, 'duplicate' => true, 'data' => public_td_scores($currentScores)]);
+        }
+
         if ($hasReplay) {
             $record['actions'] = $actions;
             $check = run_td_replay_check([
@@ -786,10 +836,13 @@ switch ($action) {
             }
         }
 
-        $scores = with_file_lock(td_scores_file(), function ($fp) use ($record) {
+        $saved = with_file_lock(td_scores_file(), function ($fp) use ($record) {
             $scores = is_resource($fp)
                 ? read_json_from_handle($fp, [])
                 : read_json(td_scores_file(), []);
+            if (find_td_duplicate($scores, $record) !== null) {
+                return ['scores' => $scores, 'duplicate' => true];
+            }
             array_unshift($scores, $record);
             // 最多留 300 条；超出时删最旧的，但每张图排行前 20 名永远保留，免得好成绩被刷掉。
             if (count($scores) > 300) {
@@ -815,9 +868,13 @@ switch ($action) {
             } else {
                 write_json(td_scores_file(), $scores);
             }
-            return $scores;
+            return ['scores' => $scores, 'duplicate' => false];
         });
-        respond(['ok' => true, 'data' => public_td_scores($scores)]);
+        respond([
+            'ok' => true,
+            'duplicate' => !empty($saved['duplicate']),
+            'data' => public_td_scores(is_array($saved['scores'] ?? null) ? $saved['scores'] : []),
+        ]);
 
     case 'uptime':
         $startedFile = DATA_DIR . '/started_at.txt';
