@@ -1,6 +1,6 @@
 /* ==========================================================================
    扫雷小游戏面板
-   配色取自 tokens.css；保留原有布局、状态与动画。
+   配色取自 tokens.css，与塔防地图共用暖白与语义色。
    ========================================================================== */
 
 body.minesweeper-page,
@@ -25,7 +25,7 @@ body.minesweeper-page[data-theme="light"] {
   --ms-gold-rgb: 154, 123, 63;
   --ms-alert-rgb: 156, 74, 63;
   --ms-mist: #e0e6e9;
-  --ms-tile: #e7e8e7;
+  --ms-tile: var(--tk-bone-warm);
 }
 
 body.minesweeper-page .brand-mark {
@@ -74,16 +74,25 @@ body.game-open {
   background-color: var(--tk-bone);
 }
 
-/* 上扫光束：只让"光束附近的网格线"发亮，并随距离渐隐 */
+/* 常驻菱形线，叠加一层向上扫过的强调线。 */
 .game-beam {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='78' height='78'%3E%3Cpath d='M0 39 39 0 78 39 39 78Z' fill='none' stroke='%234a6b82' stroke-opacity='.08'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='78' height='78'%3E%3Cpath d='M0 39 39 0 78 39 39 78Z' fill='none' stroke='%234a6b82' stroke-opacity='.16'/%3E%3C/svg%3E");
   background-size: 78px 78px;
   background-position: center;
   mix-blend-mode: normal;
+}
+
+.game-beam::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: inherit;
+  background-size: inherit;
+  background-position: inherit;
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.88) 42%, #000 50%, rgba(0, 0, 0, 0.88) 58%, transparent 100%);
   mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.88) 42%, #000 50%, rgba(0, 0, 0, 0.88) 58%, transparent 100%);
   -webkit-mask-size: 100% 340px;
@@ -464,12 +473,12 @@ body.game-open {
 
 .fx-card.is-buff {
   border-color: rgba(var(--ms-gain-rgb), 0.32);
-  background: var(--tk-file);
+  background: #f1f4ee;
 }
 
 .fx-card.is-debuff {
   border-color: rgba(var(--ms-alert-rgb), 0.32);
-  background: var(--tk-file);
+  background: #f8f2ef;
 }
 
 .fx-card.is-placeholder {
@@ -507,10 +516,12 @@ body.game-open {
 
 .fx-card.is-buff .fx-icon {
   color: var(--tk-gain);
+  background: var(--tk-gain-soft);
 }
 
 .fx-card.is-debuff .fx-icon {
   color: var(--tk-alert);
+  background: var(--tk-alert-soft);
 }
 
 .fx-name {
@@ -727,22 +738,6 @@ body.game-open {
   padding: 10px;
 }
 
-.board-glow {
-  position: absolute;
-  inset: 0;
-  border-radius: 22px;
-  opacity: 0;
-  pointer-events: none;
-  background: conic-gradient(from 0deg, transparent 0deg, rgba(var(--ms-steel-rgb), 0.18) 90deg, transparent 200deg, rgba(var(--ms-steel-rgb), 0.18) 300deg, transparent 360deg);
-  filter: blur(14px);
-  transition: opacity 0.3s ease;
-}
-
-.board-wrap.is-locked .board-glow {
-  opacity: 0.85;
-  animation: ms-spin 3.6s linear infinite;
-}
-
 .ms-row { display: contents; }
 
 .game-board {
@@ -757,7 +752,7 @@ body.game-open {
   padding: 9px;
   border-radius: 18px;
   border: 1px solid var(--glass-border);
-  background: #d6d8d7;
+  background: #d8d6d1;
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   box-shadow: 0 4px 0 rgba(var(--ms-ink-rgb), 0.1);
@@ -796,7 +791,7 @@ body.game-open {
 }
 
 .ms-cell:hover:not(.is-revealed) {
-  background: #f2f3f2;
+  background: #f5e8db;
   transform: translateY(-1px);
   border-color: var(--tk-steel);
 }
@@ -1350,20 +1345,34 @@ body.game-open {
 /* ---------- 粒子 ---------- */
 
 .particle-layer {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 3;
+  z-index: 70;
   pointer-events: none;
-  overflow: visible;
+  overflow: hidden;
 }
 
-.burst-particle {
+.firework-shot {
   position: absolute;
-  width: 8px;
+  inset: 0;
+}
+
+.firework-spark,
+.firework-rocket {
+  position: absolute;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.firework-rocket {
+  width: 4px;
+  height: 14px;
+  box-shadow: 0 8px 0 var(--tk-gold-soft);
+}
+
+.firework-spark {
+  width: 5px;
   height: 8px;
-  border-radius: 50%;
-  background: var(--tk-gold);
-  box-shadow: none;
 }
 
 /* ---------- 记录榜 ---------- */
@@ -1676,18 +1685,8 @@ body.game-open {
   100% { opacity: 0; }
 }
 
-@keyframes ms-winpulse {
-  0% { box-shadow: 0 0 0 0 rgba(var(--ms-gold-rgb), 0); }
-  45% { box-shadow: 0 0 40px 6px rgba(var(--ms-gold-rgb), 0.5); }
-  100% { box-shadow: 0 0 0 0 rgba(var(--ms-gold-rgb), 0); }
-}
-
 .board-wrap.is-shaking {
   animation: ms-shake 0.42s ease;
-}
-
-.board-wrap.is-winning .game-board {
-  animation: ms-winpulse 0.9s ease;
 }
 
 .damage-vignette {
@@ -1791,10 +1790,13 @@ body.game-open {
   .game-panel,
   .ms-cell,
   .fx-card,
-  .board-glow,
   .board-toast,
   .shield-ring {
     transition-duration: 0.01ms !important;
+  }
+
+  .game-beam::after {
+    animation: none;
   }
 }
 

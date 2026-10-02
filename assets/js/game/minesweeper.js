@@ -805,34 +805,67 @@
     return finished;
   }
 
-  function burstParticles() {
-    const wrapRect = el.boardWrap.getBoundingClientRect();
-    const cx = wrapRect.width / 2;
-    const cy = wrapRect.height / 2;
-    const count = 30;
-    for (let i = 0; i < count; i += 1) {
-      const node = document.createElement("span");
-      node.className = "burst-particle";
-      node.style.left = `${cx}px`;
-      node.style.top = `${cy}px`;
-      el.particles.appendChild(node);
-      const angle = (Math.PI * 2 * i) / count + rnd() * 0.4;
-      const dist = 90 + rnd() * 190;
-      const dx = Math.cos(angle) * dist;
-      const dy = Math.sin(angle) * dist;
-      const size = 4 + rnd() * 7;
-      node.style.width = `${size}px`;
-      node.style.height = `${size}px`;
-      node.animate(
-        [
-          { transform: "translate(-50%, -50%) scale(0.4)", opacity: 1 },
-          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1)`, opacity: 0 },
-        ],
-        { duration: 900 + rnd() * 500, easing: "cubic-bezier(.2,.7,.3,1)" }
-      ).finished
-        .catch(() => {})
-        .then(() => node.remove());
+  function clearFireworks() {
+    el.particles.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
+    el.particles.replaceChildren();
+  }
+
+  async function playWinFireworks() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const gen = G.gen;
+    const { width, height } = el.particles.getBoundingClientRect();
+    const colors = ["var(--tk-gold)", "var(--tk-steel)", "var(--tk-accent)", "var(--tk-gain)"];
+    const rise = Math.min(height * 0.52, 390);
+    const drift = Math.min(width * 0.16, 180);
+    const radius = Math.min(width * 0.23, 135);
+
+    // 两侧各一次：先升空，再散开下落；视觉动画不消耗棋盘随机数。
+    async function launch(side) {
+      const shot = document.createElement("div");
+      shot.className = "firework-shot";
+      el.particles.appendChild(shot);
+      const x = side === 1 ? width * 0.08 : width * 0.92;
+      const y = height - 12;
+      const rocket = document.createElement("span");
+      rocket.className = "firework-rocket";
+      rocket.style.left = `${x}px`;
+      rocket.style.top = `${y}px`;
+      rocket.style.color = colors[0];
+      shot.appendChild(rocket);
+      try {
+        await rocket.animate([
+          { transform: "translate(0, 20px)", opacity: 0 },
+          { transform: `translate(${side * drift * 0.45}px, ${-rise * 0.65}px)`, opacity: 1, offset: 0.55 },
+          { transform: `translate(${side * drift}px, ${-rise}px)`, opacity: 0.9 },
+        ], { duration: 480, easing: "cubic-bezier(.15,.6,.35,1)", fill: "forwards" }).finished;
+        rocket.remove();
+        if (gen !== G.gen) return;
+        const sparks = [];
+        for (let i = 0; i < 24; i += 1) {
+          const spark = document.createElement("span");
+          spark.className = "firework-spark";
+          spark.style.left = `${x + side * drift}px`;
+          spark.style.top = `${y - rise}px`;
+          spark.style.color = colors[i % colors.length];
+          shot.appendChild(spark);
+          const angle = Math.PI * 2 * i / 24;
+          const distance = radius * (0.65 + (i % 3) * 0.175);
+          const dx = Math.cos(angle) * distance;
+          const dy = Math.sin(angle) * distance;
+          sparks.push(spark.animate([
+            { transform: "translate(0, 0) scale(.5)", opacity: 1 },
+            { transform: `translate(${dx * 0.75}px, ${dy * 0.75}px) rotate(${i * 25}deg)`, opacity: 1, offset: 0.35 },
+            { transform: `translate(${dx}px, ${dy + 150}px) rotate(${i * 50}deg) scale(.4)`, opacity: 0 },
+          ], { duration: 1000 + (i % 3) * 80, easing: "linear", fill: "forwards" }).finished);
+        }
+        await Promise.all(sparks);
+      } catch (error) {
+        // 重开或离开时取消动画，旧局不再发射。
+      } finally {
+        shot.remove();
+      }
     }
+    await Promise.all([launch(1), launch(-1)]);
   }
 
   function showVignette() {
@@ -2000,7 +2033,6 @@
     if (G.tx) {
       G.tx.queue.length = 0;
     }
-    el.boardWrap.classList.add("is-winning");
     const gen = G.gen;
     const mines = G.cells.filter((c) => c.mine && !c.flagged);
     mines.forEach((cell, index) => {
@@ -2016,9 +2048,8 @@
       }, index * 40);
     });
     await sleep(mines.length * 40 + 280);
-    burstParticles();
-    await sleep(560);
-    el.boardWrap.classList.remove("is-winning");
+    await playWinFireworks();
+    if (gen !== G.gen) throw ABORT;
     runHooks("onGameEnd", makeCtx({ type: "win", depth: 0 }));
     showResult(true);
   }
@@ -2208,6 +2239,7 @@
 
   async function startGame() {
     abortTransaction();
+    clearFireworks();
     G.mode = G.nextMode;
     G.tier = G.nextTier;
     G.saving = false;

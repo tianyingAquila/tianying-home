@@ -8,7 +8,7 @@
   <meta name="description" content="天鹰个人小站里的技能扫雷：三档棋盘、正负面技能、提示与记录榜。">
   <link rel="stylesheet" href="assets/css/style.css?v=18">
   <link rel="stylesheet" href="assets/css/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/css/game.css?v=17">
+  <link rel="stylesheet" href="assets/css/game.css?v=18">
 </head>
 <body class="minesweeper-page" data-theme="light">
 
@@ -131,10 +131,8 @@
           </div>
 
           <div class="board-wrap" id="boardWrap">
-            <div class="board-glow" aria-hidden="true"></div>
             <div class="game-board" id="gameBoard" role="grid" aria-label="扫雷棋盘"></div>
             <svg class="radar-layer" id="radarLayer" aria-hidden="true"></svg>
-            <div class="particle-layer" id="particleLayer" aria-hidden="true"></div>
             <div class="board-toasts" id="boardToasts" aria-hidden="true"></div>
           </div>
 
@@ -195,7 +193,9 @@
     </div>
   </section>
 
+  <div class="particle-layer" id="particleLayer" aria-hidden="true"></div>
+
   <script src="assets/js/game/effects.js?v=13"></script>
-  <script src="assets/js/game/minesweeper.js?v=19"></script>
+  <script src="assets/js/game/minesweeper.js?v=20"></script>
 </body>
 </html>
