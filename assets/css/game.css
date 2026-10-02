@@ -8,8 +8,8 @@ body.minesweeper-page[data-theme="light"] {
   --bg-0: var(--tk-bone);
   --bg-1: var(--tk-bone);
   --bg-2: var(--tk-bone);
-  --glass: #ffffff;
-  --glass-strong: #ffffff;
+  --glass: var(--tk-file);
+  --glass-strong: var(--tk-file);
   --glass-border: var(--tk-line);
   --text: var(--tk-ink);
   --muted: #52565c;
@@ -778,7 +778,7 @@ body.game-open {
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
-  box-shadow: inset 0 1px 0 #ffffff, 0 1px 0 rgba(var(--ms-ink-rgb), 0.14);
+  box-shadow: inset 0 1px 0 var(--tk-paper), 0 1px 0 rgba(var(--ms-ink-rgb), 0.14);
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.12s ease;
 }
 
@@ -803,7 +803,7 @@ body.game-open {
 .ms-cell.is-revealed {
   cursor: default;
   border-color: var(--tk-hair);
-  background: var(--tk-file);
+  background: var(--tk-paper);
   box-shadow: none;
 }
 
@@ -907,7 +907,7 @@ body.game-open {
 }
 
 .num-1 { color: var(--tk-steel); }
-.num-2 { color: var(--tk-gain); }
+.num-2 { color: #597349; }
 .num-3 { color: var(--tk-alert); }
 .num-4 { color: #3b5364; }
 .num-5 { color: #795638; }

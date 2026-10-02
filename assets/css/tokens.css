@@ -77,3 +77,11 @@
   --tk-dur: 0.4s;
   --tk-dur-slow: 0.6s;
 }
+
+/* 游戏页靠近项目页 3D 场景的暖白观感，避免大面积纯白。 */
+body.minesweeper-page,
+body.tower-page {
+  --tk-bone: #e9e4e1;
+  --tk-file: #f5f2ed;
+  --tk-paper: #f7f4ee;
+}

@@ -618,7 +618,7 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
   display: grid;
   place-items: center;
   padding: var(--tk-gap-4);
-  background: rgba(246, 245, 243, 0.86);
+  background: rgba(233, 228, 225, 0.86);
   backdrop-filter: blur(3px);
   animation: tdFade var(--tk-dur) var(--tk-ease-soft);
 }

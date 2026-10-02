@@ -229,6 +229,7 @@
 
     loadVersion(data.version)
       .then(function () {
+        window.TD.applyPagePalette();
         data.mapName = window.TD.config.mapById(data.map).name;
         $("replayMeta").textContent = data.mapName + " · 提交用时 " + formatTime(data.timeMs / 1000) + " · 记录版本 " + data.version;
         state.renderer = new window.TD.Renderer($("replayCanvas"));
