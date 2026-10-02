@@ -27,6 +27,7 @@
       headers: options.headers || {},
       credentials: "same-origin",
     };
+    if (options.cache) { init.cache = options.cache; }
     if (init.method !== "GET") {
       init.headers["X-Requested-With"] = "XMLHttpRequest";
     }
@@ -404,7 +405,7 @@
     try {
       const configResult = await request("config");
       state.config = configResult.data;
-      const messageResult = await request("messages");
+      const messageResult = await request("messages", { cache: "no-store" });
       state.messages = messageResult.data;
       const questionResult = await request("admin_td_questions", {
         method: "POST",

@@ -592,7 +592,7 @@ switch ($action) {
         respond(['ok' => true, 'data' => current_config()], 200, 300);
 
     case 'messages':
-        respond(['ok' => true, 'data' => read_json(messages_file(), [])], 200, 60);
+        respond(['ok' => true, 'data' => read_json(messages_file(), [])]);
 
     case 'archives':
         respond(['ok' => true, 'data' => current_archives()], 200, 300);

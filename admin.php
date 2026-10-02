@@ -153,6 +153,6 @@ if (!is_https_request()) {
     </main>
   </div>
 
-  <script src="assets/js/admin.js?v=4"></script>
+  <script src="assets/js/admin.js?v=5"></script>
 </body>
 </html>

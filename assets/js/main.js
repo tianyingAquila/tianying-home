@@ -98,6 +98,7 @@
       headers: options.headers || {},
       credentials: "same-origin",
     };
+    if (options.cache) { init.cache = options.cache; }
     if (init.method !== "GET") {
       init.headers["X-Requested-With"] = "XMLHttpRequest";
     }
@@ -428,7 +429,7 @@
 
   async function loadMessages() {
     try {
-      state.messages = await request("messages");
+      state.messages = await request("messages", { cache: "no-store" });
     } catch (error) {
       state.messages = [];
     }
