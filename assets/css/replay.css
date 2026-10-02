@@ -1,0 +1,176 @@
+/* 独立回放页：沿用塔防的骨白档案语言，不参与正式游戏布局。 */
+body.replay-page {
+  min-height: 100vh;
+  background: var(--tk-bone);
+}
+
+.replay-stage {
+  padding-top: 0;
+}
+
+.replay-card {
+  display: grid;
+  gap: var(--tk-gap-3);
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.replay-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--tk-gap-3);
+}
+
+.replay-eyebrow {
+  margin: 0 0 5px;
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: 0.14em;
+  color: var(--tk-accent);
+}
+
+.replay-head h1 {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 38px);
+  letter-spacing: -0.03em;
+}
+
+.replay-meta {
+  margin: 7px 0 0;
+  color: var(--tk-muted);
+  font-size: 13px;
+}
+
+.replay-version {
+  flex: none;
+  color: var(--tk-faint);
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+  letter-spacing: 0.04em;
+}
+
+.replay-version.is-question {
+  color: var(--tk-alert);
+}
+
+.replay-canvas-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(650px, 64vh);
+  padding: 8px;
+  border: var(--tk-border) solid var(--tk-line);
+  background: var(--tk-file);
+  overflow: hidden;
+}
+
+#replayCanvas {
+  display: block;
+  max-width: 100%;
+  max-height: 64vh;
+}
+
+.replay-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  color: var(--tk-muted);
+  background: rgba(244, 241, 233, 0.82);
+  text-align: center;
+  font-size: 13px;
+}
+
+.replay-loading[hidden] {
+  display: none;
+}
+
+.replay-hud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--tk-line);
+  border-bottom: 1px solid var(--tk-line);
+  font-family: var(--tk-mono);
+  font-size: var(--tk-micro);
+}
+
+.replay-hud span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.replay-hud b {
+  color: var(--tk-faint);
+  font-weight: 500;
+}
+
+.replay-hud i {
+  color: var(--tk-ink);
+  font-style: normal;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.replay-controls {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(120px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.replay-controls .td-btn {
+  min-width: 64px;
+}
+
+#replaySeek {
+  width: 100%;
+  accent-color: var(--tk-accent);
+}
+
+.replay-time {
+  color: var(--tk-muted);
+  font-family: var(--tk-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.replay-note {
+  margin: 0;
+  color: var(--tk-faint);
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .replay-head {
+    display: block;
+  }
+  .replay-version {
+    display: inline-block;
+    margin-top: 8px;
+  }
+  .replay-canvas-box {
+    min-height: 300px;
+  }
+  #replayCanvas {
+    max-height: 48vh;
+  }
+  .replay-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  #replaySeek {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .replay-time {
+    grid-column: 1 / -1;
+    text-align: right;
+  }
+}

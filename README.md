@@ -5,12 +5,13 @@
 - 首页：个人简介、社交链接、随笔、留言板、图片集、Steam 状态和音乐播放器
 - 项目页：`projects.html` 的 Three.js 档案终端
 - 扫雷页：`minesweeper.html` 的技能扫雷
+- 塔防页：`tower.html`；赢局从 v1.02 起保存动作日志，`replay.html` 可现场回放
 - 后台：`admin.php`，只允许通过 HTTPS 访问
 
 ## 技术栈
 
 - 前端：原生 HTML / CSS / JavaScript，无构建步骤
-- 后端：PHP 单文件 API（`api.php`），数据存为 JSON 文件
+- 后端：PHP 单文件 API（`api.php`），数据存为 JSON 文件；塔防服务端复核使用一次性 Node CLI
 - 无需数据库
 
 ## 目录结构
@@ -18,10 +19,11 @@
 ```
 ├── index.html / projects.html / minesweeper.html
 ├── admin.php / api.php / config.php
-├── assets/              # 样式、脚本、图片、音乐
+├── assets/              # 样式、脚本、图片、音乐；塔防冻结版本在 js/game/tower/versions/
 ├── data/                # 网站内容、留言、成绩和缓存
 ├── uploads/             # 后台上传的图片/音频
-└── cron/                # Steam 状态定时刷新
+├── cron/                # Steam 状态定时刷新
+└── tools/               # 服务器 Node CLI 工具（不常驻）
 ```
 
 ## 上线约定

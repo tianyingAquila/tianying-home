@@ -6,6 +6,7 @@
     config: null,
     archives: null,
     messages: [],
+    tdQuestions: [],
   };
 
   const $ = (id) => document.getElementById(id);
@@ -204,6 +205,37 @@
     });
   }
 
+  function renderTdQuestions() {
+    const container = $("tdQuestionManager");
+    container.innerHTML = "";
+    if (!state.tdQuestions.length) {
+      container.innerHTML = '<p class="message-manager-meta">暂无疑问记录。</p>';
+      return;
+    }
+    state.tdQuestions.forEach((record) => {
+      const row = document.createElement("div");
+      row.className = "message-manager-item";
+      const date = new Date((record.createdAt || 0) * 1000);
+      const time = isNaN(date.getTime()) ? "" : date.toLocaleString("zh-CN", { hour12: false });
+      const rank = record.rank ? `第 ${record.rank} / ${record.rankTotal} 名` : "未进入排名";
+      row.innerHTML = `
+        <div>
+          <p><strong>${escapeHtml(record.name || "匿名玩家")}</strong> · ${formatMs(record.timeMs)} · ${escapeHtml(rank)}</p>
+          <p class="message-manager-meta">地图 ${escapeHtml(record.map)} · ${escapeHtml(record.version || "")} · ${escapeHtml(time)}</p>
+        </div>
+        <button class="remove-button" type="button" data-td-id="${escapeHtml(record.id)}">永久删除</button>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function formatMs(value) {
+    const seconds = Math.max(0, Math.round(Number(value || 0) / 1000));
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+
   function collectConfig() {
     const c = state.config || {};
     return {
@@ -346,6 +378,26 @@
         setStatus(error.message || "删除失败", true);
       }
     });
+
+    $("tdQuestionManager").addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-td-id]");
+      if (!button) {
+        return;
+      }
+      if (!window.confirm("确定永久删除这条疑问记录吗？删除后不能恢复。")) {
+        return;
+      }
+      try {
+        const result = await request("admin_td_delete", {
+          method: "POST",
+          body: JSON.stringify({ csrf: state.csrf, id: button.dataset.tdId }),
+        });
+        state.tdQuestions = result.data;
+        renderTdQuestions();
+      } catch (error) {
+        setStatus(error.message || "删除失败", true);
+      }
+    });
   }
 
   async function loadData() {
@@ -354,12 +406,18 @@
       state.config = configResult.data;
       const messageResult = await request("messages");
       state.messages = messageResult.data;
+      const questionResult = await request("admin_td_questions", {
+        method: "POST",
+        body: JSON.stringify({ csrf: state.csrf }),
+      });
+      state.tdQuestions = questionResult.data;
       const archiveResult = await request("archives");
       state.archives = archiveResult.data;
       fillFields();
       renderArchives();
       renderGallery();
       renderMessages();
+      renderTdQuestions();
     } catch (error) {
       setStatus(error.message || "加载失败", true);
     }

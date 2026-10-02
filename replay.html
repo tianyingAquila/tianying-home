@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <title>成绩回放 · Tianying的巢</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="assets/css/tokens.css?v=2">
+  <link rel="stylesheet" href="assets/css/style.css?v=18">
+  <link rel="stylesheet" href="assets/css/terminal.css?v=2">
+  <link rel="stylesheet" href="assets/css/tower.css?v=8">
+  <link rel="stylesheet" href="assets/css/replay.css?v=1">
+</head>
+<body class="tower-page replay-page" data-theme="light">
+  <header class="site-header">
+    <a class="site-brand" href="index.html">
+      <span class="brand-mark"></span>
+      <span>Tianying的巢</span>
+    </a>
+    <div class="header-actions">
+      <nav class="site-nav-links" aria-label="主导航">
+        <a class="nav-link" href="index.html">首页</a>
+        <a class="nav-link" href="projects.html">项目</a>
+        <a class="nav-link is-current" href="games.html" aria-current="page">游戏</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="td-stage replay-stage">
+    <div class="term-head">
+      <div class="term-brand">
+        <strong>TIANYING DEFENSE</strong>
+        <span>REPLAY ARCHIVE</span>
+        <strong>DEFENSE OS</strong>
+      </div>
+      <div class="term-tools">
+        <a class="td-back" href="tower.html" id="replayBack">← 返回塔防</a>
+        <div class="term-readout">
+          <span class="term-clock" id="termClock">--:--:--</span>
+          <span class="term-status" id="replayStatus">正在读取记录…</span>
+        </div>
+      </div>
+    </div>
+
+    <section class="td-card replay-card">
+      <div class="replay-head">
+        <div>
+          <p class="replay-eyebrow">RECORD REPLAY</p>
+          <h1 id="replayTitle">成绩回放</h1>
+          <p class="replay-meta" id="replayMeta">正在读取记录…</p>
+        </div>
+        <span class="replay-version" id="replayVersion"></span>
+      </div>
+
+      <div class="replay-canvas-box" id="replayCanvasBox">
+        <canvas id="replayCanvas" aria-label="塔防成绩回放战场"></canvas>
+        <div class="replay-loading" id="replayLoading">正在准备对应版本的战场…</div>
+      </div>
+
+      <div class="replay-hud">
+        <span><b>LIVES</b><i id="replayLives">--</i></span>
+        <span><b>GOLD</b><i id="replayGold">--</i></span>
+        <span><b>WAVE</b><i id="replayWave">--</i></span>
+        <span><b>STATE</b><i id="replayState">--</i></span>
+      </div>
+
+      <div class="replay-controls">
+        <button class="td-btn primary" id="replayPlay" type="button">暂停</button>
+        <button class="td-btn ghost" id="replayRestart" type="button">重播</button>
+        <button class="td-btn ghost" id="replaySpeed" type="button">2×</button>
+        <input id="replaySeek" type="range" min="0" max="1000" value="0" aria-label="回放进度">
+        <span class="replay-time" id="replayTime">00:00 / 00:00</span>
+      </div>
+      <p class="replay-note" id="replayNote">这里使用成绩提交时的版本规则，在浏览器里重新执行动作日志。</p>
+    </section>
+  </main>
+
+  <script src="assets/js/clock.js?v=1"></script>
+  <script src="assets/js/game/tower/replay.js?v=2"></script>
+</body>
+</html>

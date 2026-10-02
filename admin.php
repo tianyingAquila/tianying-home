@@ -13,7 +13,7 @@ if (!is_https_request()) {
   <title>网站后台 · Tianying的巢</title>
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/css/admin.css?v=3">
+  <link rel="stylesheet" href="assets/css/admin.css?v=4">
 </head>
 <body>
   <div class="admin-shell">
@@ -138,6 +138,14 @@ if (!is_https_request()) {
         <div class="message-manager" id="messageManager"></div>
       </section>
 
+      <section class="admin-section">
+        <div class="section-title">
+          <h2>疑问塔防记录</h2>
+          <p>服务器复核结果与提交成绩不一致的记录。这里只提供永久删除，删除后排行榜立即重新计算。</p>
+        </div>
+        <div class="message-manager" id="tdQuestionManager"></div>
+      </section>
+
       <div class="save-bar">
         <span id="saveStatus" role="status"></span>
         <button id="saveButton" class="primary-button large" type="button">保存全部修改</button>
@@ -145,6 +153,6 @@ if (!is_https_request()) {
     </main>
   </div>
 
-  <script src="assets/js/admin.js?v=3"></script>
+  <script src="assets/js/admin.js?v=4"></script>
 </body>
 </html>

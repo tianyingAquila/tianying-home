@@ -300,6 +300,11 @@ const TD_MAP_TOWERS = [
     3 => ['bolt', 'mortar', 'frost', 'rail', 'aura', 'chain'],
 ];
 
+const TD_CURRENT_VERSION = 'v1.02';
+const TD_REPLAY_MAX_ACTIONS = 2000;
+const TD_REPLAY_MAX_TICKS = 216000; // 游戏内 1 小时，足够覆盖正常局并限制异常日志。
+const TD_REPLAY_TIME_TOLERANCE_MS = 2000;
+
 // 最终部署允许为空（例如把塔全拆了），但不接受非法塔种、越界坐标、重复格或未知等级。
 function normalize_td_deployment($raw, int $map): ?array
 {
@@ -336,13 +341,192 @@ function normalize_td_deployment($raw, int $map): ?array
 
 function public_td_score(array $score): array
 {
-    unset($score['deployment']);
+    // 旧成绩没有版本字段，统一视为 v1.01；未来新成绩由服务端写入当前版本。
+    if (!isset($score['version']) || !is_string($score['version']) || $score['version'] === '') {
+        $score['version'] = 'v1.01';
+    }
+    if (!array_key_exists('hasReplay', $score)) {
+        $score['hasReplay'] = false;
+    }
+    if (!isset($score['replayStatus']) || !is_string($score['replayStatus'])) {
+        $score['replayStatus'] = 'none';
+    }
+    unset($score['deployment'], $score['actions'], $score['replayResult']);
     return $score;
 }
 
 function public_td_scores(array $scores): array
 {
     return array_map('public_td_score', $scores);
+}
+
+function normalize_td_actions($raw, int $map): ?array
+{
+    if (!is_array($raw) || count($raw) > TD_REPLAY_MAX_ACTIONS || !isset(TD_MAP_SIZE[$map], TD_MAP_TOWERS[$map])) {
+        return null;
+    }
+    [$cols, $rows] = TD_MAP_SIZE[$map];
+    $allowedTowers = TD_MAP_TOWERS[$map];
+    $allowedOps = ['start', 'build', 'upgrade', 'sell', 'wave', 'speed', 'pause', 'resume'];
+    $lastTick = -1;
+    $out = [];
+
+    foreach ($raw as $item) {
+        if (!is_array($item)) {
+            return null;
+        }
+        $tick = filter_var($item['tick'] ?? null, FILTER_VALIDATE_INT);
+        $op = (string) ($item['op'] ?? '');
+        if ($tick === false || $tick < 0 || $tick > TD_REPLAY_MAX_TICKS || $tick < $lastTick) {
+            return null;
+        }
+        if (!in_array($op, $allowedOps, true)) {
+            return null;
+        }
+        $action = ['tick' => $tick, 'op' => $op];
+        if (array_key_exists('timeMs', $item)) {
+            $timeMs = filter_var($item['timeMs'], FILTER_VALIDATE_INT);
+            if ($timeMs === false || $timeMs < 0 || $timeMs > 14400000) {
+                return null;
+            }
+            $action['timeMs'] = $timeMs;
+        }
+
+        if ($op === 'build') {
+            $type = (string) ($item['type'] ?? '');
+            $c = filter_var($item['c'] ?? null, FILTER_VALIDATE_INT);
+            $r = filter_var($item['r'] ?? null, FILTER_VALIDATE_INT);
+            if (!in_array($type, $allowedTowers, true) || $c === false || $r === false || $c < 0 || $c >= $cols || $r < 0 || $r >= $rows) {
+                return null;
+            }
+            $action += ['type' => $type, 'c' => $c, 'r' => $r];
+        } elseif ($op === 'upgrade' || $op === 'sell') {
+            $c = filter_var($item['c'] ?? null, FILTER_VALIDATE_INT);
+            $r = filter_var($item['r'] ?? null, FILTER_VALIDATE_INT);
+            if ($c === false || $r === false || $c < 0 || $c >= $cols || $r < 0 || $r >= $rows) {
+                return null;
+            }
+            $action += ['c' => $c, 'r' => $r];
+        } elseif ($op === 'speed') {
+            $speed = filter_var($item['speed'] ?? null, FILTER_VALIDATE_INT);
+            if ($speed === false || !in_array($speed, [1, 2], true)) {
+                return null;
+            }
+            $action['speed'] = $speed;
+        }
+        $out[] = $action;
+        $lastTick = $tick;
+    }
+    return $out;
+}
+
+// 一次性 Node CLI 复核。服务端不常驻进程、不开端口；出错一律返回 null，
+// 由调用方记为“回放暂不可用”，绝不因此标红。
+function run_td_replay_check(array $payload): ?array
+{
+    $runner = __DIR__ . '/tools/td_replay_runner.js';
+    if (!is_file($runner) || !function_exists('proc_open')) {
+        return ['ok' => false, 'error' => 'runner unavailable'];
+    }
+    $node = is_executable('/usr/bin/node') ? '/usr/bin/node' : 'node';
+    $cmd = [$node, '--max-old-space-size=128', $runner];
+    $descriptors = [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
+    $pipes = [];
+    $proc = @proc_open($cmd, $descriptors, $pipes, __DIR__);
+    if (!is_resource($proc)) {
+        return ['ok' => false, 'error' => 'proc_open failed'];
+    }
+
+    fwrite($pipes[0], json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}');
+    fclose($pipes[0]);
+    stream_set_blocking($pipes[1], false);
+    stream_set_blocking($pipes[2], false);
+
+    $stdout = '';
+    $stderr = '';
+    $timedOut = false;
+    $deadline = microtime(true) + 12.0;
+    while (true) {
+        $stdout .= stream_get_contents($pipes[1]);
+        $stderr .= stream_get_contents($pipes[2]);
+        $status = proc_get_status($proc);
+        if (!$status['running']) {
+            break;
+        }
+        if (microtime(true) >= $deadline) {
+            $timedOut = true;
+            @proc_terminate($proc, 9);
+            break;
+        }
+        usleep(50000);
+    }
+    $stdout .= stream_get_contents($pipes[1]);
+    $stderr .= stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    @proc_close($proc);
+
+    if ($timedOut) {
+        return ['ok' => false, 'error' => 'timeout', 'stderr' => $stderr];
+    }
+    if ($stdout === '') {
+        return ['ok' => false, 'error' => 'empty stdout', 'stderr' => $stderr];
+    }
+    $decoded = json_decode($stdout, true);
+    return is_array($decoded) ? $decoded : ['ok' => false, 'error' => 'invalid json', 'stdout' => $stdout, 'stderr' => $stderr];
+}
+
+function td_rank_for_id(array $scores, string $id): array
+{
+    $target = null;
+    foreach ($scores as $score) {
+        if (($score['id'] ?? '') === $id) {
+            $target = $score;
+            break;
+        }
+    }
+    if ($target === null) {
+        return ['rank' => 0, 'total' => 0];
+    }
+    $map = (int) ($target['map'] ?? 0);
+    $ofMap = array_values(array_filter($scores, static fn ($s): bool => (int) ($s['map'] ?? 0) === $map));
+    usort($ofMap, static fn ($a, $b): int =>
+        [$b['wave'], $b['lives'], $a['timeMs']] <=> [$a['wave'], $a['lives'], $b['timeMs']]);
+    foreach ($ofMap as $index => $score) {
+        if (($score['id'] ?? '') === $id) {
+            return ['rank' => $index + 1, 'total' => count($ofMap)];
+        }
+    }
+    return ['rank' => 0, 'total' => count($ofMap)];
+}
+
+function admin_td_questions(array $scores): array
+{
+    $questions = array_values(array_filter(
+        $scores,
+        static fn ($score): bool => ($score['replayStatus'] ?? '') === 'question'
+    ));
+    usort($questions, static fn ($a, $b): int => (int) ($b['createdAt'] ?? 0) <=> (int) ($a['createdAt'] ?? 0));
+    return array_map(static function (array $score) use ($scores): array {
+        $rank = td_rank_for_id($scores, (string) ($score['id'] ?? ''));
+        return [
+            'id' => (string) ($score['id'] ?? ''),
+            'name' => (string) ($score['name'] ?? '匿名玩家'),
+            'map' => (int) ($score['map'] ?? 0),
+            'wave' => (int) ($score['wave'] ?? 0),
+            'total' => (int) ($score['total'] ?? 0),
+            'lives' => (int) ($score['lives'] ?? 0),
+            'timeMs' => (int) ($score['timeMs'] ?? 0),
+            'version' => (string) ($score['version'] ?? TD_CURRENT_VERSION),
+            'createdAt' => (int) ($score['createdAt'] ?? 0),
+            'rank' => $rank['rank'],
+            'rankTotal' => $rank['total'],
+        ];
+    }, $questions);
 }
 
 // 项目页的档案数据：仓库里的 assets/data/archives.json 是种子，
@@ -442,6 +626,37 @@ switch ($action) {
         }
         respond(['ok' => false, 'error' => '找不到这条记录'], 404);
 
+    case 'td_replay':
+        $id = (string) ($_GET['id'] ?? '');
+        if (!preg_match('/^[a-f0-9]{12}$/', $id)) {
+            respond(['ok' => false, 'error' => '记录编号不正确'], 400);
+        }
+        foreach (read_json(td_scores_file(), []) as $score) {
+            if (($score['id'] ?? '') !== $id) {
+                continue;
+            }
+            if (($score['hasReplay'] ?? false) !== true || !is_array($score['actions'] ?? null)) {
+                respond(['ok' => false, 'error' => '这条记录没有动作回放'], 404);
+            }
+            respond([
+                'ok' => true,
+                'data' => [
+                    'id' => $id,
+                    'name' => (string) ($score['name'] ?? '匿名玩家'),
+                    'map' => (int) ($score['map'] ?? 0),
+                    'version' => (string) ($score['version'] ?? 'v1.01'),
+                    'wave' => (int) ($score['wave'] ?? 0),
+                    'total' => (int) ($score['total'] ?? 0),
+                    'lives' => (int) ($score['lives'] ?? 0),
+                    'won' => ($score['won'] ?? false) === true,
+                    'timeMs' => (int) ($score['timeMs'] ?? 0),
+                    'replayStatus' => (string) ($score['replayStatus'] ?? 'verified'),
+                    'actions' => $score['actions'],
+                ],
+            ], 200, 300);
+        }
+        respond(['ok' => false, 'error' => '找不到这条记录'], 404);
+
     case 'td_score':
         if ($method !== 'POST') {
             respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
@@ -449,6 +664,12 @@ switch ($action) {
         require_json_fetch();
         rate_limit('td_score', 30, 600);
         $body = request_body();
+
+        $version = trim((string) ($body['version'] ?? ''));
+        if ($version !== TD_CURRENT_VERSION) {
+            respond(['ok' => false, 'error' => '游戏版本已更新，请刷新页面后重试'], 409);
+        }
+
         $name = clean_text($body['name'] ?? '', 12);
         if ($name === '') {
             $name = '匿名玩家';
@@ -462,49 +683,112 @@ switch ($action) {
         $lives = (int) ($body['lives'] ?? -1);
         $won = ($body['won'] ?? false) === true;
         $timeMs = (int) ($body['timeMs'] ?? 0);
-        $hasDeployment = array_key_exists('deployment', $body);
-        $deployment = null;
-        if ($hasDeployment) {
-            $deployment = normalize_td_deployment($body['deployment'], $map);
-            if ($deployment === null) {
-                respond(['ok' => false, 'error' => '部署数据不合法'], 400);
+        foreach (['gold', 'kills', 'leaked', 'built'] as $field) {
+            if (!array_key_exists($field, $body)) {
+                respond(['ok' => false, 'error' => '成绩数据不完整，请刷新页面后重试'], 400);
             }
         }
+        $gold = (int) $body['gold'];
+        $kills = (int) $body['kills'];
+        $leaked = (int) $body['leaked'];
+        $built = (int) $body['built'];
+        if ($gold < 0 || $gold > 10000000 || $kills < 0 || $kills > 100000 || $leaked < 0 || $leaked > 100000 || $built < 0 || $built > 5000) {
+            respond(['ok' => false, 'error' => '成绩数据不合法'], 400);
+        }
+
+        if (!array_key_exists('deployment', $body)) {
+            respond(['ok' => false, 'error' => '缺少最终部署数据'], 400);
+        }
+        $deployment = normalize_td_deployment($body['deployment'], $map);
+        if ($deployment === null) {
+            respond(['ok' => false, 'error' => '部署数据不合法'], 400);
+        }
+
+        $actions = null;
+        $hasReplay = false;
+        if ($won) {
+            if (!array_key_exists('actions', $body)) {
+                respond(['ok' => false, 'error' => '缺少动作回放数据'], 400);
+            }
+            $actions = normalize_td_actions($body['actions'], $map);
+            if ($actions === null) {
+                respond(['ok' => false, 'error' => '动作回放数据不合法'], 400);
+            }
+            $hasReplay = true;
+        }
+
         if ($wave < 1 || $wave > $total || $lives < 0 || $lives > 20) {
             respond(['ok' => false, 'error' => '成绩数据不合法'], 400);
         }
-        // 胜负和数据要自洽：赢了必须打满全部波次且还有命；输了生命一定是 0
         if ($won && ($wave !== $total || $lives < 1)) {
             respond(['ok' => false, 'error' => '成绩数据不合法'], 400);
         }
         if (!$won && $lives !== 0) {
             respond(['ok' => false, 'error' => '成绩数据不合法'], 400);
         }
-        // 每波至少几秒：打到第 N 波不可能少于这个时间
         if ($timeMs < $wave * 3000 || $timeMs > 14400000) {
             respond(['ok' => false, 'error' => '用时不合法'], 400);
         }
+
         $record = [
             'id' => bin2hex(random_bytes(6)),
             'name' => $name,
+            'version' => TD_CURRENT_VERSION,
             'map' => $map,
             'wave' => $wave,
             'total' => $total,
             'lives' => $lives,
+            'gold' => $gold,
+            'kills' => $kills,
+            'leaked' => $leaked,
+            'built' => $built,
             'won' => $won,
             'timeMs' => $timeMs,
             'createdAt' => time(),
-            'hasDeployment' => $hasDeployment,
+            'hasDeployment' => true,
+            'deployment' => $deployment,
+            'hasReplay' => $hasReplay,
+            'replayStatus' => 'none',
         ];
-        if ($hasDeployment) {
-            $record['deployment'] = $deployment;
+        if ($hasReplay) {
+            $record['actions'] = $actions;
+            $check = run_td_replay_check([
+                'version' => TD_CURRENT_VERSION,
+                'map' => $map,
+                'wave' => $wave,
+                'lives' => $lives,
+                'gold' => $gold,
+                'kills' => $kills,
+                'leaked' => $leaked,
+                'built' => $built,
+                'won' => $won,
+                'timeMs' => $timeMs,
+                'deployment' => $deployment,
+                'actions' => $actions,
+                'maxTicks' => TD_REPLAY_MAX_TICKS,
+            ]);
+            if (is_array($check) && ($check['ok'] ?? false) === true) {
+                $record['replayStatus'] = !empty($check['question']) ? 'question' : 'verified';
+                $record['replayResult'] = [
+                    'expectedTimeMs' => (int) ($check['expectedTimeMs'] ?? 0),
+                    'mismatches' => array_values(array_filter((array) ($check['mismatches'] ?? []), 'is_string')),
+                    'failedActions' => (int) ($check['failedActions'] ?? 0),
+                ];
+            } else {
+                $record['replayStatus'] = 'unavailable';
+                $record['replayResult'] = [
+                    'error' => (string) (($check['error'] ?? 'replay unavailable')),
+                    'stderr' => (string) (($check['stderr'] ?? '')),
+                ];
+            }
         }
+
         $scores = with_file_lock(td_scores_file(), function ($fp) use ($record) {
             $scores = is_resource($fp)
                 ? read_json_from_handle($fp, [])
                 : read_json(td_scores_file(), []);
             array_unshift($scores, $record);
-            // 最多留 300 条；超出时删最旧的，但每张图排行前 20 名永远保留，免得好成绩被刷掉
+            // 最多留 300 条；超出时删最旧的，但每张图排行前 20 名永远保留，免得好成绩被刷掉。
             if (count($scores) > 300) {
                 $keep = [];
                 foreach (array_keys(TD_MAP_WAVES) as $m) {
@@ -950,6 +1234,63 @@ switch ($action) {
             respond(['ok' => true, 'data' => $config]);
         }
         respond(['ok' => false, 'error' => '没有找到这张图片'], 404);
+
+    case 'admin_td_questions':
+        if ($method !== 'POST') {
+            respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
+        }
+        $body = request_body();
+        require_admin($body);
+        $scores = read_json(td_scores_file(), []);
+        respond(['ok' => true, 'data' => admin_td_questions($scores)]);
+
+    case 'admin_td_delete':
+        if ($method !== 'POST') {
+            respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
+        }
+        $body = request_body();
+        require_admin($body);
+        $id = (string) ($body['id'] ?? '');
+        if (!preg_match('/^[a-f0-9]{12}$/', $id)) {
+            respond(['ok' => false, 'error' => '记录编号不正确'], 400);
+        }
+        $deleteError = '';
+        $scores = with_file_lock(td_scores_file(), function ($fp) use ($id, &$deleteError) {
+            $scores = is_resource($fp)
+                ? read_json_from_handle($fp, [])
+                : read_json(td_scores_file(), []);
+            $found = false;
+            $isQuestion = false;
+            $out = [];
+            foreach ($scores as $score) {
+                if (($score['id'] ?? '') === $id) {
+                    $found = true;
+                    $isQuestion = ($score['replayStatus'] ?? '') === 'question';
+                    if ($isQuestion) {
+                        continue;
+                    }
+                }
+                $out[] = $score;
+            }
+            if (!$found) {
+                $deleteError = '找不到这条记录';
+                return $scores;
+            }
+            if (!$isQuestion) {
+                $deleteError = '只能删除疑问记录';
+                return $scores;
+            }
+            if (is_resource($fp)) {
+                write_json_to_handle($fp, $out);
+            } else {
+                write_json(td_scores_file(), $out);
+            }
+            return $out;
+        });
+        if ($deleteError !== '') {
+            respond(['ok' => false, 'error' => $deleteError], 404);
+        }
+        respond(['ok' => true, 'data' => admin_td_questions($scores)]);
 
     case 'delete_message':
         if ($method !== 'POST') {

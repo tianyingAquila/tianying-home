@@ -20,6 +20,7 @@
 
   function TowerGame() {
     this.eng = new TD.Engine(initialMap());
+    this.eng.enableActionLog();
     this.canvas = $("tdCanvas");
     this.rd = new TD.Renderer(this.canvas);
 
@@ -140,6 +141,7 @@
 
   TowerGame.prototype.switchMap = function (id) {
     this.eng.setMap(id);
+    this.eng.enableActionLog();
     storeSet(MAP_KEY, String(id));
     /* 地址栏同步，刷新或分享链接都会停在这张图 */
     if (window.history && window.history.replaceState) {
@@ -307,6 +309,7 @@
 
     function restart() {
       self.eng.reset();
+      self.eng.enableActionLog();
       self.view = { hover: null, buildKey: null, selected: null };
       self.saved = false;
       self.el.result.hidden = true;
@@ -347,8 +350,12 @@
     });
 
     this.el.boardList.addEventListener("click", function (ev) {
-      var btn = ev.target && ev.target.closest ? ev.target.closest(".td-board-detail") : null;
+      var btn = ev.target && ev.target.closest ? ev.target.closest(".td-board-detail, .td-board-replay") : null;
       if (!btn || !btn.dataset.id) { return; }
+      if (btn.classList.contains("td-board-replay")) {
+        window.location.href = "replay.html?id=" + encodeURIComponent(btn.dataset.id);
+        return;
+      }
       self.openDeployment(btn.dataset.id);
     });
 
@@ -767,21 +774,32 @@
       var outcome = s.won
         ? '<span class="td-board-won">通关</span> 余 ' + s.lives + ' 命'
         : '第 ' + s.wave + ' / ' + s.total + ' 波';
+      var version = s.version || "v1.01";
+      var action;
+      if (s.hasReplay === true) {
+        action = '<button class="td-board-replay' + (s.replayStatus === "question" ? " is-question" : "") + '" type="button">' +
+          (s.replayStatus === "question" ? "疑问回放" : "回放") + '</button>';
+      } else if (s.hasDeployment === true) {
+        action = '<button class="td-board-detail" type="button">详情</button>';
+      } else {
+        action = '<span class="td-board-legacy" title="旧成绩未保存终局部署">旧版</span>';
+      }
       li.innerHTML =
         '<span class="td-board-rank">' + (self.boardTab === "rank" ? (idx + 1) : "·") + '</span>' +
         '<span class="td-board-player">' +
-          '<span class="td-board-name"></span>' +
-          (s.hasDeployment === true
-            ? '<button class="td-board-detail" type="button">详情</button>'
-            : '<span class="td-board-legacy" title="旧成绩未保存终局部署">旧版</span>') +
+          '<span class="td-board-identity">' +
+            '<span class="td-board-name"></span><span class="td-board-version"></span>' +
+          '</span>' +
+          action +
         '</span>' +
         '<span class="td-board-outcome">' + outcome + '</span>' +
         '<span class="td-board-time">' + fmtTime(s.timeMs / 1000) + '</span>' +
         (self.boardTab === "latest" ? '<span class="td-board-map">' + m.name + '</span>' : '');
       /* 名字是访客输入的，用 textContent 写入，不拼进 HTML */
       li.querySelector(".td-board-name").textContent = s.name || "匿名玩家";
-      var detailBtn = li.querySelector(".td-board-detail");
-      if (detailBtn) { detailBtn.dataset.id = s.id; }
+      li.querySelector(".td-board-version").textContent = version;
+      var actionBtn = li.querySelector(".td-board-detail, .td-board-replay");
+      if (actionBtn) { actionBtn.dataset.id = s.id; }
       li.title = "保存时间：" + new Date(s.createdAt * 1000).toLocaleString("zh-CN", { hour12: false });
       list.appendChild(li);
     });
@@ -804,14 +822,20 @@
       headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
       body: JSON.stringify({
         name: name,
+        version: cfg.VERSION,
         map: eng.map.id,
         wave: eng.reachedWave(),
         lives: eng.lives,
+        gold: eng.gold,
+        kills: eng.stats.kills,
+        leaked: eng.stats.leaked,
+        built: eng.stats.built,
         won: eng.state === "won",
         timeMs: Math.round(eng.realTime * 1000),
         deployment: eng.towers.map(function (t) {
           return { type: t.key, c: t.c, r: t.r, level: t.level };
-        })
+        }),
+        actions: eng.state === "won" ? eng.actions : []
       })
     })
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })

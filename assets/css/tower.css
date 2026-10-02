@@ -780,6 +780,13 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
   min-width: 0;
 }
 
+.td-board-identity {
+  display: flex;
+  align-items: baseline;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .td-board-rank {
   font-family: var(--tk-mono);
   font-size: var(--tk-micro);
@@ -790,16 +797,28 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
 .td-board-row.is-first .td-board-rank { color: var(--tk-gold); font-weight: 600; }
 
 .td-board-name {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 100%;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.td-board-version {
+  flex: none;
+  margin-left: 1px;
+  color: var(--tk-faint);
+  font-family: var(--tk-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 .td-board-detail {
   flex: none;
+  margin-left: auto;
   padding: 2px 6px;
   font-family: var(--tk-mono);
   font-size: 10px;
@@ -808,6 +827,30 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
   border: var(--tk-border) solid var(--tk-line);
   border-radius: var(--tk-radius);
   cursor: pointer;
+}
+
+.td-board-replay {
+  flex: none;
+  margin-left: auto;
+  padding: 2px 6px;
+  font-family: var(--tk-mono);
+  font-size: 10px;
+  color: var(--tk-muted);
+  background: none;
+  border: var(--tk-border) solid var(--tk-line);
+  border-radius: var(--tk-radius);
+  cursor: pointer;
+}
+
+.td-board-replay:hover {
+  color: var(--tk-ink);
+  border-color: rgba(20, 22, 26, 0.38);
+}
+
+.td-board-replay.is-question {
+  color: var(--tk-alert);
+  border-color: rgba(156, 74, 63, 0.52);
+  background: rgba(156, 74, 63, 0.05);
 }
 
 .td-board-detail:hover {
