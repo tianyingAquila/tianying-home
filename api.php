@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+// API 永远输出纯 JSON；PHP 警告只写日志，不能混进响应。
+ini_set('display_errors', '0');
+
 require_once __DIR__ . '/config.php';
 
 define('DATA_DIR', __DIR__ . '/data');
@@ -428,7 +431,7 @@ function run_td_replay_check(array $payload): ?array
     if (!is_file($runner) || !function_exists('proc_open')) {
         return ['ok' => false, 'error' => 'runner unavailable'];
     }
-    $node = is_executable('/usr/bin/node') ? '/usr/bin/node' : 'node';
+    $node = '/usr/bin/node';
     $cmd = [$node, '--max-old-space-size=128', $runner];
     $descriptors = [
         0 => ['pipe', 'r'],
