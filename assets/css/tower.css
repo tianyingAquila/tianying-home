@@ -911,6 +911,12 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
   margin-bottom: var(--tk-gap-3);
 }
 
+.td-deployment-card .td-btn.is-question {
+  color: var(--tk-alert);
+  border-color: rgba(156, 74, 63, 0.52);
+  background: rgba(156, 74, 63, 0.08);
+}
+
 .td-deployment-canvas-box {
   display: flex;
   align-items: center;

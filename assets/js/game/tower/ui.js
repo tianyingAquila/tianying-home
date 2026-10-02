@@ -77,6 +77,7 @@
       deploymentBox: $("tdDeploymentBox"),
       deploymentCanvas: $("tdDeploymentCanvas"),
       deploymentState: $("tdDeploymentState"),
+      deploymentReplay: $("tdDeploymentReplay"),
       deploymentClose: $("tdDeploymentClose")
     };
 
@@ -345,17 +346,18 @@
       self.closeDeployment();
     });
 
+    this.el.deploymentReplay.addEventListener("click", function () {
+      if (!self.deploymentReplayId) { return; }
+      window.location.href = "replay.html?id=" + encodeURIComponent(self.deploymentReplayId);
+    });
+
     this.el.deployment.addEventListener("click", function (ev) {
       if (ev.target === self.el.deployment) { self.closeDeployment(); }
     });
 
     this.el.boardList.addEventListener("click", function (ev) {
-      var btn = ev.target && ev.target.closest ? ev.target.closest(".td-board-detail, .td-board-replay") : null;
+      var btn = ev.target && ev.target.closest ? ev.target.closest(".td-board-detail") : null;
       if (!btn || !btn.dataset.id) { return; }
-      if (btn.classList.contains("td-board-replay")) {
-        window.location.href = "replay.html?id=" + encodeURIComponent(btn.dataset.id);
-        return;
-      }
       self.openDeployment(btn.dataset.id);
     });
 
@@ -775,15 +777,7 @@
         ? '<span class="td-board-won">通关</span> 余 ' + s.lives + ' 命'
         : '第 ' + s.wave + ' / ' + s.total + ' 波';
       var version = s.version || "v1.01";
-      var action;
-      if (s.hasReplay === true) {
-        action = '<button class="td-board-replay' + (s.replayStatus === "question" ? " is-question" : "") + '" type="button">' +
-          (s.replayStatus === "question" ? "疑问回放" : "回放") + '</button>';
-      } else if (s.hasDeployment === true) {
-        action = '<button class="td-board-detail" type="button">详情</button>';
-      } else {
-        action = '<span class="td-board-legacy" title="旧成绩未保存终局部署">旧版</span>';
-      }
+      var action = '<button class="td-board-detail" type="button">详情</button>';
       li.innerHTML =
         '<span class="td-board-rank">' + (self.boardTab === "rank" ? (idx + 1) : "·") + '</span>' +
         '<span class="td-board-player">' +
@@ -798,7 +792,7 @@
       /* 名字是访客输入的，用 textContent 写入，不拼进 HTML */
       li.querySelector(".td-board-name").textContent = s.name || "匿名玩家";
       li.querySelector(".td-board-version").textContent = version;
-      var actionBtn = li.querySelector(".td-board-detail, .td-board-replay");
+      var actionBtn = li.querySelector(".td-board-detail");
       if (actionBtn) { actionBtn.dataset.id = s.id; }
       li.title = "保存时间：" + new Date(s.createdAt * 1000).toLocaleString("zh-CN", { hour12: false });
       list.appendChild(li);
@@ -859,10 +853,22 @@
     var record = this.scores.find(function (s) { return s.id === id; });
     var el = this.el;
     el.deployment.hidden = false;
-    el.deploymentTitle.textContent = (record && record.name ? record.name : "匿名玩家") + "的最终部署";
+    self.deploymentReplayId = record && record.hasReplay === true ? id : "";
+    el.deploymentReplay.hidden = !self.deploymentReplayId;
+    el.deploymentReplay.textContent = record && record.replayStatus === "question" ? "疑问回放" : "回放";
+    el.deploymentReplay.classList.toggle("is-question", !!(record && record.replayStatus === "question"));
+    el.deploymentTitle.textContent = (record && record.name ? record.name : "匿名玩家") + "的记录详情";
     el.deploymentMeta.textContent = record
       ? cfg.mapById(record.map).name + " · 第 " + record.wave + " / " + record.total + " 波 · 余 " + record.lives + " 命"
       : "";
+    self.deployEng = null;
+    self.clearDeploymentCanvas();
+
+    if (!record || record.hasDeployment !== true) {
+      el.deploymentState.textContent = "这条记录没有保存最终部署图。";
+      return;
+    }
+    el.deploymentTitle.textContent = (record.name ? record.name : "匿名玩家") + "的最终部署";
     el.deploymentState.textContent = "正在读取部署…";
 
     fetch("api.php?action=td_deployment&id=" + encodeURIComponent(id), { credentials: "same-origin" })
@@ -893,6 +899,13 @@
   TowerGame.prototype.closeDeployment = function () {
     this.el.deployment.hidden = true;
     this.deployEng = null;
+    this.deploymentReplayId = "";
+  };
+
+  TowerGame.prototype.clearDeploymentCanvas = function () {
+    var canvas = this.el.deploymentCanvas;
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
   TowerGame.prototype.fitDeployment = function () {
