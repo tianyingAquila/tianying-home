@@ -32,6 +32,7 @@
     this.scores = [];
     this.boardTab = "rank";
     this.saved = false;         /* 本局成绩是否已保存（一局只能存一次） */
+    this.saving = false;
     this.pendingMap = null;     /* 等待确认要切去的地图 */
     this.deployEng = null;      /* 排行榜详情里的只读部署 */
     this.deployRd = new TD.Renderer($("tdDeploymentCanvas"));
@@ -165,6 +166,7 @@
 
   /* 把当前地图的尺寸、商店、图例、标题全部换上 */
   TowerGame.prototype.applyMap = function () {
+    this.saving = false;
     var map = this.eng.map;
     this.view = { hover: null, buildKey: null, selected: null };
     this.statsKey = undefined;
@@ -320,6 +322,7 @@
     });
 
     function restart() {
+      self.saving = false;
       self.eng.reset();
       self.eng.enableActionLog();
       self.submissionId = newSubmissionId();
@@ -739,7 +742,7 @@
   TowerGame.prototype.loadScores = function () {
     var self = this;
     this.el.boardState.textContent = "正在读取记录…";
-    fetch("api.php?action=td_scores", { credentials: "same-origin" })
+    fetch("api.php?action=td_scores", { credentials: "same-origin", cache: "no-store" })
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (res) {
         if (!res.ok || !res.d.ok) { throw new Error(); }
@@ -815,7 +818,9 @@
     var self = this;
     var eng = this.eng;
     var el = this.el;
-    if (this.saved || (eng.state !== "won" && eng.state !== "lost")) { return; }
+    if (this.saved || this.saving || (eng.state !== "won" && eng.state !== "lost")) { return; }
+    var submissionId = this.submissionId;
+    this.saving = true;
 
     var name = el.saveName.value.trim() || "匿名玩家";
     storeSet(NAME_KEY, name);
@@ -848,13 +853,17 @@
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (res) {
         if (!res.ok || !res.d.ok) { throw new Error(res.d.error || "保存失败"); }
-        self.saved = true;
         self.scores = Array.isArray(res.d.data) ? res.d.data : self.scores;
         self.renderBoard();
+        if (self.submissionId !== submissionId) { return; }
+        self.saving = false;
+        self.saved = true;
         el.saveForm.hidden = true;
         el.saveStatus.textContent = "成绩已保存，本局不能重复保存。";
       })
       .catch(function (err) {
+        if (self.submissionId !== submissionId) { return; }
+        self.saving = false;
         el.saveStatus.textContent = (err && err.message) || "保存失败，稍后再试。";
         el.saveBtn.disabled = false;
       });

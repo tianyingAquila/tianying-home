@@ -5,6 +5,12 @@ declare(strict_types=1);
 ini_set('display_errors', '0');
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/storage.php';
+
+set_exception_handler(static function (Throwable $error): void {
+    error_log('API: ' . $error->getMessage());
+    respond(['ok' => false, 'error' => '数据读取或保存失败，请稍后重试；原有数据不会被默认内容覆盖'], 500);
+});
 
 define('DATA_DIR', __DIR__ . '/data');
 define('UPLOAD_DIR', __DIR__ . '/uploads');
@@ -21,76 +27,6 @@ function respond(array $data, int $code = 200, ?int $cacheSeconds = null): never
     }
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
-}
-
-function read_json(string $file, array $default = []): array
-{
-    if (!is_file($file)) {
-        return $default;
-    }
-    $raw = file_get_contents($file);
-    $data = json_decode($raw, true);
-    return is_array($data) ? $data : $default;
-}
-
-function write_json(string $file, array $data): void
-{
-    $dir = dirname($file);
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
-    }
-    file_put_contents(
-        $file,
-        json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        LOCK_EX
-    );
-}
-
-function with_file_lock(string $file, callable $callback)
-{
-    $dir = dirname($file);
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
-    }
-    $fp = @fopen($file, 'c+');
-    if ($fp === false) {
-        return $callback(null);
-    }
-    if (!flock($fp, LOCK_EX)) {
-        fclose($fp);
-        return $callback(null);
-    }
-    try {
-        return $callback($fp);
-    } finally {
-        flock($fp, LOCK_UN);
-        fclose($fp);
-    }
-}
-
-function read_json_from_handle($fp, array $default = []): array
-{
-    if (!is_resource($fp)) {
-        return $default;
-    }
-    rewind($fp);
-    $raw = stream_get_contents($fp);
-    if ($raw === false || $raw === '') {
-        return $default;
-    }
-    $data = json_decode($raw, true);
-    return is_array($data) ? $data : $default;
-}
-
-function write_json_to_handle($fp, array $data): void
-{
-    if (!is_resource($fp)) {
-        return;
-    }
-    rewind($fp);
-    ftruncate($fp, 0);
-    fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-    fflush($fp);
 }
 
 function request_body(): array
@@ -303,7 +239,7 @@ const TD_MAP_TOWERS = [
     3 => ['bolt', 'mortar', 'frost', 'rail', 'aura', 'chain'],
 ];
 
-const TD_CURRENT_VERSION = 'v1.02';
+const TD_CURRENT_VERSION = 'v1.03';
 const TD_REPLAY_MAX_ACTIONS = 2000;
 const TD_REPLAY_MAX_TICKS = 216000; // 游戏内 1 小时，足够覆盖正常局并限制异常日志。
 const TD_REPLAY_TIME_TOLERANCE_MS = 2000;
@@ -598,12 +534,7 @@ function current_archives(): array
 
 function current_config(): array
 {
-    $config = read_json(config_file(), default_config());
-    if ($config === []) {
-        $config = default_config();
-        write_json(config_file(), $config);
-    }
-    return array_replace_recursive(default_config(), $config);
+    return merge_config(default_config(), read_json(config_file(), []));
 }
 
 $action = $_GET['action'] ?? '';
@@ -611,19 +542,19 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 switch ($action) {
     case 'config':
-        respond(['ok' => true, 'data' => current_config()], 200, 300);
+        respond(['ok' => true, 'data' => current_config()]);
 
     case 'messages':
         respond(['ok' => true, 'data' => read_json(messages_file(), [])]);
 
     case 'archives':
-        respond(['ok' => true, 'data' => current_archives()], 200, 300);
+        respond(['ok' => true, 'data' => current_archives()]);
 
     case 'ms_scores':
-        respond(['ok' => true, 'data' => read_json(ms_scores_file(), [])], 200, 60);
+        respond(['ok' => true, 'data' => read_json(ms_scores_file(), [])]);
 
     case 'td_scores':
-        respond(['ok' => true, 'data' => public_td_scores(read_json(td_scores_file(), []))], 200, 30);
+        respond(['ok' => true, 'data' => public_td_scores(read_json(td_scores_file(), []))]);
 
     case 'td_deployment':
         $id = (string) ($_GET['id'] ?? '');
@@ -1041,10 +972,20 @@ switch ($action) {
             'effects' => $effectIds,
             'createdAt' => time(),
         ];
+        $submissionId = strtolower(trim((string) ($body['submissionId'] ?? '')));
+        if ($submissionId !== '' && !preg_match('/^[a-f0-9-]{16,64}$/', $submissionId)) {
+            respond(['ok' => false, 'error' => '提交编号不正确'], 400);
+        }
+        if ($submissionId !== '') { $record['submissionId'] = $submissionId; }
         $scores = with_file_lock(ms_scores_file(), function ($fp) use ($record) {
             $scores = is_resource($fp)
                 ? read_json_from_handle($fp, [])
                 : read_json(ms_scores_file(), []);
+            foreach ($scores as $score) {
+                if (!empty($record['submissionId']) && ($score['submissionId'] ?? '') === $record['submissionId']) {
+                    return $scores;
+                }
+            }
             array_unshift($scores, $record);
             $scores = array_slice($scores, 0, 200);
             if (is_resource($fp)) {
@@ -1098,50 +1039,61 @@ switch ($action) {
             respond(['ok' => false, 'error' => '配置格式不正确'], 400);
         }
 
-        $config = current_config();
-        $textKeys = ['brand', 'name', 'intro', 'motto', 'avatar', 'background', 'github', 'icp'];
-        foreach ($textKeys as $key) {
-            if (array_key_exists($key, $input)) {
-                if (in_array($key, ['avatar', 'background', 'github'], true)) {
-                    $config[$key] = clean_url($input[$key]);
-                } else {
-                    $config[$key] = clean_text($input[$key], 500);
+        $config = with_file_lock(config_file(), function ($fp) use ($input) {
+            $config = merge_config(default_config(), read_json_from_handle($fp, []));
+            $textKeys = ['brand', 'name', 'intro', 'motto', 'avatar', 'background', 'github', 'icp'];
+            foreach ($textKeys as $key) {
+                if (array_key_exists($key, $input)) {
+                    if (in_array($key, ['avatar', 'background', 'github'], true)) {
+                        $config[$key] = clean_url($input[$key]);
+                    } else {
+                        $config[$key] = clean_text($input[$key], 500);
+                    }
                 }
             }
-        }
-
-        if (isset($input['music']) && is_array($input['music'])) {
-            $musicTitle = clean_text($input['music']['title'] ?? '', 100);
-            $musicArtist = clean_text($input['music']['artist'] ?? '', 100);
-            $musicSrc = clean_url($input['music']['src'] ?? '');
-            $musicCover = clean_url($input['music']['cover'] ?? '');
-            $config['music']['title'] = $musicTitle;
-            $config['music']['artist'] = $musicArtist;
-            $config['music']['src'] = $musicSrc;
-            $config['music']['cover'] = $musicCover;
-            if (isset($config['music']['tracks']) && is_array($config['music']['tracks']) && isset($config['music']['tracks'][0]) && is_array($config['music']['tracks'][0])) {
-                $config['music']['tracks'][0]['title'] = $musicTitle;
-                $config['music']['tracks'][0]['artist'] = $musicArtist;
-                $config['music']['tracks'][0]['src'] = $musicSrc;
-            }
-        }
-
-        if (isset($input['social']) && is_array($input['social'])) {
-            $social = [];
-            foreach ($input['social'] as $item) {
-                if (!is_array($item)) {
-                    continue;
+            if (array_key_exists('github', $input)) {
+                foreach ($config['social'] as &$socialItem) {
+                    if (($socialItem['icon'] ?? '') === 'github' || ($socialItem['name'] ?? '') === 'GitHub') {
+                        $socialItem['url'] = $config['github'];
+                    }
                 }
-                $social[] = [
-                    'name' => clean_text($item['name'] ?? '', 30),
-                    'url' => clean_url($item['url'] ?? ''),
-                    'icon' => clean_text($item['icon'] ?? '', 30),
-                ];
+                unset($socialItem);
             }
-            $config['social'] = $social;
-        }
 
-        write_json(config_file(), $config);
+            if (isset($input['music']) && is_array($input['music'])) {
+                $musicTitle = clean_text($input['music']['title'] ?? '', 100);
+                $musicArtist = clean_text($input['music']['artist'] ?? '', 100);
+                $musicSrc = clean_url($input['music']['src'] ?? '');
+                $musicCover = clean_url($input['music']['cover'] ?? '');
+                $config['music']['title'] = $musicTitle;
+                $config['music']['artist'] = $musicArtist;
+                $config['music']['src'] = $musicSrc;
+                $config['music']['cover'] = $musicCover;
+                if (isset($config['music']['tracks']) && is_array($config['music']['tracks']) && isset($config['music']['tracks'][0]) && is_array($config['music']['tracks'][0])) {
+                    $config['music']['tracks'][0]['title'] = $musicTitle;
+                    $config['music']['tracks'][0]['artist'] = $musicArtist;
+                    $config['music']['tracks'][0]['src'] = $musicSrc;
+                }
+            }
+
+            if (isset($input['social']) && is_array($input['social'])) {
+                $social = [];
+                foreach ($input['social'] as $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+                    $social[] = [
+                        'name' => clean_text($item['name'] ?? '', 30),
+                        'url' => clean_url($item['url'] ?? ''),
+                        'icon' => clean_text($item['icon'] ?? '', 30),
+                    ];
+                }
+                $config['social'] = $social;
+            }
+
+            write_json_to_handle($fp, $config);
+            return $config;
+        });
         respond(['ok' => true, 'data' => $config]);
 
     case 'archive_save':
@@ -1196,7 +1148,7 @@ switch ($action) {
         }
         require_admin($_POST);
         $type = (string) ($_POST['type'] ?? '');
-        if (!in_array($type, ['avatar', 'background', 'music', 'music-cover', 'gallery'], true)) {
+        if (!in_array($type, ['avatar', 'background', 'music', 'music-cover'], true)) {
             respond(['ok' => false, 'error' => '未知的上传类型'], 400);
         }
         if (empty($_FILES['file']) || !is_array($_FILES['file'])) {
@@ -1247,53 +1199,28 @@ switch ($action) {
         }
         chmod($target, 0644);
 
-        $config = current_config();
         $relative = 'uploads/' . $name;
-        if ($type === 'avatar') {
-            $config['avatar'] = $relative;
-        } elseif ($type === 'background') {
-            $config['background'] = $relative;
-        } elseif ($type === 'music') {
-            $config['music']['src'] = $relative;
-            if (isset($config['music']['tracks']) && is_array($config['music']['tracks']) && isset($config['music']['tracks'][0]) && is_array($config['music']['tracks'][0])) {
-                $config['music']['tracks'][0]['src'] = $relative;
+        $config = with_file_lock(config_file(), function ($fp) use ($type, $relative) {
+            $config = merge_config(default_config(), read_json_from_handle($fp, []));
+            if ($type === 'avatar') {
+                $config['avatar'] = $relative;
+            } elseif ($type === 'background') {
+                $config['background'] = $relative;
+            } elseif ($type === 'music') {
+                $config['music']['src'] = $relative;
+                if (isset($config['music']['tracks']) && is_array($config['music']['tracks']) && isset($config['music']['tracks'][0]) && is_array($config['music']['tracks'][0])) {
+                    $config['music']['tracks'][0]['src'] = $relative;
+                }
+            } elseif ($type === 'music-cover') {
+                $config['music']['cover'] = $relative;
             }
-        } elseif ($type === 'music-cover') {
-            $config['music']['cover'] = $relative;
-        } elseif ($type === 'gallery') {
-            $config['gallery'][] = [
-                'src' => $relative,
-                'caption' => clean_text($_POST['caption'] ?? '随手拍', 100),
-            ];
-        }
-        write_json(config_file(), $config);
+            write_json_to_handle($fp, $config);
+            return $config;
+        });
         respond(['ok' => true, 'data' => $config, 'file' => $relative]);
 
     case 'delete_image':
-        if ($method !== 'POST') {
-            respond(['ok' => false, 'error' => '只接受 POST 请求'], 405);
-        }
-        $body = request_body();
-        require_admin($body);
-        $src = (string) ($body['src'] ?? '');
-        $config = current_config();
-        $found = false;
-        $config['gallery'] = array_values(array_filter($config['gallery'], function ($item) use ($src, &$found) {
-            if (($item['src'] ?? '') === $src) {
-                $found = true;
-                return false;
-            }
-            return true;
-        }));
-        if ($found) {
-            write_json(config_file(), $config);
-            $path = realpath(UPLOAD_DIR . '/' . basename($src));
-            if ($path && str_starts_with($path, realpath(UPLOAD_DIR) . DIRECTORY_SEPARATOR) && is_file($path)) {
-                @unlink($path);
-            }
-            respond(['ok' => true, 'data' => $config]);
-        }
-        respond(['ok' => false, 'error' => '没有找到这张图片'], 404);
+        respond(['ok' => false, 'error' => '照片管理已取消'], 410);
 
     case 'admin_td_questions':
         if ($method !== 'POST') {

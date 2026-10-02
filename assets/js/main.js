@@ -158,7 +158,7 @@
     (state.config.social || []).forEach((item) => {
       const link = document.createElement("a");
       link.className = "social-link";
-      link.href = safeUrl(item.url);
+      link.href = safeUrl(item.icon === "github" || item.name === "GitHub" ? state.config.github || item.url : item.url);
       link.textContent = item.name || item.icon || "链接";
       if (/^https?:/i.test(item.url || "")) {
         link.target = "_blank";

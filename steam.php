@@ -1,5 +1,8 @@
 <?php
 declare(strict_types=1);
+if (!function_exists('write_json')) {
+    require_once __DIR__ . '/storage.php';
+}
 
 // Steam 状态模块
 // ---------------------------------------------------------------------------
@@ -8,7 +11,7 @@ declare(strict_types=1);
 //
 // 这台深圳服务器访问 api.steampowered.com 时，HTTPS 会被运营商随机干扰：
 // TCP 能连上、TLS 握手也正常，但响应常常收不到（实测大约三分之一能成功）。
-// 端口 80 则一直稳定。所以这里统一按「HTTPS 试两次 -> HTTP 兜底」的顺序请求，
+// 带密钥的 Web API 只用 HTTPS；失败时回退到不带密钥的公开 XML。
 // 平时由 cron 每 5 分钟刷新一次缓存，访客看到的都是缓存结果。
 
 if (!defined('DATA_DIR')) {
@@ -248,14 +251,7 @@ function steam_write_cache(string $steamId, array $data): void
     if (!is_dir(DATA_DIR)) {
         @mkdir(DATA_DIR, 0755, true);
     }
-    @file_put_contents(
-        steam_cache_file(),
-        json_encode(
-            ['steamId' => $steamId, 'time' => time(), 'data' => $data],
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-        ),
-        LOCK_EX
-    );
+    write_json(steam_cache_file(), ['steamId' => $steamId, 'time' => time(), 'data' => $data]);
 }
 
 // 启动一次后台刷新：60 秒内只允许一个刷新在跑

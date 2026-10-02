@@ -20,7 +20,7 @@ if (!is_https_request()) {
     <header class="admin-header">
       <div>
         <h1>Tianying的巢 · 后台</h1>
-        <p>修改首页内容、项目档案和照片。</p>
+        <p>修改首页内容和项目档案。</p>
       </div>
       <button id="logoutButton" class="text-button" type="button" hidden>退出登录</button>
     </header>
@@ -119,19 +119,6 @@ if (!is_https_request()) {
 
       <section class="admin-section">
         <div class="section-title">
-          <h2>照片墙</h2>
-          <p>上传随手拍，点击首页照片可放大查看。</p>
-        </div>
-        <div class="upload-inline">
-          <input id="galleryFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-          <input id="galleryCaption" type="text" maxlength="100" placeholder="照片说明（可选）">
-          <button id="galleryUploadButton" class="primary-button" type="button">上传照片</button>
-        </div>
-        <div class="gallery-manager" id="galleryManager"></div>
-      </section>
-
-      <section class="admin-section">
-        <div class="section-title">
           <h2>留言板</h2>
           <p>最多显示 5 条，新留言会自动挤掉最旧的。这里可以手动删除。</p>
         </div>
@@ -153,6 +140,6 @@ if (!is_https_request()) {
     </main>
   </div>
 
-  <script src="assets/js/admin.js?v=5"></script>
+  <script src="assets/js/admin.js?v=6"></script>
 </body>
 </html>

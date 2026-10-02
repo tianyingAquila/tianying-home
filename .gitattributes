@@ -1,0 +1,3 @@
+# Frozen manifests hash exact bytes; checkout must not change line endings.
+assets/js/game/tower/** -text
+*.sh text eol=lf

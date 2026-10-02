@@ -168,21 +168,6 @@
     }
   }
 
-  function renderGallery() {
-    const container = $("galleryManager");
-    container.innerHTML = "";
-    (state.config?.gallery || []).forEach((item) => {
-      const card = document.createElement("div");
-      card.className = "gallery-manager-item";
-      card.innerHTML = `
-        <img width="600" height="400" loading="lazy" src="${escapeHtml(item.src)}" alt="${escapeHtml(item.caption || "照片")}">
-        <div class="caption">${escapeHtml(item.caption || "")}</div>
-        <button class="remove-button" type="button" data-src="${escapeHtml(item.src)}">删除</button>
-      `;
-      container.appendChild(card);
-    });
-  }
-
   function renderMessages() {
     const container = $("messageManager");
     container.innerHTML = "";
@@ -238,7 +223,6 @@
   }
 
   function collectConfig() {
-    const c = state.config || {};
     return {
       brand: $("brandInput").value.trim(),
       name: $("nameInput").value.trim(),
@@ -252,7 +236,6 @@
         src: $("musicSrcInput").value.trim(),
         cover: $("musicCoverInput").value.trim(),
       },
-      gallery: c.gallery || [],
     };
   }
 
@@ -271,7 +254,6 @@
       state.config = result.data;
       setStatus("已保存");
       fillFields();
-      renderGallery();
       window.setTimeout(() => setStatus(""), 2000);
     } catch (error) {
       setStatus(error.message || "保存失败", true);
@@ -298,7 +280,6 @@
       });
       state.config = result.data;
       fillFields();
-      renderGallery();
       fileInput.value = "";
       setStatus("上传成功");
       window.setTimeout(() => setStatus(""), 2000);
@@ -342,27 +323,6 @@
     $("backgroundFile").addEventListener("change", () => uploadFile("background", $("backgroundFile")));
     $("musicFile").addEventListener("change", () => uploadFile("music", $("musicFile")));
     $("musicCoverFile").addEventListener("change", () => uploadFile("music-cover", $("musicCoverFile")));
-    $("galleryUploadButton").addEventListener("click", () => {
-      uploadFile("gallery", $("galleryFile"), $("galleryCaption").value.trim());
-    });
-
-    $("galleryManager").addEventListener("click", async (event) => {
-      const button = event.target.closest("button[data-src]");
-      if (!button) {
-        return;
-      }
-      try {
-        const result = await request("delete_image", {
-          method: "POST",
-          body: JSON.stringify({ csrf: state.csrf, src: button.dataset.src }),
-        });
-        state.config = result.data;
-        renderGallery();
-      } catch (error) {
-        setStatus(error.message || "删除失败", true);
-      }
-    });
-
     $("messageManager").addEventListener("click", async (event) => {
       const button = event.target.closest("button[data-id]");
       if (!button) {
@@ -403,7 +363,7 @@
 
   async function loadData() {
     try {
-      const configResult = await request("config");
+      const configResult = await request("config", { cache: "no-store" });
       state.config = configResult.data;
       const messageResult = await request("messages", { cache: "no-store" });
       state.messages = messageResult.data;
@@ -412,11 +372,10 @@
         body: JSON.stringify({ csrf: state.csrf }),
       });
       state.tdQuestions = questionResult.data;
-      const archiveResult = await request("archives");
+      const archiveResult = await request("archives", { cache: "no-store" });
       state.archives = archiveResult.data;
       fillFields();
       renderArchives();
-      renderGallery();
       renderMessages();
       renderTdQuestions();
     } catch (error) {

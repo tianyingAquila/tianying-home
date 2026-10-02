@@ -6,3 +6,6 @@ config.local.php
 data/rate_limits.json
 data/steam_status.json
 data/steam_icons/
+data/*.lock
+release.json
+release.sha256

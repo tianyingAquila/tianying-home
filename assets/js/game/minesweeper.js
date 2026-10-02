@@ -111,6 +111,9 @@
     counts: {},
     mode: "tier",
     tier: "normal",
+    nextMode: "tier",
+    nextTier: "normal",
+    saving: false,
     freeSelection: new Set(["buff_radar2", "debuff_mist"]),
     flagMode: false,
     hints: 3,
@@ -617,8 +620,8 @@
     const sizeLabel = sizeInfo().label;
     el.modeBadge.textContent =
       (G.mode === "free"
-        ? G.freeSelection.size
-          ? `自由 · ${G.freeSelection.size} 个效果`
+        ? G.effects.length
+          ? `自由 · ${G.effects.length} 个效果`
           : "自由 · 纯扫雷"
         : `难度 · ${TIERS[G.tier].label}`) + ` · ${sizeLabel}`;
     el.modeBadge.classList.toggle("is-free", G.mode === "free");
@@ -2205,6 +2208,10 @@
 
   async function startGame() {
     abortTransaction();
+    G.mode = G.nextMode;
+    G.tier = G.nextTier;
+    G.saving = false;
+    G.submissionId = window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : Date.now().toString(16) + Math.random().toString(16).slice(2);
     G.phase = "dealing";
     applyBoardSize();
     G.mines = G.baseMines;
@@ -2336,7 +2343,7 @@
   async function loadScores() {
     el.scoreState.textContent = "正在读取记录…";
     try {
-      const response = await fetch("api.php?action=ms_scores", { credentials: "same-origin" });
+      const response = await fetch("api.php?action=ms_scores", { credentials: "same-origin", cache: "no-store" });
       const data = await response.json();
       if (!response.ok || !data.ok) {
         throw new Error(data.error || "读取失败");
@@ -2396,10 +2403,12 @@
   async function saveScore(event) {
     event.preventDefault();
     // 只有难度模式的胜利才能上榜：自由模式、失败局、已保存过的都不允许。
-    if (G.mode !== "tier" || G.savedThisGame || !G.resultWon) {
+    if (G.mode !== "tier" || G.savedThisGame || G.saving || !G.resultWon || G.phase !== "over") {
       return;
     }
     const name = el.scoreName.value.trim() || "匿名玩家";
+    const gen = G.gen;
+    G.saving = true;
     el.saveButton.disabled = true;
     el.resultStatus.textContent = "正在保存…";
     try {
@@ -2409,6 +2418,7 @@
         headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({
           name,
+          submissionId: G.submissionId,
           mode: G.mode,
           size: G.sizeId,
           timeMs: G.endedAt - G.startedAt,
@@ -2421,13 +2431,17 @@
         throw new Error(data.error || "保存失败");
       }
       G.scores = Array.isArray(data.data) ? data.data : G.scores;
-      G.savedThisGame = true;
       renderScores();
+      if (gen !== G.gen) { return; }
+      G.savedThisGame = true;
       el.scoreForm.hidden = true;
       el.resultStatus.textContent = "成绩已保存，本局不能重复保存。";
     } catch (error) {
+      if (gen !== G.gen) { return; }
       el.resultStatus.textContent = error.message || "保存失败，稍后再试。";
       el.saveButton.disabled = false;
+    } finally {
+      if (gen === G.gen) { G.saving = false; }
     }
   }
 
@@ -2554,18 +2568,18 @@
   function bindSetup() {
     el.modeSwitch.querySelectorAll("button").forEach((btn) => {
       btn.addEventListener("click", () => {
-        G.mode = btn.dataset.mode;
+        G.nextMode = btn.dataset.mode;
         el.modeSwitch.querySelectorAll("button").forEach((b) => b.classList.toggle("is-active", b === btn));
-        el.tierBlock.hidden = G.mode !== "tier";
-        el.freeBlock.hidden = G.mode !== "free";
+        el.tierBlock.hidden = G.nextMode !== "tier";
+        el.freeBlock.hidden = G.nextMode !== "free";
         updateHud();
       });
     });
     el.tierSwitch.querySelectorAll("button").forEach((btn) => {
       btn.addEventListener("click", () => {
-        G.tier = btn.dataset.tier;
+        G.nextTier = btn.dataset.tier;
         el.tierSwitch.querySelectorAll("button").forEach((b) => b.classList.toggle("is-active", b === btn));
-        el.tierNote.textContent = `${TIERS[G.tier].label}：${TIERS[G.tier].buffs} 个正面 + ${TIERS[G.tier].debuffs} 个负面。${TIERS[G.tier].desc}`;
+        el.tierNote.textContent = `${TIERS[G.nextTier].label}：${TIERS[G.nextTier].buffs} 个正面 + ${TIERS[G.nextTier].debuffs} 个负面。${TIERS[G.nextTier].desc}`;
         updateHud();
       });
     });
@@ -2852,12 +2866,12 @@
       minesForEffects,
       draw: (tierId) => drawTierEffects(tierId),
       startTier(tier) {
-        G.mode = "tier";
-        G.tier = tier;
+        G.nextMode = "tier";
+        G.nextTier = tier;
         return startGame();
       },
       startFree(ids) {
-        G.mode = "free";
+        G.nextMode = "free";
         G.freeSelection = new Set(ids || []);
         return startGame();
       },

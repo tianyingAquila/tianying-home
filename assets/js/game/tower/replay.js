@@ -116,7 +116,22 @@
   }
 
   function makeEngine() {
-    return new window.TD.Engine(state.record.map);
+    var eng = new window.TD.Engine(state.record.map);
+    // Old frozen engines reset their cursor on every call; adapt in the shell.
+    var cursor = { i: 0 };
+    eng.runToTick = function (actions, targetTick, maxTicks) {
+      while (this.stepCount < targetTick && this.stepCount < maxTicks && this.state !== "won" && this.state !== "lost") {
+        this.consumeActions(actions, cursor, this.stepCount);
+        if (this.state !== "running") { break; }
+        this.step(1 / window.TD.config.LIMITS.stepHz);
+      }
+      if (this.state !== "won" && this.state !== "lost") {
+        this.consumeActions(actions, cursor, this.stepCount);
+      }
+      this.drain();
+      return this.resultState();
+    };
+    return eng;
   }
 
   function seekTo(tick) {
