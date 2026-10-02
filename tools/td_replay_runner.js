@@ -84,8 +84,11 @@ function compare(payload, result, expectedMs) {
     const raw = await readStdin();
     const payload = JSON.parse(raw || "{}");
     if (!payload || typeof payload !== "object") throw new Error("输入不是对象");
-    const actions = Array.isArray(payload.actions) ? payload.actions : [];
+    let actions = Array.isArray(payload.actions) ? payload.actions.slice() : [];
     if (actions.length > 2000) throw new Error("动作过多");
+    if (!actions.some((action) => action && action.op === "start" && Number(action.tick) === 0)) {
+      actions.unshift({ tick: 0, op: "start" });
+    }
     const maxTicks = Math.max(1, Math.min(Number(payload.maxTicks) || 216000, 216000));
     const TD = loadEngine(String(payload.version || ""));
     const eng = new TD.Engine(Number(payload.map));

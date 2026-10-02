@@ -201,9 +201,8 @@
   function start(data) {
     state.record = data;
     state.actions = Array.isArray(data.actions) ? data.actions.slice() : [];
-    if (!state.actions.length) {
-      fail("这条记录没有动作日志");
-      return;
+    if (!state.actions.some(function (action) { return action && action.op === "start" && Number(action.tick) === 0; })) {
+      state.actions.unshift({ tick: 0, op: "start" });
     }
     $("replayTitle").textContent = (data.name || "匿名玩家") + "的成绩";
     $("replayVersion").textContent = data.version;
