@@ -308,7 +308,7 @@ const TD_REPLAY_TIME_TOLERANCE_MS = 2000;
 // 最终部署允许为空（例如把塔全拆了），但不接受非法塔种、越界坐标、重复格或未知等级。
 function normalize_td_deployment($raw, int $map): ?array
 {
-    if (!is_array($raw) || count($raw) > 80 || !isset(TD_MAP_SIZE[$map], TD_MAP_TOWERS[$map])) {
+    if (!is_array($raw) || count($raw) > 120 || !isset(TD_MAP_SIZE[$map], TD_MAP_TOWERS[$map])) {
         return null;
     }
     [$cols, $rows] = TD_MAP_SIZE[$map];
