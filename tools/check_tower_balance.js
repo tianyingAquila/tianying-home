@@ -1,14 +1,14 @@
 "use strict";
 const fs = require("node:fs"), vm = require("node:vm"), path = require("node:path");
 const { spawnSync } = require("node:child_process");
-function load() {
+function load(snapshot) {
   const ctx = { console }; ctx.window = ctx; vm.createContext(ctx);
   for (const file of ["config", "grid", "enemies", "towers", "engine"]) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, "../assets/js/game/tower", file + ".js"), "utf8"), ctx);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, "../assets/js/game/tower", snapshot || "", file + ".js"), "utf8"), ctx);
   }
   return ctx.TD;
 }
-const TD = load();
+const TD = load(process.argv.includes("--original") ? "versions/v1.04" : "");
 function actualDamage(eng) {
   let damage = 0;
   const hurt = eng.damage;
@@ -48,12 +48,19 @@ function duel(key, level, wave, anchor, slow) {
 function campaign(map, strategy, variant) {
   const eng = new TD.Engine(map), getDamage = actualDamage(eng);
   eng.enableActionLog();
-  const keys = strategy === "bolt" ? ["bolt"] : strategy === "no-inferno" ? ["bolt", "frost", "chain", "rail", "aura"] : ["bolt", "frost", "chain", "inferno", "aura", "rail"];
+  const formations = [
+    ["chain", "chain", "frost", "aura", "inferno", "aura"],
+    ["bolt", "bolt", "chain", "frost", "aura", "inferno", "chain", "aura"],
+    ["aura", "bolt", "chain", "frost", "inferno", "chain", "aura"],
+    ["chain", "aura", "frost", "aura", "chain", "inferno", "aura", "aura"]
+  ];
+  const focused = strategy === "focused";
+  const keys = focused ? formations[variant % formations.length] : strategy === "bolt" ? ["bolt"] : strategy === "no-inferno" ? ["bolt", "frost", "chain", "rail", "aura"] : ["bolt", "frost", "chain", "inferno", "aura", "rail"];
   const targets = [];
   eng.grid.paths.forEach(p => {
     for (let d = 0; d < p.length; d += 0.8) {
       const pos = eng.grid.positionAt(p.index, d);
-      targets.push({ ...pos, weight: p.weight, covered: 0 });
+      targets.push({ ...pos, weight: p.weight * (focused && d < 42 ? 2 + Math.floor(variant / 4) % 3 : 1), covered: 0 });
     }
   });
   function purchase() {
@@ -61,7 +68,7 @@ function campaign(map, strategy, variant) {
     for (let purchases = 0; purchases < 100; purchases++) {
       const upgrade = strategy !== "bolt" && eng.towers.find(t => t.level < 3 && (eng.towers.length >= 4 || t.level === 2) && eng.canAfford(t.upgradeCost()));
       if (upgrade) { eng.upgrade(upgrade); continue; }
-      const key = keys[(eng.towers.length + variant) % keys.length], def = TD.config.TOWERS[key];
+      const key = keys[(eng.towers.length + (focused ? 0 : variant)) % keys.length], def = TD.config.TOWERS[key];
       if (!eng.canAfford(def.cost)) break;
       let best, bestScore = -1;
       for (const cell of candidates(eng, [10, 5])) {
@@ -81,12 +88,33 @@ function campaign(map, strategy, variant) {
   let lastWave = -1, tick = 0;
   while (eng.state === "running" && tick++ < 216000) {
     eng.realTime = eng.stepCount / 60;
-    if (!eng.waveActive && eng.waveIndex !== lastWave) { purchase(); lastWave = eng.waveIndex; }
+    if (!eng.waveActive && eng.waveIndex !== lastWave) {
+      if (focused && variant >= 24) eng.callWaveEarly();
+      purchase(); lastWave = eng.waveIndex;
+    }
     eng.step(1 / 60);
   }
   return { map, strategy, variant, state: eng.state, wave: eng.reachedWave(), lives: eng.lives, damage: getDamage(), towers: eng.towers.length, ticks: eng.stepCount, actions: eng.actions, result: eng.resultState() };
 }
-if (process.argv.includes("--campaign")) {
+module.exports = { campaign, load };
+if (require.main === module && process.argv.includes("--search")) {
+  let best;
+  for (let variant = 24; variant < 48; variant++) {
+    const run = campaign(4, "focused", variant);
+    console.log(JSON.stringify({ ...run, actions: undefined, result: undefined }));
+    if (!best || run.lives > best.lives || (run.lives === best.lives && run.wave > best.wave)) best = run;
+    if (run.state === "won" && run.lives === 20) {
+      if (process.argv.includes("--verify")) {
+        const replay = new TD.Engine(4);
+        replay.runToTick(run.actions, run.ticks, 216000);
+        if (JSON.stringify(replay.resultState()) !== JSON.stringify(run.result)) throw new Error("Replay mismatch");
+      }
+      console.log("Full-health legal campaign found: " + variant);
+      break;
+    }
+  }
+  if (best.state !== "won" || best.lives !== 20) process.exitCode = 1;
+} else if (require.main === module && process.argv.includes("--campaign")) {
   const runs = [];
   for (const map of [3, 4]) for (const strategy of ["bolt", "mixed", "no-inferno"]) {
     if (map === 3 && strategy === "mixed") continue;
@@ -101,7 +129,7 @@ if (process.argv.includes("--campaign")) {
       replay.runToTick(run.actions, run.ticks, 216000);
       if (JSON.stringify(replay.resultState()) !== JSON.stringify(run.result)) throw new Error("Replay mismatch");
       if (run.state === "won") {
-        const payload = { ...run.result, version: TD.config.VERSION, map: run.map, actions: run.actions, deployment: run.result.towers, timeMs: run.result.gameTimeMs };
+        const payload = { ...run.result, version: TD.config.VERSION, revision: TD.config.REVISION || 0, map: run.map, actions: run.actions, deployment: run.result.towers, timeMs: run.result.gameTimeMs };
         const checked = spawnSync(process.execPath, [path.join(__dirname, "td_replay_runner.js")], { input: JSON.stringify(payload), encoding: "utf8" });
         const result = JSON.parse(checked.stdout);
         if (!result.ok || result.question) throw new Error("Server replay mismatch: " + checked.stdout);
@@ -109,7 +137,7 @@ if (process.argv.includes("--campaign")) {
     }
     console.log("All campaign action logs reproduce exactly");
   }
-} else {
+} else if (require.main === module) {
   const results = [];
   for (const level of [1, 3]) for (const wave of [4, 13, 17, 20]) for (const anchor of [[8, 4], [14, 6], [4, 6]]) for (const slow of [false, true]) {
     const inferno = duel("inferno", level, wave, anchor, slow), bolt = duel("bolt", level, wave, anchor, slow);

@@ -838,6 +838,7 @@
       body: JSON.stringify({
         name: name,
         version: cfg.VERSION,
+        revision: cfg.REVISION || 0,
         submissionId: self.submissionId,
         map: eng.map.id,
         wave: eng.reachedWave(),

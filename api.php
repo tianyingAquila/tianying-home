@@ -241,6 +241,7 @@ const TD_MAP_TOWERS = [
 ];
 
 const TD_CURRENT_VERSION = 'v1.04';
+const TD_CURRENT_REVISION = 1;
 const TD_REPLAY_MAX_ACTIONS = 2000;
 const TD_REPLAY_MAX_TICKS = 216000; // 游戏内 1 小时，足够覆盖正常局并限制异常日志。
 const TD_REPLAY_TIME_TOLERANCE_MS = 2000;
@@ -599,6 +600,7 @@ switch ($action) {
                     'name' => (string) ($score['name'] ?? '匿名玩家'),
                     'map' => (int) ($score['map'] ?? 0),
                     'version' => (string) ($score['version'] ?? 'v1.01'),
+                    'revision' => (int) ($score['revision'] ?? 0),
                     'wave' => (int) ($score['wave'] ?? 0),
                     'total' => (int) ($score['total'] ?? 0),
                     'lives' => (int) ($score['lives'] ?? 0),
@@ -622,6 +624,10 @@ switch ($action) {
         $version = trim((string) ($body['version'] ?? ''));
         if ($version !== TD_CURRENT_VERSION) {
             respond(['ok' => false, 'error' => '游戏版本已更新，请刷新页面后重试'], 409);
+        }
+        $revision = (int) ($body['revision'] ?? 0);
+        if ($revision < 0 || $revision > TD_CURRENT_REVISION) {
+            respond(['ok' => false, 'error' => '规则快照不正确'], 400);
         }
 
         $name = clean_text($body['name'] ?? '', 12);
@@ -694,6 +700,7 @@ switch ($action) {
         }
         $dedupeKey = hash('sha256', json_encode([
             'version' => TD_CURRENT_VERSION,
+            'revision' => $revision,
             'name' => $name,
             'map' => $map,
             'wave' => $wave,
@@ -712,6 +719,7 @@ switch ($action) {
             'id' => bin2hex(random_bytes(6)),
             'name' => $name,
             'version' => TD_CURRENT_VERSION,
+            'revision' => $revision,
             'map' => $map,
             'wave' => $wave,
             'total' => $total,
@@ -739,6 +747,7 @@ switch ($action) {
             $record['actions'] = $actions;
             $check = run_td_replay_check([
                 'version' => TD_CURRENT_VERSION,
+                'revision' => $revision,
                 'map' => $map,
                 'wave' => $wave,
                 'lives' => $lives,

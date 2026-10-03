@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const { spawnSync } = require("node:child_process");
 const base = path.resolve(__dirname, "../assets/js/game/tower");
 function load(version) {
   const ctx = { console }; ctx.window = ctx;
@@ -59,12 +60,53 @@ test("ended games keep their final deployment and gold", () => {
   assert.equal(JSON.stringify(eng.resultState()), before);
 });
 test("all frozen manifests still match their files", () => {
-  for (const version of ["v1.01", "v1.02", "v1.03", "v1.04"]) {
-    const dir = path.join(base, "versions", version);
+  const snapshots = ["versions/v1.01", "versions/v1.02", "versions/v1.03", "versions/v1.04", "patches/v1.04-r1"];
+  for (const snapshot of snapshots) {
+    const dir = path.join(base, snapshot);
     const manifest = JSON.parse(fs.readFileSync(path.join(dir, "manifest.json")));
     for (const [file, hash] of Object.entries(manifest.files)) {
       assert.equal(crypto.createHash("sha256").update(fs.readFileSync(path.join(dir, file))).digest("hex").toUpperCase(), hash);
     }
+  }
+});
+
+test("fourth map ramps from wave sixteen and increases final healing pressure", () => {
+  const current = load().TD.config, original = load("v1.04").TD.config;
+  assert.equal(current.VERSION, "v1.04");
+  const next = current.mapById(4), old = original.mapById(4);
+  assert.equal(JSON.stringify(next.waves.slice(0, 15)), JSON.stringify(old.waves.slice(0, 15)));
+  for (const no of [16, 17, 18, 19, 20]) assert.ok(next.endgame[no] > (old.endgame[no] || 1));
+  const priests = map => map.waves[19].groups.find(g => g[0] === "priest")[1];
+  assert.ok(priests(next) > priests(old));
+});
+
+test("replay browser loads the original or revised snapshot without changing version", async () => {
+  for (const revision of [0, 1]) {
+    const sources = [], ctx = load();
+    ctx.document = { getElementById() {}, createElement() { return {}; }, head: { appendChild(script) { sources.push(script.src); script.onload(); } } };
+    vm.runInContext(fs.readFileSync(path.join(base, "replay.js"), "utf8").replace("  init();", "  window.__test = { loadVersion };"), ctx);
+    await ctx.__test.loadVersion("v1.04", revision);
+    assert.equal(sources.length, 6);
+    const prefix = revision ? "assets/js/game/tower/patches/v1.04-r1/" : "assets/js/game/tower/versions/v1.04/";
+    assert.ok(sources.every(src => src.startsWith(prefix)));
+  }
+});
+
+test("revised fourth map has a full-health campaign with legal economy and verified replay", () => {
+  const { campaign } = require("../tools/check_tower_balance");
+  const run = campaign(4, "focused", 32);
+  assert.equal(run.state, "won"); assert.equal(run.lives, 20); assert.equal(run.result.leaked, 0);
+  assert.ok(run.result.gold >= 0);
+  assert.ok(run.actions.some(action => action.op === "wave"));
+  for (const revision of [0, 1]) {
+    const TD = revision ? load().TD : load("v1.04").TD;
+    const replay = new TD.Engine(4);
+    const result = replay.runReplay(run.actions, 216000);
+    if (revision) assert.equal(JSON.stringify(result), JSON.stringify(run.result));
+    const payload = { ...result, map: 4, version: "v1.04", revision, actions: run.actions, deployment: result.towers, timeMs: result.gameTimeMs };
+    const output = spawnSync(process.execPath, [path.resolve(__dirname, "../tools/td_replay_runner.js")], { input: JSON.stringify(payload), encoding: "utf8" });
+    const check = JSON.parse(output.stdout);
+    assert.equal(check.ok, true); assert.equal(check.question, false);
   }
 });
 

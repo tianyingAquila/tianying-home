@@ -29,11 +29,13 @@
     });
   }
 
-  function loadVersion(version) {
+  function loadVersion(version, revision) {
     if (!/^v\d+\.\d+$/.test(version)) {
       throw new Error("版本号不正确");
     }
-    var base = "assets/js/game/tower/versions/" + version + "/";
+    revision = Number(revision || 0);
+    if (!Number.isInteger(revision) || revision < 0) { throw new Error("规则快照不正确"); }
+    var base = "assets/js/game/tower/" + (revision ? "patches/" : "versions/") + version + (revision ? "-r" + revision : "") + "/";
     var files = ["config.js", "grid.js", "enemies.js", "towers.js", "engine.js", "render.js"];
     return files.reduce(function (chain, file) {
       return chain.then(function () { return loadScript(base + file); });
@@ -227,7 +229,7 @@
       $("replayNote").textContent = "服务器复核结果与提交成绩不一致。这里播放的是提交动作在正常规则下的实际过程。";
     }
 
-    loadVersion(data.version)
+    loadVersion(data.version, data.revision)
       .then(function () {
         window.TD.applyPagePalette();
         data.mapName = window.TD.config.mapById(data.map).name;

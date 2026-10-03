@@ -27,7 +27,8 @@ for file in ./*.php cron/*.php; do
     /www/server/php/82/bin/php -l "$file" >/dev/null
 done
 /usr/bin/node tools/check_release.js
-for version in assets/js/game/tower/versions/*; do
+for version in assets/js/game/tower/versions/* assets/js/game/tower/patches/*; do
+    [ -d "$version" ] || continue
     if [ -d "$root/$version" ]; then diff -qr "$version" "$root/$version"; fi
 done
 find . -type f ! -name release.json ! -name release.sha256 -exec sha256sum '{}' \; > release.sha256

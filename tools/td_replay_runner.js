@@ -48,9 +48,10 @@ function expectedTimeMs(actions, finalTick) {
   return Math.round(total);
 }
 
-function loadEngine(version) {
+function loadEngine(version, revision) {
   if (!/^v\d+\.\d+$/.test(version)) throw new Error("版本号不合法");
-  const versionDir = path.resolve(__dirname, "..", "assets", "js", "game", "tower", "versions", version);
+  if (!Number.isInteger(revision) || revision < 0) throw new Error("规则快照不合法");
+  const versionDir = path.resolve(__dirname, "..", "assets", "js", "game", "tower", revision ? "patches" : "versions", version + (revision ? "-r" + revision : ""));
   if (!fs.existsSync(versionDir)) throw new Error("版本目录不存在");
 
   const sandbox = { console: console };
@@ -90,7 +91,7 @@ function compare(payload, result, expectedMs) {
       actions.unshift({ tick: 0, op: "start" });
     }
     const maxTicks = Math.max(1, Math.min(Number(payload.maxTicks) || 216000, 216000));
-    const TD = loadEngine(String(payload.version || ""));
+    const TD = loadEngine(String(payload.version || ""), Number(payload.revision || 0));
     const eng = new TD.Engine(Number(payload.map));
     const result = eng.runReplay(actions, maxTicks);
     if (result.state !== "won" && result.state !== "lost") {
