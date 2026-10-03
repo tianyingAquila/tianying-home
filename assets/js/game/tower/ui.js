@@ -626,12 +626,13 @@
         '<p class="td-stats-name">' + t.def.name + '</p>' +
         '<p class="td-stats-lv">LV ' + t.level + ' / ' + t.maxLevel() + '</p>' +
         '<dl class="td-stats-list">' +
-          srow(t.def.aoe ? "范围伤害" : "伤害", st.damage) +
+          srow(t.def.beam ? "起始DPS" : (t.def.aoe ? "范围伤害" : "伤害"), st.damage) +
+          (t.def.beam ? srow("峰值DPS", st.maxDamage) : "") +
           srow("射程", st.range.toFixed(1)) +
           (st.splash ? srow("溅射", st.splash.toFixed(2)) : "") +
           (st.slow ? srow("减速", Math.round(st.slow * 100) + "%") : "") +
           (chain ? srow("跳跃", chain.jumps + " 次 · " + Math.round(chain.ratio * 100) + "%") : "") +
-          srow("射速", st.rate.toFixed(2) + "/s") +
+          (t.def.beam ? '<div><dt>当前DPS</dt><dd data-live="beam">' + st.damage + '</dd></div>' : srow("射速", st.rate.toFixed(2) + "/s")) +
         '</dl>' +
         '<dl class="td-stats-list td-stats-record">' +
           '<div><dt>击杀</dt><dd data-live="kills">' + t.kills + '</dd></div>' +
@@ -645,16 +646,17 @@
           '<p class="td-stats-name">LV ' + (t.level + 1) + '</p>' +
           '<p class="td-stats-lv">费用 ' + t.upgradeCost() + '</p>' +
           '<dl class="td-stats-list">' +
-            gainRow(t.def.aoe ? "范围伤害" : "伤害", st.damage, nx.damage, 0) +
+            gainRow(t.def.beam ? "起始DPS" : (t.def.aoe ? "范围伤害" : "伤害"), st.damage, nx.damage, 0) +
+            (t.def.beam ? gainRow("峰值DPS", st.maxDamage, nx.maxDamage, 0) : "") +
             gainRow("射程", st.range, nx.range, 1) +
             (nx.splash ? gainRow("溅射", st.splash, nx.splash, 2) : "") +
             (nx.slow ? gainRow("减速", st.slow * 100, nx.slow * 100, 0, "%") : "") +
-            (frostUpgrade
+            (t.def.beam ? srow("蓄能", "20秒") : frostUpgrade
               ? gainRow("射速", st.rate, nx.rate, 2, "/s")
               : srow("射速", nx.rate.toFixed(2) + "/s")) +
           '</dl>' +
           '<p class="td-stats-foot">' +
-            (frostUpgrade
+            (t.def.beam ? '升级保持锁定与蓄能' : frostUpgrade
               ? '升级提升伤害、射程与射速<br>减速值同步提高'
               : '升级只提升伤害与射程<br>射速恒定不变') +
           '</p>';
@@ -669,6 +671,8 @@
     /* 每帧只刷战绩 */
     var k = now.querySelector('[data-live="kills"]');
     var d = now.querySelector('[data-live="dmg"]');
+    var beamDps = now.querySelector('[data-live="beam"]');
+    if (beamDps) { beamDps.textContent = t.beamTarget && t.beamTarget.alive ? t.beamDps().toFixed(1) : "0"; }
     if (k) { k.textContent = t.kills; }
     if (d) { d.textContent = Math.round(t.damageDealt); }
 
@@ -754,7 +758,7 @@
       });
   };
 
-  /* 最高记录：只看当前地图（三张图难度不同，混排没意义），
+  /* 最高记录：只看当前地图（各图难度不同，混排没意义），
      按 打到的波数 → 剩余生命 → 用时 排序。
      最新：所有地图混在一起按时间倒序，每条标上是哪张图。 */
   TowerGame.prototype.renderBoard = function () {

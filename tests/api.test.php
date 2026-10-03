@@ -55,6 +55,12 @@ try {
     $score = ['name' => 'test', 'mode' => 'tier', 'timeMs' => 5000, 'difficulty' => 'easy', 'size' => 'small', 'effects' => [], 'submissionId' => str_repeat('a', 32)];
     [$one] = api('ms_score', $score); [$two] = api('ms_score', $score);
     verify($one['ok'] && $two['ok'] && count($two['data']) === 1, 'retry saves minesweeper score once');
+    $towerScore = ['name' => 'map4-test', 'map' => 4, 'version' => 'v1.04', 'wave' => 12, 'lives' => 0, 'won' => false, 'timeMs' => 180000, 'gold' => 10, 'kills' => 80, 'leaked' => 20, 'built' => 1, 'deployment' => [['type' => 'inferno', 'c' => 8, 'r' => 4, 'level' => 2]], 'submissionId' => str_repeat('b', 32)];
+    [$towerOne] = api('td_score', $towerScore); [$towerTwo] = api('td_score', $towerScore);
+    verify($towerOne['ok'] && $towerTwo['ok'] && count($towerTwo['data']) === 1 && $towerTwo['data'][0]['map'] === 4, 'fourth map accepts inferno deployment and deduplicates retries');
+    $towerScore['deployment'][0]['type'] = 'mortar';
+    [$wrongTower, $headers] = api('td_score', $towerScore);
+    verify(!$wrongTower['ok'] && str_contains($headers[0], '400'), 'fourth map rejects removed mortar tower');
     file_put_contents($dir . '/data/messages.json', '{broken');
     [$bad, $headers] = api('message', ['name' => 'test', 'message' => 'test']);
     verify(!$bad['ok'] && str_contains($headers[0], '500') && file_get_contents($dir . '/data/messages.json') === '{broken', 'API returns JSON error and preserves corrupt data');

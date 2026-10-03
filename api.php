@@ -225,21 +225,22 @@ function ms_scores_file(): string
     return DATA_DIR . '/ms_scores.json';
 }
 
-// 塔防记录榜。三张地图的总波数要和前端 config.js 保持一致。
+// 塔防记录榜。地图的总波数要和前端 config.js 保持一致。
 function td_scores_file(): string
 {
     return DATA_DIR . '/td_scores.json';
 }
 
-const TD_MAP_WAVES = [1 => 18, 2 => 18, 3 => 20];
-const TD_MAP_SIZE = [1 => [15, 11], 2 => [15, 11], 3 => [20, 11]];
+const TD_MAP_WAVES = [1 => 18, 2 => 18, 3 => 20, 4 => 20];
+const TD_MAP_SIZE = [1 => [15, 11], 2 => [15, 11], 3 => [20, 11], 4 => [20, 11]];
 const TD_MAP_TOWERS = [
     1 => ['bolt', 'mortar', 'frost', 'rail'],
     2 => ['bolt', 'mortar', 'frost', 'rail', 'aura'],
     3 => ['bolt', 'mortar', 'frost', 'rail', 'aura', 'chain'],
+    4 => ['bolt', 'inferno', 'frost', 'rail', 'aura', 'chain'],
 ];
 
-const TD_CURRENT_VERSION = 'v1.03';
+const TD_CURRENT_VERSION = 'v1.04';
 const TD_REPLAY_MAX_ACTIONS = 2000;
 const TD_REPLAY_MAX_TICKS = 216000; // 游戏内 1 小时，足够覆盖正常局并限制异常日志。
 const TD_REPLAY_TIME_TOLERANCE_MS = 2000;

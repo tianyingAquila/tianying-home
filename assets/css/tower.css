@@ -47,10 +47,10 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
 
 /* ----------------------------------------------------------------- 地图选择 */
 
-/* 三张地图做成档案页那种编号卡：等宽编号 + 名称 + 一行说明，当前选中的长出褐色竖条 */
+/* 地图选择沿用档案页的编号样式。 */
 .td-maps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--tk-gap-2);
   margin-bottom: var(--tk-gap-3);
 }
@@ -511,6 +511,24 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
 }
 
 .td-gl-circle { border-radius: 50%; }
+.td-gl-flash {
+  border: none;
+  background: var(--tk-steel);
+  clip-path: polygon(0 0, 100% 50%, 0 100%, 30% 50%);
+}
+.td-gl-priest {
+  position: relative;
+  border: none;
+  background: var(--tk-steel);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.td-gl-priest::after {
+  content: "";
+  position: absolute;
+  inset: 5px 3px 2px;
+  background: var(--tk-bone);
+  clip-path: polygon(40% 0, 60% 0, 60% 35%, 100% 35%, 100% 60%, 60% 60%, 60% 100%, 40% 100%, 40% 60%, 0 60%, 0 35%, 40% 35%);
+}
 .td-gl-square { border-radius: 1px; }
 
 .td-gl-triangle {
@@ -1076,14 +1094,14 @@ body.is-wide-map .td-arena { grid-template-columns: 132px minmax(0, 1fr) 132px; 
   .td-btn { height: 30px; font-size: 12px; padding: 0 6px; }
   .td-hud { overflow-x: hidden; }
 
-  /* 地图切换：在紧凑布局里改成固定在左列底部的三个小号按钮。
+  /* 地图切换：在紧凑布局里改成固定在左列底部的四个小号按钮。
      它在 DOM 里不属于 .td-layout，所以用 fixed 贴过去，不然会横跨整屏顶部、把地图往下挤 */
   .td-maps {
     position: fixed;
     left: max(8px, env(safe-area-inset-left));
     bottom: 8px;
     width: 118px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
     margin: 0;
     z-index: 4;
