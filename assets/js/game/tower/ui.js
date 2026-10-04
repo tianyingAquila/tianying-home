@@ -53,6 +53,7 @@
       restartTopBtn: $("tdRestartTop"),
       pauseBtn: $("tdPause"),
       speedBtn: $("tdSpeed"),
+      version: $("tdVersion"),
       callBtn: $("tdCall"),
       result: $("tdResult"),
       resultEyebrow: $("tdResultEyebrow"),
@@ -173,6 +174,7 @@
     this.saved = false;
     this.el.result.hidden = true;
     this.el.confirm.hidden = true;
+    if (this.el.version) { this.el.version.textContent = cfg.VERSION; }
 
     this.rd.setGrid(map.cols, map.rows);
     document.body.classList.toggle("is-wide-map", map.cols > 15);

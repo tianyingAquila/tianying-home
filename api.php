@@ -240,7 +240,7 @@ const TD_MAP_TOWERS = [
     4 => ['bolt', 'inferno', 'frost', 'rail', 'aura', 'chain'],
 ];
 
-const TD_CURRENT_VERSION = 'v1.05';
+const TD_CURRENT_VERSION = 'v1.06';
 const TD_CURRENT_REVISION = 0;
 const TD_REPLAY_MAX_ACTIONS = 2000;
 const TD_REPLAY_MAX_TICKS = 216000; // 游戏内 1 小时，足够覆盖正常局并限制异常日志。

@@ -55,10 +55,10 @@ try {
     $score = ['name' => 'test', 'mode' => 'tier', 'timeMs' => 5000, 'difficulty' => 'easy', 'size' => 'small', 'effects' => [], 'submissionId' => str_repeat('a', 32)];
     [$one] = api('ms_score', $score); [$two] = api('ms_score', $score);
     verify($one['ok'] && $two['ok'] && count($two['data']) === 1, 'retry saves minesweeper score once');
-    $towerScore = ['name' => 'map4-test', 'map' => 4, 'version' => 'v1.05', 'revision' => 0, 'wave' => 12, 'lives' => 0, 'won' => false, 'timeMs' => 180000, 'gold' => 10, 'kills' => 80, 'leaked' => 20, 'built' => 1, 'deployment' => [['type' => 'inferno', 'c' => 8, 'r' => 4, 'level' => 2]], 'submissionId' => str_repeat('b', 32)];
+    $towerScore = ['name' => 'map4-test', 'map' => 4, 'version' => 'v1.06', 'revision' => 0, 'wave' => 12, 'lives' => 0, 'won' => false, 'timeMs' => 180000, 'gold' => 10, 'kills' => 80, 'leaked' => 20, 'built' => 1, 'deployment' => [['type' => 'inferno', 'c' => 8, 'r' => 4, 'level' => 2]], 'submissionId' => str_repeat('b', 32)];
     [$towerOne] = api('td_score', $towerScore); [$towerTwo] = api('td_score', $towerScore);
     verify($towerOne['ok'] && $towerTwo['ok'] && count($towerTwo['data']) === 1 && $towerTwo['data'][0]['map'] === 4, 'fourth map accepts inferno deployment and deduplicates retries');
-    verify($towerTwo['data'][0]['version'] === 'v1.05' && $towerTwo['data'][0]['revision'] === 0, 'new scores use the v1.05 snapshot');
+    verify($towerTwo['data'][0]['version'] === 'v1.06' && $towerTwo['data'][0]['revision'] === 0, 'new scores use the v1.06 snapshot');
     $legacy = $towerScore; $legacy['version'] = 'v1.04'; $legacy['submissionId'] = str_repeat('c', 32); $legacy['name'] = 'legacy';
     foreach ([0, 1] as $revision) {
         $legacy['revision'] = $revision;

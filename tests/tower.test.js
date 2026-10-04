@@ -32,7 +32,7 @@ test("chunked replay equals a single replay, including seek boundaries", () => {
   assert.equal(JSON.stringify(chunks.resultState()), JSON.stringify(single.resultState()));
 });
 test("browser shell adapts old frozen engines without editing them", () => {
-  for (const version of ["v1.01", "v1.02", "v1.03", "v1.04", "v1.05"]) {
+  for (const version of ["v1.01", "v1.02", "v1.03", "v1.04", "v1.05", "v1.06"]) {
     const ctx = load(version);
     ctx.document = { getElementById() {} };
     vm.runInContext(fs.readFileSync(path.join(base, "replay.js"), "utf8").replace("  init();", "  window.__test = { state, makeEngine };"), ctx);
@@ -61,7 +61,7 @@ test("ended games keep their final deployment and gold", () => {
   assert.equal(JSON.stringify(eng.resultState()), before);
 });
 test("all frozen manifests still match their files", () => {
-  const snapshots = ["versions/v1.01", "versions/v1.02", "versions/v1.03", "versions/v1.04", "patches/v1.04-r1", "versions/v1.05"];
+  const snapshots = ["versions/v1.01", "versions/v1.02", "versions/v1.03", "versions/v1.04", "patches/v1.04-r1", "versions/v1.05", "versions/v1.06"];
   for (const snapshot of snapshots) {
     const dir = path.join(base, snapshot);
     const manifest = JSON.parse(fs.readFileSync(path.join(dir, "manifest.json")));
@@ -73,7 +73,7 @@ test("all frozen manifests still match their files", () => {
 
 test("fourth map ramps from wave sixteen and increases final healing pressure", () => {
   const current = load().TD.config, original = load("v1.04").TD.config;
-  assert.equal(current.VERSION, "v1.05");
+  assert.equal(current.VERSION, "v1.06");
   assert.equal(current.REVISION, 0);
   const next = current.mapById(4), old = original.mapById(4);
   assert.equal(JSON.stringify(next.waves.slice(0, 15)), JSON.stringify(old.waves.slice(0, 15)));
@@ -82,8 +82,8 @@ test("fourth map ramps from wave sixteen and increases final healing pressure", 
   assert.ok(priests(next) > priests(old));
 });
 
-test("replay browser preserves both v1.04 snapshots and loads v1.05", async () => {
-  for (const [version, revision] of [["v1.04", 0], ["v1.04", 1], ["v1.05", 0]]) {
+test("replay browser preserves old snapshots and loads v1.06", async () => {
+  for (const [version, revision] of [["v1.04", 0], ["v1.04", 1], ["v1.05", 0], ["v1.06", 0]]) {
     const sources = [], ctx = load();
     ctx.document = { getElementById() {}, createElement() { return {}; }, head: { appendChild(script) { sources.push(script.src); script.onload(); } } };
     vm.runInContext(fs.readFileSync(path.join(base, "replay.js"), "utf8").replace("  init();", "  window.__test = { loadVersion };"), ctx);
@@ -100,11 +100,11 @@ test("revised fourth map has a full-health campaign with legal economy and verif
   assert.equal(run.state, "won"); assert.equal(run.lives, 20); assert.equal(run.result.leaked, 0);
   assert.ok(run.result.gold >= 0);
   assert.ok(run.actions.some(action => action.op === "wave"));
-  for (const [version, revision] of [["v1.04", 0], ["v1.04", 1], ["v1.05", 0]]) {
+  for (const [version, revision] of [["v1.04", 0], ["v1.04", 1], ["v1.05", 0], ["v1.06", 0]]) {
     const TD = load(version, revision).TD;
     const replay = new TD.Engine(4);
     const result = replay.runReplay(run.actions, 216000);
-    if (revision || version === "v1.05") assert.equal(JSON.stringify(result), JSON.stringify(run.result));
+    if (revision || version === "v1.05" || version === "v1.06") assert.equal(JSON.stringify(result), JSON.stringify(run.result));
     const payload = { ...result, map: 4, version, revision, actions: run.actions, deployment: result.towers, timeMs: result.gameTimeMs };
     const output = spawnSync(process.execPath, [path.resolve(__dirname, "../tools/td_replay_runner.js")], { input: JSON.stringify(payload), encoding: "utf8" });
     const check = JSON.parse(output.stdout);
