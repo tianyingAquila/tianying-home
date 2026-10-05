@@ -4,7 +4,7 @@
 
 - 首页：个人简介、社交链接、随笔、留言板、图片集、Steam 状态和音乐播放器
 - 项目页：`projects.html` 的 Three.js 档案终端
-- 游戏选择页：`games.html` 的平面 GAME OS；卡带切换、插槽启动及反向退出，直接展开真实游戏预览
+- 游戏选择页：`games.html` 的一屏 GAME OS；大卡带、贴底游戏机、1:1 真实预览和反向退出
 - 扫雷页：`minesweeper.html` 的技能扫雷
 - 塔防页：`tower.html`；赢局从 v1.02 起保存动作日志，`replay.html` 可现场回放
 - 后台：`admin.php`，只允许通过 HTTPS 访问
@@ -40,8 +40,10 @@
 
 ## 回归验证
 
-GAME OS 使用原生 CSS / Web Animations，没有新增依赖。卡带里的预览是同源游戏页面的真实棋盘 / Canvas 中央截取，启动约 1.75 秒，整个过程保留同一节点和实例。选择器读取原游戏 HTML，添加同源 base 后挂载到 iframe 的 srcdoc，保留线上已有的 `X-Frame-Options: DENY` 和 `frame-ancestors 'none'`；资源、API 地址和游戏代码都继续来自原页面。嵌入标记只在选择器内部启用专用布局；直接访问扫雷、塔防页面仍使用原布局。`game-os.js` 管理选择器与过渡，`game-os-embed.js` / `game-os-embed.css` 管理预览定位、嵌入布局及生命周期。退出保留本局，选择器期间停止塔防推进和扫雷计时；刷新页面不保存本局。动画遵循系统的减少动态效果偏好。
+GAME OS 使用原生 CSS / Web Animations，没有新增依赖。选择页固定为一屏：中央大卡带、右侧被屏幕裁切的下一张卡带、固定贴底并随卡带宽度调整凹口的游戏机底座。预览覆盖轻薄塑料高光，悬浮上移 8px。卡带里的预览是同源游戏页面的真实棋盘 / Canvas，保持与运行时 1:1 相同尺寸；较矮屏幕裁切中央部分，全程不缩放棋盘。启动约 1.7 秒：下插 30px，棋盘平移到运行位置，外壳/薄膜退去后才显现周围 UI、恢复输入。整个过程保留同一节点和实例；外层页面始终没有滚动空间，运行游戏可以内部滚动。
 
-浏览器回归应检查：两款卡带切换与插槽对齐、真实棋盘 / Canvas 节点连续、扫雷开格 / 插旗 / 提示 / 改雷区、塔防建造 / 地图 / 开波 / 暂停 / 倍速、滚动后退出与再次进入、动画中缩放窗口，以及 1440 / 1280 / 1024 桌面宽度和手机布局。验证记录见 `docs/game-os-verification.md`。
+选择器读取原游戏 HTML，添加同源 base 后挂载到 iframe 的 srcdoc，保留线上已有的 `X-Frame-Options: DENY` 和 `frame-ancestors 'none'`；资源、API 地址和游戏代码都继续来自原页面。嵌入标记只在选择器内部启用专用布局；直接访问扫雷、塔防页面仍使用原布局。`game-os.js` 管理选择器与过渡，`game-os-embed.js` / `game-os-embed.css` 管理预览定位、嵌入布局及生命周期。退出保留本局，选择器期间停止塔防推进和扫雷计时；刷新页面不保存本局。预览和启动动画期间触发层、pointer-events、inert 隔离真实游戏输入。动画遵循系统的减少动态效果偏好。
+
+浏览器回归应检查：一屏无滚动、底座固定、两款卡带切换与插槽对齐、启动/退出每帧尺寸与节点连续、先平移后显现 UI 的顺序、扫雷开格 / 插旗 / 提示 / 改雷区、塔防建造 / 地图 / 开波 / 暂停 / 倍速、滚动后退出与再次进入、动画中改变窗口大小，以及 1947 / 1440 / 1366 / 1280 / 1024 桌面宽度和手机布局。验证记录见 `docs/game-os-verification.md`。
 
 本地执行 `node --test tests/*.test.js`、`node tools/check_release.js`。服务器或 PHP 8.2 CLI Linux 环境执行 `php tests/storage.test.php`、`php tests/api.test.php`。PHP 测试使用独立临时目录，不修改真实数据。`tests/deploy.test.php` 需要现有 Linux 服务器的 PHP/Node 路径和 www 用户，用隔离站点验证发布失败回退。部署检查每步退出码、服务器语法、冻结版本及整批发布文件哈希，最后核对线上 `release.json`。

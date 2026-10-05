@@ -15,8 +15,9 @@ html.game-os-embedded { scrollbar-gutter: auto; scroll-behavior: auto; }
 .game-os-embedded .td-arena,.game-os-embedded body.is-wide-map .td-arena { grid-template-columns:110px minmax(0,1fr) 110px; gap:10px; }
 .game-os-embedded .td-hud { gap:15px; padding:12px; flex-wrap:wrap; }
 .game-os-preview :is(.game-result,.game-confirm,.td-result,.particle-layer) { visibility:hidden; }
-.game-os-embedded :is(.game-topbar,.game-statusline,.game-sidebar,.game-hud,.game-main > .game-card,.td-maps,.td-hud,.td-side,.td-hint,.td-board,.td-rotate) { transition:opacity 450ms; }
+.game-os-embedded :is(.game-topbar,.game-statusline,.game-sidebar,.game-hud,.game-main > .game-card,.td-maps,.td-hud,.td-stats,.td-side,.td-hint,.td-board,.td-rotate) { transition:opacity 450ms; }
 .game-os-preview :is(.game-topbar,.game-statusline,.game-sidebar,.game-hud,.game-main > .game-card,.td-maps,.td-hud,.td-stats,.td-side,.td-hint,.td-board,.td-rotate) { opacity:0; }
+@media (prefers-reduced-motion:reduce) { .game-os-embedded * { transition-duration:.01ms !important; } }
 @media (max-width:1000px) {
   .game-os-embedded .td-arena,.game-os-embedded body.is-wide-map .td-arena { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .game-os-embedded .td-canvas-box { grid-row:1; grid-column:1 / -1; }

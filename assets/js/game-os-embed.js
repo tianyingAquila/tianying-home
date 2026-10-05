@@ -3,7 +3,7 @@
   'use strict';
   const embedded = new URLSearchParams(location.search).get('gameos') === '1' || (window.frameElement && window.frameElement.dataset.gameos === '1');
   if (!embedded || window.parent === window) return;
-  document.documentElement.classList.add('game-os-embedded');
+  document.documentElement.classList.add('game-os-embedded', 'game-os-preview');
   let active = false;
   let resolveReady;
   const ready = new Promise(resolve => { resolveReady = resolve; });
@@ -17,9 +17,11 @@
     window.scrollTo(0, 0);
     const el = surface();
     el.style.transform = 'none';
-    const y = 16 - board().getBoundingClientRect().top;
-    el.style.transform = `translateY(${y}px)`;
     redraw();
+    const rect = board().getBoundingClientRect();
+    // Keep the real board inside the iframe's own viewport before the outer
+    // aperture clips it. Natural game layout can put its lower half below it.
+    el.style.transform = `translateY(${(innerHeight - rect.height) / 2 - rect.y}px)`;
     return el.style.transform;
   }
 
@@ -48,9 +50,12 @@
       const offset = window.scrollY;
       const el = surface();
       window.scrollTo(0, 0);
+      el.style.transform = 'none';
+      const rect = board().getBoundingClientRect();
+      const target = (innerHeight - rect.height) / 2 - rect.y;
+      const bounds = { x:rect.x, y:rect.y + target, width:rect.width, height:rect.height };
       el.style.transform = `translateY(${-offset}px)`;
-      const target = 16 - (board().getBoundingClientRect().top + offset);
-      return { from:el.style.transform, to:`translateY(${target}px)` };
+      return { from:el.style.transform, to:`translateY(${target}px)`, bounds };
     },
     bounds() {
       const rect = board().getBoundingClientRect();

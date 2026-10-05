@@ -35,15 +35,18 @@
     module.frame.style.width = (target.width - 2) + 'px';
     module.frame.style.height = (target.height - 56) + 'px';
   }
-  function crop(module) {
-    const b = module.frame.contentWindow.GameOSModule.bounds();
-    const w = module.window.clientWidth, h = module.window.clientHeight;
-    // Fill the cartridge aperture with a real central crop, rather than making
-    // a wide map or a square board too small just to show every outer edge.
-    const s = Math.max(w / b.width, h / b.height) * .98;
-    const x = (w - b.width * s) / 2 - b.x * s;
-    const y = (h - b.height * s) / 2 - b.y * s;
-    return `translate(${x}px, ${y}px) scale(${s})`;
+  function shapeDock() {
+    const dock = document.querySelector('.os-dock');
+    const shoulder = Math.max(24, (1440 - (cards[current].offsetWidth + 48) / dock.clientWidth * 1440) / 2);
+    const right = 1440 - shoulder;
+    // The physical recess follows the cartridge width at every breakpoint.
+    dock.querySelector('path').setAttribute('d', `M 1 160 V 25 Q 1 7 20 7 H ${shoulder - 19} Q ${shoulder} 7 ${shoulder} 26 V 49 Q ${shoulder} 57 ${shoulder + 10} 57 H ${right - 10} Q ${right} 57 ${right} 49 V 26 Q ${right} 7 ${right + 19} 7 H 1420 Q 1439 7 1439 25 V 160`);
+  }
+  function crop(module, w = module.window.clientWidth, h = module.window.clientHeight, bounds) {
+    const b = bounds || module.frame.contentWindow.GameOSModule.bounds();
+    // One preview pixel is one live-game pixel. A small aperture clips edges;
+    // it never resizes the board, canvas, or the document inside the iframe.
+    return `translate(${(w - b.width) / 2 - b.x}px, ${(h - b.height) / 2 - b.y}px)`;
   }
   function preview(module) {
     if (module.ready) {
@@ -95,6 +98,7 @@
     const m = modules[current];
     if (!m.ready) { status.textContent = '程序仍在读取，请稍候再点击卡带。'; return; }
     busy = true;
+    const hoverPose = getComputedStyle(m.card).transform;
     m.trigger.hidden = true;
     chromeActive(false);
     state('inserting');
@@ -102,30 +106,32 @@
     status.textContent = '正在启动' + names[current];
     progress.setAttribute('aria-valuenow', '5');
     // Only the lower lip enters the persistent dock; there is no rotation.
-    await animate(m.card, { transform: 'translateY(0)' }, { transform: 'translateY(18px)' }, 320);
+    await animate(m.card, { transform:hoverPose }, { transform:'translateY(30px)' }, 320);
     progress.setAttribute('aria-valuenow', '25');
     const from = m.card.getBoundingClientRect();
     const windowFrom = { left: m.window.offsetLeft, top: m.window.offsetTop, width: m.window.offsetWidth, height: m.window.offsetHeight };
     const frameFrom = m.frame.style.transform;
     const bridge = m.frame.contentWindow.GameOSModule;
     const surfaceFrom = bridge.surface().style.transform;
-    bridge.unfold();
     const target = area();
     m.card.classList.add('is-expanded');
     Object.assign(m.card.style, boxStyle(from), { transform: 'none' });
     m.window.style.right = 'auto';
     m.window.style.bottom = 'auto';
     Object.assign(m.window.style, boxStyle(windowFrom));
-    // The iframe never reloads. Its actual board travels from the cropped
-    // cartridge window into the game layout as surrounding controls unfold.
+    // The source document keeps its natural layout. Only translations change,
+    // so the board travels into place at exactly the preview's original size.
     await Promise.all([
-      animate(m.card, boxStyle(from), boxStyle(target), 1180),
-      animate(m.window, boxStyle(windowFrom), boxStyle({ left:0, top:54, width:target.width - 2, height:target.height - 56 }), 1180),
-      animate(m.frame, { transform:frameFrom }, { transform:'translate(0px, 0px) scale(1)' }, 1180),
-      animate(bridge.surface(), { transform:surfaceFrom }, { transform:'translateY(0px)' }, 1180)
+      animate(m.card, boxStyle(from), boxStyle(target), 900),
+      animate(m.window, boxStyle(windowFrom), boxStyle({ left:0, top:54, width:target.width - 2, height:target.height - 56 }), 900),
+      animate(m.frame, { transform:frameFrom }, { transform:'translate(0px, 0px)' }, 900),
+      animate(bridge.surface(), { transform:surfaceFrom }, { transform:'translateY(0px)' }, 900)
     ]);
+    bridge.unfold();
+    progress.setAttribute('aria-valuenow', '75');
+    // Reveal controls after the board has settled, while input remains inert.
+    await delay(reduced.matches ? 0 : 450);
     progress.setAttribute('aria-valuenow', '100');
-    await delay(reduced.matches ? 0 : 250);
     state('running');
     bridge.surface().style.transform = 'none';
     m.frame.contentWindow.GameOSModule.setActive(true);
@@ -146,6 +152,7 @@
     m.frame.setAttribute('aria-hidden', 'true');
     m.frame.setAttribute('tabindex', '-1');
     state('ejecting');
+    await delay(reduced.matches ? 0 : 180);
     // Measure the current selector position even after a viewport resize.
     const probe = document.createElement('div');
     probe.className = 'os-module';
@@ -159,15 +166,11 @@
     probe.remove();
     const from = m.card.getBoundingClientRect();
     const fromWindow = { left:m.window.offsetLeft, top:m.window.offsetTop, width:m.window.offsetWidth, height:m.window.offsetHeight };
-    // crop() uses the current scroll offset and chosen board/map dimensions.
-    const b = bridge.bounds();
-    const s = Math.max((toWindow.width-2)/b.width, (toWindow.height-2)/b.height) * .98;
-    const x = (toWindow.width-2-b.width*s)/2-b.x*s;
-    const y = (toWindow.height-2-b.height*s)/2-16*s;
+    const frameTarget = crop(m, toWindow.width - 2, toWindow.height - 2, surfacePose.bounds);
     await Promise.all([
       animate(m.card, boxStyle(from), boxStyle(target), 850),
       animate(m.window, boxStyle(fromWindow), boxStyle(toWindow), 850),
-      animate(m.frame, { transform:m.frame.style.transform }, { transform:`translate(${x}px, ${y}px) scale(${s})` }, 850),
+      animate(m.frame, { transform:m.frame.style.transform }, { transform:frameTarget }, 850),
       animate(bridge.surface(), { transform:surfacePose.from }, { transform:surfacePose.to }, 850)
     ]);
     m.card.classList.remove('is-expanded');
@@ -187,6 +190,7 @@
 
   async function resize() {
     if (busy) { needsResize = true; return; }
+    shapeDock();
     modules.forEach(sizeFrame);
     await nextFrame();
     if (body.dataset.osState === 'running') {
@@ -251,4 +255,5 @@
     if (event.key === 'Escape' && body.dataset.osState === 'running') eject();
   });
   metadata();
+  shapeDock();
 })();
