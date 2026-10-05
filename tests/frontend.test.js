@@ -59,3 +59,24 @@ test("minesweeper setup changes only the next game's rules", () => {
   assert.equal(G.mode, "tier"); assert.equal(G.tier, "easy");
   assert.equal(G.nextMode, "free"); assert.equal(G.nextTier, "hard");
 });
+
+test("tower map switch completes UI refresh in srcdoc and preserves standalone share URLs", () => {
+  for (const embedded of [true, false]) {
+    const historyCalls = [], updates = [];
+    const ctx = { console, document: { getElementById() { return null; } },
+      location: { href: embedded ? "about:srcdoc" : "https://example.test/tower.html", pathname: embedded ? "srcdoc" : "/tower.html" },
+      history: { replaceState(...args) { if (embedded) throw new Error("srcdoc cannot rewrite history"); historyCalls.push(args); } },
+      localStorage: { setItem() {} }, TD: { config: {} } };
+    ctx.window = ctx;
+    vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync(path.join(base, "game/tower/ui.js"), "utf8").replace('  /* 入口 */', '  window.__test = TowerGame;\n  /* 入口 */'), ctx);
+    const game = Object.create(ctx.__test.prototype);
+    game.eng = { setMap(id) { updates.push(id); }, enableActionLog() {} };
+    game.applyMap = () => updates.push("canvas-shop-legend");
+    game.renderBoard = () => updates.push("leaderboard");
+    game.switchMap(4);
+    assert.deepEqual(updates, [4, "canvas-shop-legend", "leaderboard"]);
+    assert.equal(historyCalls.length, embedded ? 0 : 1);
+    if (!embedded) assert.equal(historyCalls[0][2], "/tower.html?map=4");
+  }
+});

@@ -157,8 +157,8 @@
     this.eng.enableActionLog();
     this.submissionId = newSubmissionId();
     storeSet(MAP_KEY, String(id));
-    /* 地址栏同步，刷新或分享链接都会停在这张图 */
-    if (window.history && window.history.replaceState) {
+    /* 独立页同步分享地址；GAME OS 的 srcdoc 只保留本局与本地地图选择。 */
+    if (location.href !== "about:srcdoc" && window.history && window.history.replaceState) {
       window.history.replaceState(null, "", location.pathname + "?map=" + id);
     }
     this.applyMap();
