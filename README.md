@@ -4,6 +4,7 @@
 
 - 首页：个人简介、社交链接、随笔、留言板、图片集、Steam 状态和音乐播放器
 - 项目页：`projects.html` 的 Three.js 档案终端
+- 游戏选择页：`games.html` 的平面 GAME OS；卡带切换、插槽启动及反向退出，直接展开真实游戏预览
 - 扫雷页：`minesweeper.html` 的技能扫雷
 - 塔防页：`tower.html`；赢局从 v1.02 起保存动作日志，`replay.html` 可现场回放
 - 后台：`admin.php`，只允许通过 HTTPS 访问
@@ -17,7 +18,7 @@
 ## 目录结构
 
 ```
-├── index.html / projects.html / minesweeper.html
+├── index.html / projects.html / games.html / minesweeper.html / tower.html
 ├── admin.php / api.php / config.php
 ├── assets/              # 样式、脚本、图片、音乐；塔防冻结版本在 js/game/tower/versions/
 ├── data/                # 网站内容、留言、成绩和缓存
@@ -38,5 +39,9 @@
 - 生产环境要求 HTTPS；后台登录和会话 Cookie 不能回退到明文 HTTP。
 
 ## 回归验证
+
+GAME OS 使用原生 CSS / Web Animations，没有新增依赖。卡带里的预览是同源游戏页面的真实棋盘 / Canvas 中央截取，启动约 1.75 秒，整个过程保留同一节点和实例。`?gameos=1` 仅在被选择页嵌入时启用专用布局；直接访问扫雷、塔防页面仍使用原布局。`game-os.js` 管理选择器与过渡，`game-os-embed.js` / `game-os-embed.css` 管理预览定位、嵌入布局及生命周期。退出保留本局，选择器期间停止塔防推进和扫雷计时；刷新页面不保存本局。动画遵循系统的减少动态效果偏好。
+
+浏览器回归应检查：两款卡带切换与插槽对齐、真实棋盘 / Canvas 节点连续、扫雷开格 / 插旗 / 提示 / 改雷区、塔防建造 / 地图 / 开波 / 暂停 / 倍速、滚动后退出与再次进入、动画中缩放窗口，以及 1440 / 1280 / 1024 桌面宽度和手机布局。验证记录见 `docs/game-os-verification.md`。
 
 本地执行 `node --test tests/*.test.js`、`node tools/check_release.js`。服务器或 PHP 8.2 CLI Linux 环境执行 `php tests/storage.test.php`、`php tests/api.test.php`。PHP 测试使用独立临时目录，不修改真实数据。`tests/deploy.test.php` 需要现有 Linux 服务器的 PHP/Node 路径和 www 用户，用隔离站点验证发布失败回退。部署检查每步退出码、服务器语法、冻结版本及整批发布文件哈希，最后核对线上 `release.json`。

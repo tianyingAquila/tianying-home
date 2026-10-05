@@ -4,80 +4,58 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <title>游戏终端 · Tianying的巢</title>
-  <meta name="description" content="Tianying 的小站游戏终端：技能扫雷与网格塔防。">
-  <link rel="stylesheet" href="assets/css/tokens.css?v=2">
+  <title>GAME OS · Tianying的巢</title>
+  <meta name="description" content="Tianying GAME OS：选择游戏模块，插入系统，展开技能扫雷与网格塔防。">
+  <link rel="stylesheet" href="assets/css/tokens.css?v=5">
   <link rel="stylesheet" href="assets/css/style.css?v=18">
-  <link rel="stylesheet" href="assets/css/terminal.css?v=2">
-  <link rel="stylesheet" href="assets/css/games.css?v=3">
+  <link rel="stylesheet" href="assets/css/games.css?v=4">
 </head>
-<body class="games-page" data-theme="light">
-
+<body class="games-page" data-theme="light" data-os-state="selecting">
   <header class="site-header">
-    <a class="site-brand" href="index.html">
-      <span class="brand-mark"></span>
-      <span>Tianying的巢</span>
-    </a>
-    <div class="header-actions">
-      <nav class="site-nav-links" aria-label="主导航">
-        <a class="nav-link" href="index.html">首页</a>
-        <a class="nav-link" href="projects.html">项目</a>
-        <a class="nav-link is-current" href="games.html" aria-current="page">游戏</a>
-      </nav>
-    </div>
+    <a class="site-brand" href="index.html"><span class="brand-mark"></span><span>Tianying的巢</span></a>
+    <div class="header-actions"><nav class="site-nav-links" aria-label="主导航">
+      <a class="nav-link" href="index.html">首页</a>
+      <a class="nav-link" href="projects.html">项目</a>
+      <a class="nav-link is-current" href="games.html" aria-current="page">游戏</a>
+    </nav></div>
   </header>
-
-  <main class="hub-stage">
-    <div class="term-head">
-      <div class="term-brand">
-        <strong>TIANYING GAMES</strong>
-        <span>SELECT A PROGRAM</span>
-        <strong>GAME OS</strong>
+  <main class="os-stage">
+    <header class="os-heading">
+      <div><p>TIANYING GAMES</p><h1>GAME OS</h1></div>
+      <div class="os-readout"><span id="termClock" class="term-clock">--:--:--</span><span>02 PROGRAMS / ONLINE</span></div>
+    </header>
+    <section class="os-selector" aria-label="游戏程序选择器">
+      <div class="os-axis" aria-hidden="true"></div>
+      <div class="os-selector-note" aria-hidden="true"><span>PROGRAM MODULE</span><span>选择 / 插入 / 启动</span><span>↓</span></div>
+      <article class="os-module" data-game="minesweeper" data-position="current">
+        <div class="module-label"><span>G-001</span><span class="module-type">PUZZLE <i class="module-light" aria-hidden="true"></i></span></div>
+        <h2 class="module-title">技能扫雷<span>SKILL MINESWEEPER</span></h2>
+        <div class="module-window"><span class="module-loading">正在读取程序…</span><iframe class="module-frame" src="minesweeper.html?gameos=1" title="技能扫雷游戏" tabindex="-1" aria-hidden="true"></iframe></div>
+        <div class="module-footer"><span>16 × 16 / SKILL SYSTEM</span><i class="module-contact" aria-hidden="true"></i></div>
+        <button class="module-trigger" type="button" aria-label="插入并启动技能扫雷"></button>
+        <button class="os-exit" type="button" aria-label="退出技能扫雷，返回选择器">退出 / EJECT</button>
+      </article>
+      <article class="os-module" data-game="tower" data-position="next">
+        <div class="module-label"><span>G-002</span><span class="module-type">STRATEGY <i class="module-light" aria-hidden="true"></i></span></div>
+        <h2 class="module-title">网格塔防<span>GRID DEFENSE</span></h2>
+        <div class="module-window"><span class="module-loading">正在读取程序…</span><iframe class="module-frame" src="tower.html?gameos=1" title="网格塔防游戏" tabindex="-1" aria-hidden="true"></iframe></div>
+        <div class="module-footer"><span>04 MAPS / TACTICAL SYSTEM</span><i class="module-contact" aria-hidden="true"></i></div>
+        <button class="module-trigger" type="button" aria-label="选择网格塔防"></button>
+        <button class="os-exit" type="button" aria-label="退出网格塔防，返回选择器">退出 / EJECT</button>
+      </article>
+      <div class="os-dock" aria-label="程序插槽">
+        <div class="dock-machine"><div class="dock-mouth"></div><div class="dock-progress" role="progressbar" aria-label="程序启动进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div></div>
+        <div class="dock-label"><span>SLOT 01 / <span id="dockProgram">G-001</span></span><span id="dockPrompt">INSERT / EXECUTE</span></div>
       </div>
-
-      <div class="term-tools">
-        <div class="term-readout">
-          <span class="term-clock" id="termClock">--:--:--</span>
-          <span class="term-status">2 PROGRAMS</span>
-        </div>
-      </div>
-    </div>
-
-    <ul class="hub-list">
-      <li class="hub-item">
-        <a class="hub-card" href="minesweeper.html">
-          <span class="hub-no">G-001</span>
-          <span class="hub-body">
-            <span class="hub-title">技能扫雷</span>
-            <span class="hub-en">SKILL MINESWEEPER</span>
-            <span class="hub-desc">三档棋盘，27 个正负面效果随机上身。连锁结算、三次提示、成绩上榜。</span>
-          </span>
-          <span class="hub-meta">
-            <span class="hub-tag">PUZZLE</span>
-            <span class="hub-enter">ACCESS <i aria-hidden="true"></i></span>
-          </span>
-        </a>
-      </li>
-
-      <li class="hub-item">
-        <a class="hub-card" href="tower.html">
-          <span class="hub-no">G-002</span>
-          <span class="hub-body">
-            <span class="hub-title">网格塔防</span>
-            <span class="hub-en">GRID DEFENSE</span>
-            <span class="hub-desc">四张地图：回廊、交错、汇流、螺旋。防御塔三级强化，末段波次逐步强化。</span>
-          </span>
-          <span class="hub-meta">
-            <span class="hub-tag">STRATEGY</span>
-            <span class="hub-enter">ACCESS <i aria-hidden="true"></i></span>
-          </span>
-        </a>
-      </li>
-    </ul>
-
-    <p class="hub-foot">POWERED BY TIANYING ARCHIVE <span class="hub-foot-rule" aria-hidden="true"></span></p>
+    </section>
+    <section class="os-details" aria-label="当前游戏说明"><span class="os-index" id="osIndex">G-001 / 02</span><div>
+      <p class="os-description" id="osDescription">三档棋盘，27 个正负面效果随机上身。连锁结算、三次提示、成绩上榜。</p>
+      <p class="os-instructions">点击中央卡带启动 · 点击右侧卡带切换</p>
+    </div></section>
+    <footer class="os-footer"><span class="os-system-status" id="osStatus" role="status" aria-live="polite">系统就绪 / 选择程序模块</span><span>POWERED BY TIANYING ARCHIVE</span></footer>
+    <noscript><p class="os-no-script">启用 JavaScript 以使用选择器，或直接进入 <a href="minesweeper.html">技能扫雷</a> / <a href="tower.html">网格塔防</a>。</p></noscript>
   </main>
-
   <script src="assets/js/clock.js?v=1"></script>
+  <script src="assets/js/game-os.js?v=1"></script>
 </body>
 </html>

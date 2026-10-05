@@ -2892,6 +2892,22 @@
     el.tierNote.textContent = `${TIERS[G.tier].label}：${TIERS[G.tier].buffs} 个正面 + ${TIERS[G.tier].debuffs} 个负面。${TIERS[G.tier].desc}`;
     applyHash(true);
 
+    // GAME OS suspension preserves the board and excludes time in the selector.
+    // Independent pages never dispatch this event and retain their usual timing.
+    let osSuspendedAt = 0;
+    document.addEventListener("gameos:active", (event) => {
+      if (!event.detail && !osSuspendedAt) {
+        osSuspendedAt = Date.now();
+        if (G.timerId) { window.clearInterval(G.timerId); G.timerId = 0; }
+      } else if (event.detail && osSuspendedAt) {
+        if (G.startedAt && !G.endedAt && G.phase === "playing") {
+          G.startedAt += Date.now() - osSuspendedAt;
+          G.timerId = window.setInterval(renderTimer, 100);
+        }
+        osSuspendedAt = 0;
+      }
+    });
+
     window.MS_DEBUG = {
       state: () => G,
       pool: () => ({ buffs: BUFFS.map((e) => e.id), debuffs: DEBUFFS.map((e) => e.id) }),

@@ -1,0 +1,39 @@
+/* Scoped to ?gameos=1. Standalone games keep their original layout and rules. */
+html.game-os-embedded { scrollbar-gutter: auto; scroll-behavior: auto; }
+.game-os-embedded body { --tk-bone:#f2f0ec; --tk-file:#f8f6f1; --tk-paper:#faf8f3; background:var(--tk-bone); }
+.game-os-embedded .site-header,.game-os-embedded .game-beam,.game-os-embedded .term-head,.game-os-embedded .td-foot { display:none; }
+.game-os-embedded body.minesweeper-page .game-panel { padding-top:0; min-height:100vh; }
+.game-os-embedded body.minesweeper-page .game-shell { padding:12px 20px 40px; max-width:1440px; }
+.game-os-embedded .game-topbar { border-radius:3px; padding:10px 14px; }
+.game-os-embedded .game-title { font:600 20px var(--tk-sans); }
+.game-os-embedded .game-eyebrow { font:9px var(--tk-mono); }
+.game-os-embedded .game-card { border-radius:3px; backdrop-filter:none; }
+.game-os-embedded .game-board { border-radius:3px; backdrop-filter:none; box-shadow:none; max-width:min(566px,calc(100vh - 32px)); min-width:0; }
+.game-os-embedded .ms-cell { border-radius:2px; }
+.game-os-embedded .td-stage { padding:12px 20px 40px; max-width:1600px; }
+.game-os-embedded .td-layout { grid-template-columns:minmax(0,1fr) 230px; gap:16px; }
+.game-os-embedded .td-arena,.game-os-embedded body.is-wide-map .td-arena { grid-template-columns:110px minmax(0,1fr) 110px; gap:10px; }
+.game-os-embedded .td-hud { gap:15px; padding:12px; flex-wrap:wrap; }
+.game-os-preview :is(.game-result,.game-confirm,.td-result,.particle-layer) { visibility:hidden; }
+.game-os-embedded :is(.game-topbar,.game-statusline,.game-sidebar,.game-hud,.game-main > .game-card,.td-maps,.td-hud,.td-side,.td-hint,.td-board,.td-rotate) { transition:opacity 450ms; }
+.game-os-preview :is(.game-topbar,.game-statusline,.game-sidebar,.game-hud,.game-main > .game-card,.td-maps,.td-hud,.td-stats,.td-side,.td-hint,.td-board,.td-rotate) { opacity:0; }
+@media (max-width:1000px) {
+  .game-os-embedded .td-arena,.game-os-embedded body.is-wide-map .td-arena { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .game-os-embedded .td-canvas-box { grid-row:1; grid-column:1 / -1; }
+}
+@media (max-width:760px) {
+  .game-os-embedded body.minesweeper-page .game-shell,.game-os-embedded .td-stage { padding:8px 10px 30px; }
+  .game-os-embedded .game-body { display:flex; flex-direction:column; }
+  .game-os-embedded .game-main { order:-1; width:100%; }
+  .game-os-embedded .game-sidebar { position:static; width:100%; }
+  .game-os-embedded .game-statusline { flex-wrap:wrap; }
+  .game-os-embedded .game-topbar { align-items:center; padding:10px; }
+  .game-os-embedded .game-topbar-actions { gap:4px; }
+  .game-os-embedded .game-button { padding:0 10px; font-size:12px; }
+  .game-os-embedded .game-board { min-width:0; }
+  .game-os-embedded .board-wrap { justify-content:center; }
+  .game-os-embedded .td-layout,.game-os-embedded body.is-wide-map .td-layout { grid-template-columns:minmax(0,1fr); }
+  .game-os-embedded .td-side { position:static; }
+  .game-os-embedded .td-arena,.game-os-embedded body.is-wide-map .td-arena { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .game-os-embedded .td-maps { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
