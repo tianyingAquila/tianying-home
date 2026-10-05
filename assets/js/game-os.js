@@ -2,7 +2,6 @@
   'use strict';
   const body = document.body;
   const cards = [...document.querySelectorAll('.os-module')];
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const progress = document.querySelector('.dock-progress');
   const status = document.getElementById('osStatus');
   const names = ['技能扫雷', '网格塔防'];
@@ -63,7 +62,6 @@
     return { left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px', height: rect.height + 'px' };
   }
   async function animate(element, from, to, duration) {
-    if (reduced.matches) { Object.assign(element.style, to); return; }
     const animation = element.animate([from, to], { duration, easing: 'cubic-bezier(.32,.02,.2,1)', fill: 'both' });
     await animation.finished;
     Object.assign(element.style, to);
@@ -87,7 +85,7 @@
     cards[index].dataset.position = 'current';
     current = index;
     metadata();
-    await delay(reduced.matches ? 0 : 660);
+    await delay(660);
     old.classList.remove('is-departing');
     busy = false;
     await refreshIfNeeded();
@@ -130,7 +128,7 @@
     bridge.unfold();
     progress.setAttribute('aria-valuenow', '75');
     // Reveal controls after the board has settled, while input remains inert.
-    await delay(reduced.matches ? 0 : 450);
+    await delay(450);
     progress.setAttribute('aria-valuenow', '100');
     state('running');
     bridge.surface().style.transform = 'none';
@@ -152,7 +150,7 @@
     m.frame.setAttribute('aria-hidden', 'true');
     m.frame.setAttribute('tabindex', '-1');
     state('ejecting');
-    await delay(reduced.matches ? 0 : 180);
+    await delay(180);
     // Measure the current selector position even after a viewport resize.
     const probe = document.createElement('div');
     probe.className = 'os-module';
@@ -229,7 +227,9 @@
     // srcdoc instead, preserving those response headers and all game scripts.
     async function mount() {
       try {
-        const response = await fetch(m.frame.dataset.src, { credentials:'same-origin' });
+        // Revalidate the game HTML so its embedded stylesheet version cannot
+        // remain cached after the selector itself receives an update.
+        const response = await fetch(m.frame.dataset.src, { credentials:'same-origin', cache:'no-cache' });
         if (!response.ok) throw new Error('Program response: ' + response.status);
         const source = new DOMParser().parseFromString(await response.text(), 'text/html');
         const base = source.createElement('base');

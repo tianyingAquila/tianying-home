@@ -134,4 +134,5 @@ body[data-os-state="ejecting"] .os-dock { z-index:35; }
   .os-details { top:57%; }
   .os-instructions { margin-top:8px; }
 }
-@media (prefers-reduced-motion:reduce) { .games-page *, .games-page *::before, .games-page *::after { transition-duration:.01ms !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; } }
+/* Cartridge movement is the GAME OS interaction, and remains animated even
+   when the system reduces decorative motion. */

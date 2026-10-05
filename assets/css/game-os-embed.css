@@ -1,5 +1,5 @@
 /* Scoped to ?gameos=1. Standalone games keep their original layout and rules. */
-html.game-os-embedded { scrollbar-gutter: auto; scroll-behavior: auto; }
+html.game-os-embedded { scrollbar-gutter:stable; overflow-y:scroll; scroll-behavior:auto; overflow-anchor:none; }
 .game-os-embedded body { --tk-bone:#f2f0ec; --tk-file:#f8f6f1; --tk-paper:#faf8f3; background:var(--tk-bone); }
 .game-os-embedded .site-header,.game-os-embedded .game-beam,.game-os-embedded .term-head,.game-os-embedded .td-foot { display:none; }
 .game-os-embedded body.minesweeper-page .game-panel { padding-top:0; min-height:100vh; }
@@ -11,13 +11,15 @@ html.game-os-embedded { scrollbar-gutter: auto; scroll-behavior: auto; }
 .game-os-embedded .game-board { border-radius:3px; backdrop-filter:none; box-shadow:none; max-width:min(566px,calc(100vh - 32px)); min-width:0; }
 .game-os-embedded .ms-cell { border-radius:2px; }
 .game-os-embedded .td-stage { padding:12px 20px 40px; max-width:1600px; }
+/* Geometry is measured synchronously. Only the host's Web Animations may
+   animate these transforms; a CSS transition would return the old bounds. */
+.game-os-embedded :is(.game-shell,.td-stage) { transition:none !important; }
 .game-os-embedded .td-layout { grid-template-columns:minmax(0,1fr) 230px; gap:16px; }
 .game-os-embedded .td-arena,.game-os-embedded body.is-wide-map .td-arena { grid-template-columns:110px minmax(0,1fr) 110px; gap:10px; }
 .game-os-embedded .td-hud { gap:15px; padding:12px; flex-wrap:wrap; }
 .game-os-preview :is(.game-result,.game-confirm,.td-result,.particle-layer) { visibility:hidden; }
 .game-os-embedded :is(.game-topbar,.game-statusline,.game-sidebar,.game-hud,.game-main > .game-card,.td-maps,.td-hud,.td-stats,.td-side,.td-hint,.td-board,.td-rotate) { transition:opacity 450ms; }
 .game-os-preview :is(.game-topbar,.game-statusline,.game-sidebar,.game-hud,.game-main > .game-card,.td-maps,.td-hud,.td-stats,.td-side,.td-hint,.td-board,.td-rotate) { opacity:0; }
-@media (prefers-reduced-motion:reduce) { .game-os-embedded * { transition-duration:.01ms !important; } }
 @media (max-width:1000px) {
   .game-os-embedded .td-arena,.game-os-embedded body.is-wide-map .td-arena { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .game-os-embedded .td-canvas-box { grid-row:1; grid-column:1 / -1; }

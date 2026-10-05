@@ -27,3 +27,13 @@ Node 18 项回归、冻结塔防版本完整性检查通过，仍为 v1.06，冻
 线上 1440×900 的 30 项浏览器断言全部通过，包括新增反向过渡每帧尺寸检查。实际启动约 1788ms，采样 258 帧；棋盘每帧尺寸和 X/Y 缩放系数均保持不变，错误日志为空。另用全新会话在 1947×950 真实鼠标点击预览：悬浮抬升 8px、命中 module-trigger，启动期间 inert，完成后仍未布雷、未开格、未插旗。该会话错误日志也为空，最终预览图保留于 `G:\个人网页\backups\game-os-large-online.png`。临时本地服务和 QA 浏览器会话在完成后关闭。
 
 可复用浏览器断言为 `tests/game-os.browser.js`，新增反向过渡每帧尺寸检查，最终共 30 项。用独立 agent-browser 会话打开 games.html、设为 1440×900 和 `set media light`（确认 reduced-motion 为 false），通过 PowerShell `Get-Content -Raw tests/game-os.browser.js | agent-browser.cmd --session <测试会话名> eval --stdin` 执行。仅游玩，不提交成绩；同时检查新会话的 `errors --json`。减少动画用 `set media light reduced-motion`。
+
+## 2026-10-06：Edge 偏移与动画缺失
+
+上述“减少动画立即完成”是旧版本行为；本次按用户反馈改为核心动画始终保留。
+
+本地使用实际 `Microsoft/Edge/Application/msedge.exe`，1536×728，模拟 prefers-reduced-motion:reduce。旧版初次测量的扫雷预览中心偏移 -212px，塔防也偏移；切到 10×10、滚动后退出、再切塔防第四图，重现用户截图只看到下半部分。源表面的 computed transition 为 0.01ms（来自全元素 reduced-motion 覆写）。同步写入 transform 后立即读取 bounds 会得到旧位置，后续裁切便带上错误偏移。选择器 JS 同时直接跳过动画，所以进入和切换瞬间完成。
+
+修复移除这两个缩短/跳过核心动画的规则，测量表面显式 transition:none，固定内层滚动条占位并关闭自动锚定。保留 Web Animations 管理的纯平移，不改游戏规则、尺寸或实例。发现刷新主文档后源游戏 HTML 可能仍取旧缓存，增加 cache:no-cache 重新核对样式版本。
+
+Edge 在 reduced-motion=true 下通过 `tests/game-os-motion.browser.js` 的 22 项断言：三档扫雷和 4→1→4 塔防地图在滚动/退出/切换后，两个预览中心误差均为 0；启动约 1699–1716ms，160ms 时仍在插入且输入锁定，切换经过中间位置，全程没有游戏画面缩放。Chrome 常规模式原 30 项断言通过；Node 18 项回归和冻结版本检查通过。线上发布复验待完成。
