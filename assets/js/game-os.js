@@ -220,6 +220,24 @@
     }
     m.frame.addEventListener('load', initialize);
     if (m.frame.contentDocument.readyState === 'complete') initialize();
+    // Production protects full pages with X-Frame-Options: DENY and
+    // frame-ancestors 'none'. Load the same trusted source into a same-origin
+    // srcdoc instead, preserving those response headers and all game scripts.
+    async function mount() {
+      try {
+        const response = await fetch(m.frame.dataset.src, { credentials:'same-origin' });
+        if (!response.ok) throw new Error('Program response: ' + response.status);
+        const source = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const base = source.createElement('base');
+        base.href = new URL(m.frame.dataset.src, location.href).href;
+        source.head.prepend(base);
+        m.frame.srcdoc = '<!DOCTYPE html>' + source.documentElement.outerHTML;
+      } catch (error) {
+        m.card.querySelector('.module-loading').textContent = '读取失败，请刷新重试';
+        status.textContent = names[m.index] + '暂时无法读取，请刷新重试。';
+      }
+    }
+    mount();
     m.trigger.addEventListener('click', () => m.index === current ? launch() : select(m.index));
     m.exit.addEventListener('click', eject);
   });

@@ -1,7 +1,8 @@
 /* The same document supplies both the cartridge preview and the live game. */
 (function () {
   'use strict';
-  if (new URLSearchParams(location.search).get('gameos') !== '1' || window.parent === window) return;
+  const embedded = new URLSearchParams(location.search).get('gameos') === '1' || (window.frameElement && window.frameElement.dataset.gameos === '1');
+  if (!embedded || window.parent === window) return;
   document.documentElement.classList.add('game-os-embedded');
   let active = false;
   let resolveReady;
