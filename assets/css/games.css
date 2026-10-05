@@ -45,11 +45,15 @@ body.games-page {
 .module-light { width:5px; height:5px; border-radius:50%; background:#b9b4c1; }
 .module-title { position:absolute; top:53px; left:32px; right:32px; margin:0; line-height:1.2; font-size:clamp(24px,2vw,32px); font-weight:650; letter-spacing:-.03em; transition:opacity 250ms; }
 .module-title span { display:block; margin-top:6px; font:9px var(--tk-mono); letter-spacing:.1em; color:#757172; }
-.module-window { position:absolute; left:32px; right:32px; top:116px; bottom:64px; overflow:hidden; background:rgba(232,228,222,.35); border:1px solid var(--tk-line); border-radius:6px; }
+.module-window { position:absolute; left:32px; right:32px; top:116px; bottom:64px; overflow:hidden; background:rgba(232,228,222,.35); border:1px solid rgba(51,54,57,.3); border-radius:6px; box-shadow:0 1px 0 rgba(255,255,255,.9),0 0 0 3px rgba(71,68,63,.055); transition:box-shadow 350ms; }
 .module-frame { display:block; position:absolute; top:0; left:0; border:0; transform-origin:0 0; pointer-events:none; opacity:0; transition:opacity 250ms; }
 .os-module.is-ready .module-frame { opacity:1; }
-.module-film { position:absolute; inset:0; z-index:2; pointer-events:none; border-radius:inherit; border:1px solid rgba(255,255,255,.72); background:linear-gradient(115deg,rgba(255,255,255,.22),rgba(255,255,255,.04) 38%,rgba(255,255,255,.28) 38.2%,rgba(255,255,255,.08) 39%,rgba(255,255,255,.03) 68%,rgba(255,255,255,.19)),rgba(246,244,239,.09); box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(20,22,26,.06); transition:opacity 350ms; }
-.module-film::after { content:''; position:absolute; inset:8px; border:1px solid rgba(255,255,255,.28); border-radius:2px; }
+/* A clear observation pane: recessed seat, bevelled edge and reflected light.
+   All material layers sit above the preview; none change its geometry. */
+.module-film { position:absolute; inset:0; z-index:2; pointer-events:none; overflow:hidden; border-radius:inherit; border:1px solid; border-color:rgba(255,255,255,.95) rgba(59,66,72,.2) rgba(59,66,72,.28) rgba(255,255,255,.8); background:linear-gradient(150deg,rgba(45,57,65,.085),rgba(45,57,65,.025) 65%,rgba(255,255,255,.06)); box-shadow:inset 0 3px 4px rgba(35,39,43,.1),inset 3px 0 4px rgba(255,255,255,.35),inset 0 -3px 2px rgba(255,255,255,.65),inset -3px 0 2px rgba(255,255,255,.4); transition:opacity 350ms; }
+.module-film::before { content:''; position:absolute; inset:-12% -16%; background:linear-gradient(118deg,transparent 28%,rgba(53,65,74,.065) 31%,rgba(255,255,255,.12) 32%,rgba(255,255,255,.52) 35%,rgba(255,255,255,.3) 45%,rgba(255,255,255,.04) 49%,transparent 51%,transparent 65%,rgba(255,255,255,.16) 66%,rgba(255,255,255,.72) 66.5%,rgba(255,255,255,.25) 67.2%,rgba(56,67,76,.06) 68%,transparent 69%); opacity:.9; transform:translateX(-7px); transition:transform 550ms var(--tk-ease-soft),opacity 350ms; }
+.module-film::after { content:''; position:absolute; inset:3px; border:1px solid; border-color:rgba(255,255,255,.8) rgba(255,255,255,.18) rgba(58,65,71,.16) rgba(255,255,255,.5); border-radius:3px; }
+body[data-os-state="selecting"] .os-module[data-position="current"]:has(.module-trigger:hover,.module-trigger:focus-visible) .module-film::before { transform:translateX(9px); opacity:1; }
 .module-loading { position:absolute; inset:0; display:grid; place-items:center; font:10px var(--tk-mono); letter-spacing:.1em; color:#777; }
 .os-module.is-ready .module-loading { display:none; }
 .module-footer { position:absolute; bottom:27px; left:32px; right:32px; display:flex; justify-content:space-between; align-items:center; font:10px var(--tk-mono); letter-spacing:.07em; color:#757172; transition:opacity 250ms; }
@@ -87,7 +91,7 @@ body:is([data-os-state="inserting"],[data-os-state="running"],[data-os-state="ej
 .os-module.is-expanded::before,.os-module.is-expanded::after { opacity:0; }
 .os-module.is-expanded .module-label { top:18px; right:160px; opacity:1; color:#605969; }
 .os-module.is-expanded :is(.module-title,.module-footer,.module-film) { opacity:0; }
-.os-module.is-expanded .module-window { border-color:transparent; background:transparent; border-radius:0; }
+.os-module.is-expanded .module-window { border-color:transparent; background:transparent; border-radius:0; box-shadow:none; }
 body[data-os-state="running"] .is-expanded .os-exit { display:block; }
 body[data-os-state="running"] .os-module.is-expanded .module-frame { pointer-events:auto; }
 body:is([data-os-state="inserting"],[data-os-state="running"],[data-os-state="ejecting"]) .os-module[data-position="next"] { opacity:0; pointer-events:none; }
