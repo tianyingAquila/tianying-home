@@ -44,4 +44,6 @@ Edge 在 reduced-motion=true 下通过 `tests/game-os-motion.browser.js` 的 22 
 
 只修改选择器 CSS 与其版本参数（games.css v7）：浅内陷窗框、透明面板厚边、宽/窄环境反射，使用覆盖层及伪元素，无新增依赖、模糊滤镜或 JS。窗口 border 仍为 1px，几何和游戏内容不变；运行时窗框阴影取消，膜层随启动淡出。
 
-Edge 1440×900、reduced-motion=true：真实鼠标悬浮时反光变换从 translateX(-7px) 到 translateX(9px)，卡带上浮 8px，棋盘前后均为 566×566。点击仍命中 module-trigger，启动后未开格；运行时 film opacity=0、窗口 box-shadow=none，退出后 film opacity=1。静态截图检查 1440×900、1024×768、390×844，页面尺寸等于视口，材质清晰且保留棋盘可读性。原 30 项浏览器回归通过（运行回归时先将鼠标移至舞台外侧，避免 hover 改变切换过渡采样时刻）。冻结规则检查通过；发布与线上检查待完成。
+Edge 1440×900、reduced-motion=true：真实鼠标悬浮时反光变换从 translateX(-7px) 到 translateX(9px)，卡带上浮 8px，棋盘前后均为 566×566。点击仍命中 module-trigger，启动后未开格；运行时 film opacity=0、窗口 box-shadow=none，退出后 film opacity=1。静态截图检查 1440×900、1024×768、390×844，页面尺寸等于视口，材质清晰且保留棋盘可读性。原 30 项浏览器回归通过（运行回归时先将鼠标移至舞台外侧，避免 hover 改变切换过渡采样时刻）。Node 18 项回归、冻结规则及 diff 检查通过。
+
+发布返回 DEPLOY-OK，线上标识 `11cfab30379a43fe9d8e710a9532eea5`。新 Edge 会话加载 CSS v7，在 reduced-motion=true 下再次真实鼠标检查：反光平移 16px，启动/退出材质正确淡出及恢复，棋盘保持 566×566，点击卡带仍未开格，错误日志为空。最终预览图保留于 `G:\个人网页\backups\game-os-glass-online.png`；本次其余截图、测试会话和临时本地服务已清理。
