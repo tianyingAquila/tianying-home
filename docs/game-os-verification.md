@@ -36,4 +36,6 @@ Node 18 项回归、冻结塔防版本完整性检查通过，仍为 v1.06，冻
 
 修复移除这两个缩短/跳过核心动画的规则，测量表面显式 transition:none，固定内层滚动条占位并关闭自动锚定。保留 Web Animations 管理的纯平移，不改游戏规则、尺寸或实例。发现刷新主文档后源游戏 HTML 可能仍取旧缓存，增加 cache:no-cache 重新核对样式版本。
 
-Edge 在 reduced-motion=true 下通过 `tests/game-os-motion.browser.js` 的 22 项断言：三档扫雷和 4→1→4 塔防地图在滚动/退出/切换后，两个预览中心误差均为 0；启动约 1699–1716ms，160ms 时仍在插入且输入锁定，切换经过中间位置，全程没有游戏画面缩放。Chrome 常规模式原 30 项断言通过；Node 18 项回归和冻结版本检查通过。线上发布复验待完成。
+Edge 在 reduced-motion=true 下通过 `tests/game-os-motion.browser.js` 的 22 项断言：三档扫雷和 4→1→4 塔防地图在滚动/退出/切换后，两个预览中心误差均为 0；启动约 1699–1716ms，160ms 时仍在插入且输入锁定，切换经过中间位置，全程没有游戏画面缩放。Chrome 常规模式原 30 项断言通过；Node 18 项回归和冻结版本检查通过。
+
+发布返回 DEPLOY-OK，线上标识 `8a07eb11744544df94874fedd3f7a0d5`。新 Edge 会话在 https://tianying0.com/games.html、1536×728、reduced-motion=true 下，22 项专项断言全部通过，完成标记为 true，错误日志为空；加载的选择器 JS 是 v4、嵌入 CSS 是 v3。测试浏览器与本地临时服务在收尾关闭，修复前后临时截图删除。
