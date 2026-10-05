@@ -22,6 +22,8 @@
 
 ## 自动回归与发布
 
-Node 18 项回归、冻结塔防版本完整性检查通过，仍为 v1.06，冻结引擎和规则未修改。发布和线上回验尚待执行。
+Node 18 项回归、冻结塔防版本完整性检查通过，仍为 v1.06，冻结引擎和规则未修改。发布已返回 DEPLOY-OK，线上 release.json 标识 `39de6077570648309958009bc0929af2`。
+
+线上 1440×900 的 30 项浏览器断言全部通过，包括新增反向过渡每帧尺寸检查。实际启动约 1788ms，采样 258 帧；棋盘每帧尺寸和 X/Y 缩放系数均保持不变，错误日志为空。另用全新会话在 1947×950 真实鼠标点击预览：悬浮抬升 8px、命中 module-trigger，启动期间 inert，完成后仍未布雷、未开格、未插旗。该会话错误日志也为空，最终预览图保留于 `G:\个人网页\backups\game-os-large-online.png`。临时本地服务和 QA 浏览器会话在完成后关闭。
 
 可复用浏览器断言为 `tests/game-os.browser.js`，新增反向过渡每帧尺寸检查，最终共 30 项。用独立 agent-browser 会话打开 games.html、设为 1440×900 和 `set media light`（确认 reduced-motion 为 false），通过 PowerShell `Get-Content -Raw tests/game-os.browser.js | agent-browser.cmd --session <测试会话名> eval --stdin` 执行。仅游玩，不提交成绩；同时检查新会话的 `errors --json`。减少动画用 `set media light reduced-motion`。
