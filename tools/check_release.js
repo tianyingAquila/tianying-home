@@ -8,8 +8,6 @@ const revision = Number((config.match(/var REVISION = (\d+)/) || [0, 0])[1]);
 const current = (revision ? "patches/" : "versions/") + version + (revision ? "-r" + revision : "");
 const engineFiles = ["config", "grid", "enemies", "towers", "engine", "render"].map(name => name + ".js");
 if (!fs.existsSync(path.join(tower, current, "manifest.json"))) throw new Error("Current frozen version missing");
-if (!fs.readFileSync(path.join(root, "api.php"), "utf8").includes("const TD_CURRENT_VERSION = '" + version + "'")) throw new Error("API version mismatch");
-if (revision && !fs.readFileSync(path.join(root, "api.php"), "utf8").includes("const TD_CURRENT_REVISION = " + revision + ";")) throw new Error("API revision mismatch");
 const dirs = fs.readdirSync(path.join(tower, "versions")).map(dir => "versions/" + dir);
 if (fs.existsSync(path.join(tower, "patches"))) dirs.push(...fs.readdirSync(path.join(tower, "patches")).map(dir => "patches/" + dir));
 for (const dir of dirs) {

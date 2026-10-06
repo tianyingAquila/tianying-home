@@ -1,51 +1,41 @@
 # Tianying的巢
 
-一个个人网站，包含：
+个人网站的前台源码，包含：
 
 - 首页：个人简介、社交链接、随笔、留言板、图片集、Steam 状态和音乐播放器
 - 项目页：`projects.html` 的 Three.js 档案终端
-- 游戏选择页：`games.html` 的一屏 GAME OS；大卡带、贴底游戏机、1:1 真实预览和反向退出
+- 游戏选择页：`games.html` 的一屏 GAME OS
 - 扫雷页：`minesweeper.html` 的技能扫雷
-- 塔防页：`tower.html`；赢局从 v1.02 起保存动作日志，`replay.html` 可现场回放
-- 后台：`admin.php`，只允许通过 HTTPS 访问
+- 塔防页：`tower.html` 的四张地图；`replay.html` 可按记录版本回放
 
-## 技术栈
+## 技术与目录
 
-- 前端：原生 HTML / CSS / JavaScript，无构建步骤
-- 后端：PHP 单文件 API（`api.php`），数据存为 JSON 文件；塔防服务端复核使用一次性 Node CLI
-- 无需数据库
+原生 HTML、CSS、JavaScript，无构建步骤。在线内容及成绩通过页面中使用的同源 API 读取；离线预览部分功能需要相应的在线接口。
 
-## 目录结构
-
-```
-├── index.html / projects.html / games.html / minesweeper.html / tower.html
-├── admin.php / api.php / config.php
-├── assets/              # 样式、脚本、图片、音乐；塔防冻结版本在 js/game/tower/versions/
-├── data/                # 网站内容、留言、成绩和缓存
-├── uploads/             # 后台上传的图片/音频
-├── cron/                # Steam 状态定时刷新
-└── tools/               # 服务器 Node CLI 工具（不常驻）
+```text
+├── index.html / projects.html / games.html
+├── minesweeper.html / tower.html / replay.html
+├── assets/     # 样式、脚本、公开图片、音乐与种子数据
+├── tests/      # 前台逻辑与浏览器回归
+├── tools/      # 引擎版本检查、冻结与平衡模拟
+└── docs/       # 前台设计与验证记录
 ```
 
-## 上线约定
+## 本地预览与检查
 
-- 部署从本机执行 `G:\个人网页\deploy.ps1`，不要用服务器反向拉 GitHub。
-- `assets/` 中的代码、图片和种子数据走普通部署；`data/`、`uploads/` 和 `config.local.php` 不部署覆盖。
-- `assets/music/` 也不在日常部署范围，首次恢复服务器时需单独恢复音乐。
-- 照片墙只展示已有照片，后台不再提供照片上传、删除或更改。
-- `storage.php` 使用独立锁文件和临时文件替换，失败返回错误；列表配置整体替换默认值。
-- 当前塔防规则 `v1.06`，四张地图；第四图「螺旋」增加地狱塔、闪光和牧师，按65/35分配双路敌军，第16至20波逐步强化。v1.06 在顶部 HUD 的 WAVE 后显示当前版本，并把地狱塔的等级刻度由暗金改为钢蓝；正式页面加载 `versions/v1.06/`，玩法与 v1.05 一致。原版v1.04、曾上线的 `patches/v1.04-r1/`、v1.05 和更早历史快照永久保留，已有成绩按对应快照回放。
-- 页面静态资源带版本参数，修改 CSS/JS 后必须同步提升 `?v=N`。
-- 生产环境要求 HTTPS；后台登录和会话 Cookie 不能回退到明文 HTTP。
+用静态 HTTP 服务打开项目目录。项目档案接口不可用时会回落到 `assets/data/archives.json`；留言、Steam 状态、榜单和在线成绩保存需要对应 API。
 
-## 回归验证
+```sh
+node tools/check_release.js
+node --test tests/*.test.js
+```
 
-GAME OS 使用原生 CSS / Web Animations，没有新增依赖。选择页固定为一屏：中央大卡带、右侧被屏幕裁切的下一张卡带、固定贴底并随卡带宽度调整凹口的游戏机底座。预览窗采用浅内陷座、透明面板厚边和一宽一窄的环境反光；悬浮时卡带上移 8px，反光轻移 16px。材质全部由 CSS 覆盖层组成，启动时随面板淡出。卡带里的预览是同源游戏页面的真实棋盘 / Canvas，保持与运行时 1:1 相同尺寸；较矮屏幕裁切中央部分，全程不缩放棋盘。启动约 1.7 秒：下插 30px，棋盘平移到运行位置，外壳/薄膜退去后才显现周围 UI、恢复输入。整个过程保留同一节点和实例；外层页面始终没有滚动空间，运行游戏可以内部滚动。
+页面 CSS/JS 修改后同步提升资源的 `?v=N` 参数。当前塔防规则为 `v1.06`；所有历史冻结快照保留，已有成绩按其对应版本回放。不能直接修改冻结文件；规则变化须发布新版本。
 
-选择器读取原游戏 HTML（每次挂载重新验证缓存），添加同源 base 后挂载到 iframe 的 srcdoc，保留线上已有的 `X-Frame-Options: DENY` 和 `frame-ancestors 'none'`；资源、API 地址和游戏代码都继续来自原页面。嵌入标记只在选择器内部启用专用布局；直接访问扫雷、塔防页面仍使用原布局。`game-os.js` 管理选择器与过渡，`game-os-embed.js` / `game-os-embed.css` 管理预览定位、嵌入布局及生命周期。退出保留本局，选择器期间停止塔防推进和扫雷计时；刷新页面不保存本局。预览和启动动画期间触发层、pointer-events、inert 隔离真实游戏输入。按用户要求，卡带切换、插入/退出和 UI 显现这些核心交互始终保留动画；游戏内部的装饰效果仍遵循原有减少动态效果设置。几何测量容器禁用 CSS transition，内部滚动条占位固定，避免读取旧变换和预览偏移。
+## GAME OS
 
-浏览器回归应检查：一屏无滚动、底座固定、两款卡带切换与插槽对齐、启动/退出每帧尺寸与节点连续、先平移后显现 UI 的顺序、扫雷开格 / 插旗 / 提示 / 改雷区、塔防建造 / 地图 / 开波 / 暂停 / 倍速、滚动后退出与再次进入、动画中改变窗口大小，以及 1947 / 1440 / 1366 / 1280 / 1024 桌面宽度和手机布局。验证记录见 `docs/game-os-verification.md`。
+游戏终端固定为一屏：中央大卡带、右侧下一张卡带和贴底游戏机。卡带预览使用原游戏页面的真实棋盘或 Canvas，保持同一实例、相同尺寸；启动时平移到运行位置，退出后保留本局，刷新不保存本局。
 
-`tests/game-os.browser.js` 检查完整玩法和过渡；`tests/game-os-motion.browser.js` 专门覆盖 Edge 的 reduced-motion 模式、三档扫雷、反复切换塔防宽地图，以及滚动后返回卡带的定位。两个脚本都通过浏览器 `eval --stdin` 执行，不属于 Node 测试。
+选择器读取原游戏 HTML，在同源 iframe 中挂载。预览期间隔离真实游戏输入、暂停推进与计时；运行后恢复。卡带切换、插入、退出和 UI 显现保留核心动画，游戏装饰遵循减少动态效果设置。
 
-本地执行 `node --test tests/*.test.js`、`node tools/check_release.js`。服务器或 PHP 8.2 CLI Linux 环境执行 `php tests/storage.test.php`、`php tests/api.test.php`。PHP 测试使用独立临时目录，不修改真实数据。`tests/deploy.test.php` 需要现有 Linux 服务器的 PHP/Node 路径和 www 用户，用隔离站点验证发布失败回退。部署检查每步退出码、服务器语法、冻结版本及整批发布文件哈希，最后核对线上 `release.json`。
+浏览器回归记录见 `docs/game-os-verification.md`，可复用断言为 `tests/game-os.browser.js` 和 `tests/game-os-motion.browser.js`。后者覆盖 Edge 减少动态效果模式、三档扫雷、宽地图及退出定位；这些脚本在浏览器中执行，不属于 Node 测试。

@@ -51,7 +51,7 @@
 
   /* ---------------------------------------------------------------- 数据 */
 
-  // 档案数据优先走后端接口（后台改过的字段存在服务器 data/ 里，由 api.php 合并），
+  // 档案数据优先读取在线接口，
   // 接口取不到就回落到仓库里的静态文件——单独把源码解压出来看时也能跑。
   function fetchArchives() {
     return fetch("api.php?action=archives", { credentials: "same-origin" })

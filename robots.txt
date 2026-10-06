@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /admin.php
 Disallow: /api.php
 Disallow: /data/

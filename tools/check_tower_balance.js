@@ -1,6 +1,5 @@
 "use strict";
 const fs = require("node:fs"), vm = require("node:vm"), path = require("node:path");
-const { spawnSync } = require("node:child_process");
 function load(snapshot) {
   const ctx = { console }; ctx.window = ctx; vm.createContext(ctx);
   for (const file of ["config", "grid", "enemies", "towers", "engine"]) {
@@ -128,12 +127,6 @@ if (require.main === module && process.argv.includes("--search")) {
       const replay = new TD.Engine(run.map);
       replay.runToTick(run.actions, run.ticks, 216000);
       if (JSON.stringify(replay.resultState()) !== JSON.stringify(run.result)) throw new Error("Replay mismatch");
-      if (run.state === "won") {
-        const payload = { ...run.result, version: TD.config.VERSION, revision: TD.config.REVISION || 0, map: run.map, actions: run.actions, deployment: run.result.towers, timeMs: run.result.gameTimeMs };
-        const checked = spawnSync(process.execPath, [path.join(__dirname, "td_replay_runner.js")], { input: JSON.stringify(payload), encoding: "utf8" });
-        const result = JSON.parse(checked.stdout);
-        if (!result.ok || result.question) throw new Error("Server replay mismatch: " + checked.stdout);
-      }
     }
     console.log("All campaign action logs reproduce exactly");
   }
