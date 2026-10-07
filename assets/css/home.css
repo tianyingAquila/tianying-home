@@ -73,15 +73,14 @@ body.home-page :is(.card, .quote-block, .recent-games, .content-section) {
   backdrop-filter: blur(7px) saturate(110%);
 }
 
-/* 顶部与底部保留实体，避免导航随壁纸明暗变化。 */
-body.home-page :is(.site-header, .site-footer) {
+body.home-page .site-footer {
   background: var(--tk-bone);
   border-color: var(--tk-line);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 
-body.home-page[data-theme="dark"] :is(.site-header, .site-footer, .card,
+body.home-page[data-theme="dark"] :is(.site-footer, .card,
   .quote-block, .recent-games, .content-section) {
   background: var(--glass);
   -webkit-backdrop-filter: none;
@@ -103,11 +102,6 @@ body.home-page[data-theme="dark"] :is(.message-item, .message-form) {
 
 body.home-page .card::after {
   background: none;
-}
-
-body.home-page .brand-mark {
-  background: var(--accent);
-  box-shadow: none;
 }
 
 body.home-page .avatar {
@@ -135,16 +129,6 @@ body.home-page :is(.motto, .section-heading h2, .section-note,
   text-shadow: none;
 }
 
-body.home-page .particle {
-  background: var(--accent-soft);
-  box-shadow: none;
-}
-
-body.home-page .petal {
-  background: linear-gradient(135deg, #fff9ee, #edddc8 55%, #d7c1a5);
-  box-shadow: none;
-}
-
 body.home-page :is(a, button, input):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -162,16 +146,6 @@ body.home-page :is(.icon-button, .round-button, .lightbox-close):hover {
 
 body.home-page .round-button.play-button:hover {
   background: var(--accent);
-}
-
-body.home-page .nav-link.is-current {
-  color: var(--text);
-  border-color: var(--glass-border);
-  background: var(--chip);
-}
-
-body.home-page .nav-link:hover {
-  background: var(--chip);
 }
 
 body.home-page :is(.eyebrow, .recent-game-time) {
@@ -331,13 +305,13 @@ body.home-page[data-theme="dark"] :is(.round-button.play-button, .primary-button
 }
 
 /* 细相框：外沿加厚，内侧浅凹槽承托玻璃，不叠加斜向高光带。 */
-body.home-page :is(.site-header, .site-footer, .card, .quote-block, .recent-games, .content-section) {
+body.home-page :is(.site-footer, .card, .quote-block, .recent-games, .content-section) {
   border-width: 2px;
   border-color: rgba(250, 247, 238, 0.60) rgba(77, 67, 54, 0.22) rgba(77, 67, 54, 0.27) rgba(250, 247, 238, 0.48);
   box-shadow: inset 0 3px 4px rgba(44, 37, 29, 0.12), inset 3px 0 3px rgba(44, 37, 29, 0.05), inset 0 -3px 2px rgba(255, 252, 244, 0.28), inset -3px 0 2px rgba(255, 252, 244, 0.16), 0 8px 24px rgba(38, 30, 22, 0.10);
 }
 
-body.home-page[data-theme="dark"] :is(.site-header, .site-footer, .card, .quote-block, .recent-games, .content-section) {
+body.home-page[data-theme="dark"] :is(.site-footer, .card, .quote-block, .recent-games, .content-section) {
   border-color: rgba(230, 219, 201, 0.42) rgba(55, 47, 36, 0.30) rgba(55, 47, 36, 0.34) rgba(230, 219, 201, 0.28);
   box-shadow: inset 0 3px 4px rgba(44, 37, 29, 0.14), inset 3px 0 3px rgba(44, 37, 29, 0.06), inset 0 -3px 2px rgba(239, 225, 201, 0.18), var(--shadow);
 }

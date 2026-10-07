@@ -16,9 +16,8 @@
 ├── index.html / projects.html / games.html
 ├── minesweeper.html / tower.html / replay.html
 ├── assets/     # 样式、脚本、公开图片、音乐与种子数据
-├── tests/      # 前台逻辑与浏览器回归
-├── tools/      # 引擎版本检查、冻结与平衡模拟
-└── docs/       # 前台设计与验证记录
+├── tests/      # 游戏逻辑测试与一份浏览器烟测
+└── tools/      # 引擎版本检查、冻结与平衡模拟
 ```
 
 ## 本地预览与检查
@@ -38,4 +37,10 @@ node --test tests/*.test.js
 
 选择器读取原游戏 HTML，在同源 iframe 中挂载。预览期间隔离真实游戏输入、暂停推进与计时；运行后恢复。卡带切换、插入、退出和 UI 显现保留核心动画，游戏装饰遵循减少动态效果设置。
 
-浏览器回归记录见 `docs/game-os-verification.md`，可复用断言为 `tests/game-os.browser.js` 和 `tests/game-os-motion.browser.js`。后者覆盖 Edge 减少动态效果模式、三档扫雷、宽地图及退出定位；这些脚本在浏览器中执行，不属于 Node 测试。
+`tests/game-os.browser.js` 是一份短浏览器烟测，在游戏页控制台运行，检查启动、退出与游戏实例保留。开发期间的尺寸、逐帧和时长专项脚本已清理。
+
+## 页面衔接
+
+公共导航、品牌与时钟由 `os-shell.css` 和 `clock.js` 统一。首页首次打开有约一秒的短开场，同一标签页再次访问不重复。接入终端将观察窗展开为整页，目标档案或游戏准备好后揭开场景；返回首页恢复入口。普通导航使用浏览器原生跨页转场，不支持时仍可直接导航。
+
+首页保留照片、玻璃、花瓣与唱片；游戏紫色由公共令牌 `--tk-program` 定义。转场逻辑在 `os-shell.js`，小窗模型与局部交互在 `home-access.js`。

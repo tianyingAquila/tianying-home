@@ -1,0 +1,84 @@
+body .site-header {
+  color: var(--tk-ink);
+  background: var(--tk-bone);
+  border: 1px solid var(--tk-line);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,.55), 0 3px 14px rgba(20,22,26,.035);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  view-transition-name: os-header;
+}
+body[data-theme="dark"] .site-header {
+  background: #bbb4aa;
+  border-color: rgba(39,36,31,.2);
+}
+.site-header .brand-mark { background: var(--tk-accent); box-shadow: inset 0 0 0 3px rgba(255,255,255,.16); }
+.site-header .nav-link { color: inherit; border-radius: 6px; transition: background .18s, border-color .18s; }
+.site-header .nav-link:hover { background: var(--tk-accent-soft); }
+.site-header .nav-link.is-current { color: inherit; background: var(--tk-accent-soft); border-color: rgba(180,121,74,.38); }
+.site-header :is(a,button):focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 3px; }
+body .system-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 8px;
+  border: 1px solid var(--tk-line);
+  border-radius: var(--tk-radius);
+  color: var(--tk-ink);
+  background: rgba(255,255,255,.24);
+  font: 500 12px/1.2 var(--tk-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+.system-clock::before { content: ''; width: 4px; height: 4px; background: var(--tk-accent); }
+.os-readout .system-clock { color: var(--tk-ink); }
+
+::view-transition-group(os-header) { animation-duration: 0s; z-index: 2; }
+::view-transition-old(os-header), ::view-transition-new(os-header) { animation-duration: .22s; }
+::view-transition-old(root) { animation: os-nav-out .18s var(--tk-ease-soft) both; }
+::view-transition-new(root) { animation: os-nav-in .32s var(--tk-ease) both; }
+@keyframes os-nav-out { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes os-nav-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes os-fade-out { to { opacity: 0; } }
+@keyframes os-fade-in { from { opacity: 0; } }
+
+html[data-os-boot="armed"] :is(.hero,.access-terminals,.site-footer) { opacity: 0; }
+html[data-os-boot="running"] .site-header { animation: os-header-on .35s var(--tk-ease) both; }
+html[data-os-boot="running"] .profile-card { animation: os-panel-on .48s var(--tk-ease) .06s both; }
+html[data-os-boot="running"] .music-card { animation: os-panel-on .48s var(--tk-ease) .14s both; }
+html[data-os-boot="running"] .access-terminals { animation: os-panel-on .4s var(--tk-ease) .2s both; }
+html[data-os-boot="running"] .access-window { animation: os-window-on .6s var(--tk-ease-soft) .24s both; }
+html[data-os-boot="running"] .archive-model { animation: os-file-on .45s var(--tk-ease) calc(.26s + var(--boot-step,0) * .025s) both; }
+html[data-os-boot="running"] .preview-covered .preview-cell { animation: os-cell-on .26s var(--tk-ease-soft) calc(.3s + var(--boot-step,0) * .045s) both; }
+html[data-os-boot="running"] .site-footer { animation: os-panel-on .35s var(--tk-ease-soft) .6s both; }
+@keyframes os-header-on { from { opacity: .4; transform: translateY(-4px); } }
+@keyframes os-panel-on { from { opacity: 0; transform: translateY(6px); } }
+@keyframes os-window-on { from { filter: brightness(.78); } }
+@keyframes os-file-on { from { transform: translateY(12px); opacity: .35; } }
+@keyframes os-cell-on { from { opacity: .15; } }
+
+.os-portal {
+  position: fixed;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 8px;
+  contain: layout paint;
+}
+.os-portal-scene { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.os-portal .access-world { opacity: 1; }
+.os-portal.is-dark .preview-covered .preview-cell { background: linear-gradient(135deg,#d2c9bc,#b7ad9e); border-color: #e7dfd2 #948a7c #948a7c #e7dfd2; }
+.os-portal.is-dark .preview-reveal .preview-cell { background: #d4cbbc; }
+html:is([data-os-leaving],[data-os-arrival]) { pointer-events: none; }
+html[data-os-leaving] .page { opacity: .55; transition: opacity .35s var(--tk-ease-soft); }
+html[data-os-arrival] :is(.arc-stage,.os-stage) { animation: os-scene-settle .48s var(--tk-ease) both; }
+@keyframes os-scene-settle { from { transform: translateY(8px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root) { animation: os-fade-out .15s both; }
+  ::view-transition-new(root) { animation: os-fade-in .2s both; }
+  html[data-os-boot="running"] :is(.site-header,.profile-card,.music-card,.access-terminals,.site-footer,.archive-model) { animation-name: os-cell-on; }
+  html[data-os-arrival] :is(.arc-stage,.os-stage) { animation-name: os-cell-on; }
+}

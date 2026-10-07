@@ -1,45 +1,22 @@
 :root {
-  --bg-0: #070a18;
-  --bg-1: #141833;
-  --bg-2: #24153b;
-  --bg-3: #3a1636;
-  --glass: rgba(20, 24, 51, 0.38);
-  --glass-strong: rgba(20, 24, 51, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --text: #f7f7ff;
-  --muted: #aab0cf;
-  --muted-2: #7f86ad;
-  --accent: #6d6df6;
-  --accent-2: #f472b6;
-  --accent-soft: rgba(109, 109, 246, 0.22);
-  --danger: #fb7185;
-  --online: #34d399;
-  --chip: rgba(255, 255, 255, 0.07);
-  --track: rgba(255, 255, 255, 0.15);
+  --bg-0: var(--tk-bone);
+  --glass: var(--tk-bone);
+  --glass-strong: var(--tk-file);
+  --glass-border: var(--tk-line);
+  --text: var(--tk-ink);
+  --muted: #68625b;
+  --muted-2: #827970;
+  --accent: var(--tk-accent);
+  --accent-2: var(--tk-accent);
+  --accent-soft: var(--tk-accent-soft);
+  --danger: var(--tk-alert);
+  --online: var(--tk-gain);
+  --chip: var(--tk-bone-warm);
+  --track: var(--tk-line);
   --radius-lg: 24px;
   --radius-md: 16px;
-  --shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+  --shadow: 0 8px 24px rgba(20, 22, 26, 0.06);
   --serif: Georgia, "Times New Roman", "Songti SC", serif;
-}
-
-body[data-theme="light"] {
-  --bg-0: #eef1ff;
-  --bg-1: #f7f0fa;
-  --bg-2: #fdeef7;
-  --bg-3: #e6e9ff;
-  --glass: rgba(255, 255, 255, 0.38);
-  --glass-strong: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(60, 65, 105, 0.22);
-  --text: #20233d;
-  --muted: #5a6079;
-  --muted-2: #61677f;
-  --accent: #5a56e8;
-  --accent-2: #d94f9c;
-  --accent-soft: rgba(90, 86, 232, 0.14);
-  --online: #0f9d63;
-  --chip: rgba(255, 255, 255, 0.55);
-  --track: rgba(60, 65, 105, 0.18);
-  --shadow: 0 24px 60px rgba(90, 95, 160, 0.18);
 }
 
 * {
@@ -82,30 +59,12 @@ a {
   position: fixed;
   inset: 0;
   z-index: -3;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(109, 109, 246, 0.34), transparent 34%),
-    radial-gradient(circle at 82% 22%, rgba(244, 114, 182, 0.22), transparent 30%),
-    radial-gradient(circle at 55% 90%, rgba(56, 189, 248, 0.18), transparent 34%),
-    linear-gradient(145deg, var(--bg-0) 0%, var(--bg-1) 45%, var(--bg-2) 75%, var(--bg-3) 100%);
+  background: var(--bg-0);
   background-position: center;
   background-size: cover;
 }
 
-.bg.has-image {
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.48)), var(--bg-image);
-  background-size: cover, cover;
-  background-position: center, center;
-  background-repeat: no-repeat, no-repeat;
-}
-
-body[data-theme="light"] .recent-game-time { color: #a32f72; }
-
-body[data-theme="dark"] .bg.has-image {
-  background-image: linear-gradient(180deg, rgba(7, 10, 24, 0.18), rgba(7, 10, 24, 0.42)), var(--bg-image);
-  background-size: cover, cover;
-  background-position: center, center;
-  background-repeat: no-repeat, no-repeat;
-}
+body[data-theme="light"] .recent-game-time { color: var(--tk-accent); }
 
 .bg-particles {
   position: fixed;
@@ -135,8 +94,7 @@ body[data-theme="light"] .sakura {
   width: 15px;
   height: 22px;
   border-radius: 70% 15% 70% 15%;
-  background: linear-gradient(135deg, #fff4f8, #ffd8e7 55%, #f7b7ce);
-  box-shadow: 0 0 10px rgba(255, 180, 205, 0.4);
+  background: linear-gradient(135deg, #fff9ee, #edddc8 55%, #d7c1a5);
   animation: petal-fall linear infinite;
   opacity: 0.85;
 }
@@ -171,15 +129,9 @@ body[data-theme="light"] .music-meta h2 {
   position: absolute;
   bottom: -12px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 0 12px rgba(173, 173, 255, 0.8);
+  background: var(--accent-soft);
   animation: float-up linear infinite;
   opacity: 0;
-}
-
-body[data-theme="light"] .particle {
-  background: rgba(90, 86, 232, 0.32);
-  box-shadow: 0 0 10px rgba(90, 86, 232, 0.4);
 }
 
 @keyframes float-up {
@@ -230,8 +182,8 @@ body[data-theme="light"] .particle {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 14px rgba(109, 109, 246, 0.9);
+  background: var(--tk-accent);
+  box-shadow: none;
 }
 
 .icon-button,
@@ -251,8 +203,8 @@ body[data-theme="light"] .particle {
 .round-button:hover,
 .lightbox-close:hover {
   transform: translateY(-1px);
-  border-color: rgba(109, 109, 246, 0.65);
-  background: rgba(109, 109, 246, 0.16);
+  border-color: rgba(180, 121, 74, 0.65);
+  background: rgba(180, 121, 74, 0.16);
 }
 
 .icon-button {
@@ -321,10 +273,10 @@ body[data-theme="light"] .icon-moon {
   flex: 0 0 auto;
   width: 122px;
   height: 122px;
-  border: 3px solid rgba(109, 109, 246, 0.8);
+  border: 3px solid rgba(180, 121, 74, 0.8);
   border-radius: 26px;
   object-fit: cover;
-  box-shadow: 0 0 34px rgba(109, 109, 246, 0.35);
+  box-shadow: 0 0 34px rgba(180, 121, 74, 0.35);
 }
 
 .profile-content {
@@ -512,7 +464,7 @@ body[data-theme="light"] .icon-moon {
   border-radius: 50%;
   padding: 6px;
   background: conic-gradient(from 0deg, var(--accent), var(--accent-2), var(--accent));
-  box-shadow: 0 0 30px rgba(109, 109, 246, 0.28);
+  box-shadow: 0 0 30px rgba(180, 121, 74, 0.28);
 }
 
 .record-wrap.playing {
@@ -524,7 +476,7 @@ body[data-theme="light"] .icon-moon {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid rgba(20, 24, 51, 0.85);
+  border: 3px solid rgba(39, 36, 31, 0.85);
 }
 
 @keyframes spin {
@@ -590,7 +542,7 @@ body[data-theme="light"] .icon-moon {
   border: 3px solid #fff;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 12px rgba(109, 109, 246, 0.8);
+  box-shadow: 0 0 12px rgba(180, 121, 74, 0.8);
 }
 
 .music-controls {
@@ -614,7 +566,7 @@ body[data-theme="light"] .icon-moon {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #fff;
   font-size: 19px;
-  box-shadow: 0 10px 28px rgba(109, 109, 246, 0.4);
+  box-shadow: 0 10px 28px rgba(180, 121, 74, 0.4);
 }
 
 .quote-block {
@@ -732,26 +684,26 @@ body[data-theme="dark"] .quote-block {
 
 body[data-theme="light"] .help-button {
   color: #20233d;
-  border-color: rgba(60, 65, 105, 0.3);
+  border-color: rgba(74, 63, 48, 0.3);
   background: rgba(255, 255, 255, 0.66);
 }
 
 body[data-theme="light"] .form-row input {
-  border-color: rgba(60, 65, 105, 0.22);
+  border-color: rgba(74, 63, 48, 0.22);
   background: rgba(255, 255, 255, 0.72);
 }
 
 body[data-theme="light"] .form-row input::placeholder {
-  color: #6b7290;
+  color: var(--muted-2);
 }
 
 body[data-theme="light"] .eyebrow {
-  color: #4643cf;
+  color: var(--tk-accent);
   text-shadow: 0 1px 8px rgba(255, 255, 255, 0.85);
 }
 
 body[data-theme="light"] .music-source {
-  color: #555b77;
+  color: var(--muted);
 }
 
 .help-tooltip {
@@ -876,7 +828,7 @@ body[data-theme="light"] .music-source {
 
 .form-row input:focus {
   border-color: var(--accent);
-  background: rgba(109, 109, 246, 0.08);
+  background: rgba(180, 121, 74, 0.08);
 }
 
 .primary-button {
@@ -893,7 +845,7 @@ body[data-theme="light"] .music-source {
 
 .primary-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(109, 109, 246, 0.35);
+  box-shadow: 0 10px 24px rgba(180, 121, 74, 0.35);
 }
 
 .primary-button:disabled {
@@ -962,10 +914,10 @@ body[data-theme="light"] .music-source {
   z-index: 3;
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(31, 35, 58, 0.18);
+  border: 1px solid rgba(74, 63, 48, 0.18);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.8);
-  color: #2b2f4a;
+  color: var(--tk-ink);
   font-size: 26px;
   line-height: 1;
   cursor: pointer;
@@ -1006,7 +958,7 @@ body[data-theme="light"] .music-source {
 }
 
 body[data-theme="light"] .carousel-dot {
-  background: rgba(96, 104, 140, 0.38);
+  background: rgba(74, 63, 48, 0.38);
 }
 
 .carousel-dot.active {
@@ -1200,9 +1152,7 @@ body[data-theme="light"] .carousel-dot {
   }
 }
 
-/* ------------------------------------------------------------------ 顶部导航
-   三页（首页 / 项目 / 扫雷）共用同一套导航；跨文档切换时用 View Transitions
-   做一个轻量淡入，不支持的浏览器退化为普通跳转。 */
+/* 公共导航 */
 
 @view-transition {
   navigation: auto;
@@ -1258,8 +1208,8 @@ body[data-theme="light"] .carousel-dot {
 
 .nav-link.is-current {
   color: var(--text);
-  border-color: rgba(109, 109, 246, 0.45);
-  background: rgba(109, 109, 246, 0.16);
+  border-color: rgba(180, 121, 74, 0.45);
+  background: rgba(180, 121, 74, 0.16);
 }
 
 @media (max-width: 620px) {

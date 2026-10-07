@@ -45,7 +45,6 @@
     ].forEach((id) => { el[id] = document.getElementById(id); });
 
     bindEvents();
-    startClock();
     loadData();
   }
 
@@ -107,7 +106,7 @@
         });
         if (!isSmallScreen()) {
           setup3D();
-        }
+        } else { window.dispatchEvent(new Event('os:scene-ready')); }
       })
       .catch((error) => {
         console.error("[档案终端] 数据加载失败：", error);
@@ -118,6 +117,7 @@
         el.accessBtn.disabled = true;
         el.accessBtn.style.opacity = "0.4";
         document.body.classList.add("is-ready");
+        window.dispatchEvent(new Event('os:scene-ready'));
       });
   }
 
@@ -156,6 +156,7 @@
     if (!el.arcCanvas) {
       buildBackground();
       buildForeground();
+      window.dispatchEvent(new Event('os:scene-ready'));
       return;
     }
     // 注意：改 archive3d.js 之后要顺手把这里的版本号 +1，否则浏览器会用缓存
@@ -177,6 +178,7 @@
         });
         stage.setLift(0.9);
         stage.resize();
+        window.dispatchEvent(new Event('os:scene-ready'));
       })
       .catch((error) => {
         if (token !== stageInitToken) { return; }
@@ -187,6 +189,7 @@
         buildBackground();
         buildForeground();
         renderArray();
+        window.dispatchEvent(new Event('os:scene-ready'));
       });
   }
 
@@ -577,19 +580,6 @@
       el.docRepo.hidden = true;
       el.docRepo.removeAttribute("href");
     }
-  }
-
-  /* ---------------------------------------------------------------- 时钟 */
-
-  function startClock() {
-    if (!el.hudClock) { return; }
-    const tick = () => {
-      const now = new Date();
-      const p = (n) => String(n).padStart(2, "0");
-      el.hudClock.textContent = p(now.getHours()) + ":" + p(now.getMinutes()) + ":" + p(now.getSeconds());
-    };
-    tick();
-    window.setInterval(tick, 1000);
   }
 
   /* -------------------------------------------------------------- 索引 */

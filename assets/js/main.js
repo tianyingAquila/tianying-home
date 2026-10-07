@@ -648,13 +648,7 @@
     }
   }
 
-  function setupClockAndUptime() {
-    const clock = () => {
-      $("clockText").textContent = new Date().toLocaleTimeString("zh-CN", { hour12: false });
-    };
-    clock();
-    window.setInterval(clock, 1000);
-
+  function setupUptime() {
     const updateUptime = async () => {
       try {
         const data = await request("uptime");
@@ -671,7 +665,7 @@
     setupTheme();
     setupParticles();
     setupSakura();
-    setupClockAndUptime();
+    setupUptime();
     setupLightbox();
     setupGalleryControls();
 
@@ -689,6 +683,7 @@
     renderGallery();
     setupGuestbook();
     loadMessages();
+    window.dispatchEvent(new Event('os:home-ready'));
   }
 
   init();

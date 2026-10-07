@@ -3,9 +3,8 @@
   'use strict';
   const terminals = [...document.querySelectorAll('.access-terminal')];
   if (!terminals.length) return;
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const fine = matchMedia('(hover: hover) and (pointer: fine)');
-  let navigating = false, navigationTimer = 0, peekFrame = 0;
+  let peekFrame = 0;
   const archive = document.querySelector('.archive-array');
   const ns = 'http://www.w3.org/2000/svg';
   const svgNode = (name, attrs) => {
@@ -23,6 +22,7 @@
     // The hit area stays put while the model lifts, avoiding edge hover jitter.
     file.append(svgNode('path', {class:'archive-hit', d:'M-13 -17 140 -80 140 12 0 76 -13 70Z'}));
     const model = svgNode('g', {class:'archive-model'});
+    model.style.setProperty('--boot-step', row * 3 + col);
     model.append(
       svgNode('path', {d:'M-13 -6 127 -70 140 -64 0 0Z', fill:'#faf7ef'}),
       svgNode('path', {d:'M-13 -6 0 0 0 76 -13 70Z', fill:'url(#archive-edge)'}),
@@ -44,6 +44,7 @@
   for (let i = 0; i < cols * rows; i++) {
     const cover = document.createElement('span'), cell = document.createElement('span');
     cover.className = cell.className = 'preview-cell';
+    cover.style.setProperty('--boot-step', Math.floor(i / cols));
     if (mines.has(i)) {
       const mine = svgNode('svg', {class:'preview-mine', viewBox:'0 0 24 24', focusable:'false'});
       mine.innerHTML = '<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/><circle cx="12" cy="12" r="5.5"/><circle cx="10" cy="10" r="1.4" fill="#eee8dd" stroke="none"/>';
@@ -66,7 +67,7 @@
     board.classList.remove('is-peeking');
   };
   board.addEventListener('pointermove', event => {
-    if (!fine.matches || event.pointerType === 'touch' || navigating) return;
+    if (!fine.matches || event.pointerType === 'touch' || document.documentElement.hasAttribute('data-os-leaving')) return;
     const bounds = board.getBoundingClientRect();
     spotX = event.clientX - bounds.left - board.clientLeft;
     spotY = event.clientY - bounds.top - board.clientTop;
@@ -78,19 +79,7 @@
   });
   board.addEventListener('pointerleave', clearPeek);
   board.addEventListener('pointercancel', clearPeek);
-  for (const el of terminals) el.addEventListener('click', event => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || el.target || reduced.matches) return;
-    event.preventDefault(); if (navigating) return;
-    navigating = true; clearPeek();
-    el.classList.add('is-opening'); document.body.classList.add('access-departing');
-    navigationTimer = setTimeout(() => location.assign(el.href), 320);
-  });
-  const reset = () => {
-    clearTimeout(navigationTimer); navigating = false; clearPeek();
-    document.body.classList.remove('access-departing');
-    terminals.forEach(el => el.classList.remove('is-opening'));
-  };
-  addEventListener('pageshow', reset);
+  addEventListener('pageshow', clearPeek);
   // Scrolling can move the board away without sending a pointerleave event.
   addEventListener('scroll', clearPeek, {passive:true});
   addEventListener('blur', clearPeek);

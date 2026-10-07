@@ -1,8 +1,7 @@
-/* One stationary chassis; only the objects behind its glass respond. */
 .access-terminals { --shell:#ece7df; --window:#e6e0d6; position:relative; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0; margin-top:28px; border:2px solid; border-color:#fcfaf5 #bcb5aa #b3ab9e #f3efe6; border-radius:18px; background:linear-gradient(130deg,rgba(255,255,255,.28),transparent 60%),var(--shell); box-shadow:inset 0 1px 2px rgba(255,255,255,.55),0 10px 18px -13px rgba(36,29,21,.36); }
 body[data-theme="dark"] .access-terminals { --shell:#aaa399; --window:#92897c; border-color:#c8beb0 #776e60 #706859 #c0b6a7; }
-.access-terminal { --signal:#b4794a; position:relative; display:block; min-width:0; padding:22px 24px 18px; color:#27241f; text-decoration:none; border-radius:16px; -webkit-tap-highlight-color:transparent; }
-.access-terminal + .access-terminal { --signal:#7060a8; border-left:1px solid rgba(80,65,44,.18); border-radius:0 16px 16px 0; box-shadow:inset 1px 0 rgba(255,255,255,.45); }
+.access-terminal { --signal:var(--tk-accent); position:relative; display:block; min-width:0; padding:22px 24px 18px; color:#27241f; text-decoration:none; border-radius:16px; -webkit-tap-highlight-color:transparent; }
+.access-terminal + .access-terminal { --signal:var(--tk-program); border-left:1px solid rgba(80,65,44,.18); border-radius:0 16px 16px 0; box-shadow:inset 1px 0 rgba(255,255,255,.45); }
 .access-terminal:focus-visible { outline:2px solid var(--signal); outline-offset:-6px; }
 .access-label { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
 .access-label h2 { margin:0; font:500 22px var(--serif); letter-spacing:.035em; }
@@ -57,8 +56,6 @@ body[data-theme="dark"] .preview-reveal .preview-cell { background:#d4cbbc; }
   .archive-file:hover .archive-model { transform:translateY(-18px); filter:drop-shadow(7px 12px 8px rgba(68,52,27,.28)); }
   .archive-file:hover .archive-shadow { opacity:.23; }
 }
-.is-opening .access-world { transform:scale(1.10); opacity:.2; transition:transform .32s,opacity .32s; }
-body.access-departing .access-terminal:not(.is-opening) { opacity:.45; transition:opacity .3s; }
 @media (max-width:900px) {
   .access-terminals { grid-template-columns:1fr; gap:18px; border:0; border-radius:0; background:none; box-shadow:none; }
   .access-terminal,.access-terminal + .access-terminal { border:2px solid; border-color:#fcfaf5 #bcb5aa #b3ab9e #f3efe6; border-radius:16px; background:linear-gradient(130deg,rgba(255,255,255,.28),transparent 60%),var(--shell); box-shadow:inset 0 1px 2px rgba(255,255,255,.55),0 10px 18px -13px rgba(36,29,21,.36); }

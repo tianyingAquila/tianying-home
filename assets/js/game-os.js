@@ -215,9 +215,11 @@
         m.ready = true;
         preview(m);
         m.card.classList.add('is-ready');
+        if (m.index === current) window.dispatchEvent(new Event('os:scene-ready'));
       } catch (error) {
         m.ready = false;
         m.card.querySelector('.module-loading').textContent = '读取失败，请刷新重试';
+        if (m.index === current) window.dispatchEvent(new Event('os:scene-ready'));
       }
     }
     m.frame.addEventListener('load', initialize);
@@ -239,6 +241,7 @@
       } catch (error) {
         m.card.querySelector('.module-loading').textContent = '读取失败，请刷新重试';
         status.textContent = names[m.index] + '暂时无法读取，请刷新重试。';
+        if (m.index === current) window.dispatchEvent(new Event('os:scene-ready'));
       }
     }
     mount();

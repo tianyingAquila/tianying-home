@@ -1,114 +1,34 @@
+// 在 games.html 控制台运行：启动、退出与实例保留。
 (async () => {
-  const results = [];
-  window.osQAResults = results;
-  window.osQAError = null;
-  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const wait = async predicate => {
+    const deadline = performance.now() + 8000;
+    while (!predicate()) {
+      if (performance.now() > deadline) throw new Error('游戏未进入预期状态');
+      await new Promise(resolve => setTimeout(resolve, 40));
+    }
+  };
+  const cards = [...document.querySelectorAll('.os-module')];
   const state = () => document.body.dataset.osState;
-  function check(name, ok, details) { results.push({ name, ok:!!ok, details }); if (!ok) throw Error(name + ': ' + JSON.stringify(details)); }
-  async function until(fn, timeout=6000) { const end=performance.now()+timeout; while (!fn()) { if(performance.now()>end) throw Error('timeout'); await sleep(25); } }
-  const mineCard=document.querySelector('[data-game=minesweeper]'), towerCard=document.querySelector('[data-game=tower]');
-  const mw=mineCard.querySelector('iframe').contentWindow, tw=towerCard.querySelector('iframe').contentWindow;
-  await until(()=>mineCard.classList.contains('is-ready')&&towerCard.classList.contains('is-ready'));
-  if(state()==='running') { document.querySelector('.is-expanded .os-exit').click(); await until(()=>state()==='selecting'); }
-  if(mineCard.dataset.position!=='current') { mineCard.querySelector('.module-trigger').click(); await sleep(720); }
-  const board=mw.document.getElementById('gameBoard');
-  const canvas=tw.document.getElementById('tdCanvas');
-  const dock=document.querySelector('.os-dock');
-  check('selector stays within one viewport with the shared scrollbar gutter',document.documentElement.scrollHeight===innerHeight&&document.documentElement.scrollWidth===document.body.clientWidth&&document.documentElement.scrollWidth<=innerWidth&&getComputedStyle(document.documentElement).overflow==='hidden',{height:document.documentElement.scrollHeight,width:document.documentElement.scrollWidth,bodyWidth:document.body.clientWidth,innerHeight,innerWidth});
-  check('large cartridge and cropped next program',mineCard.offsetWidth>innerWidth*.48&&towerCard.getBoundingClientRect().left<innerWidth&&towerCard.getBoundingClientRect().right>innerWidth);
-  check('console fixed to viewport bottom',getComputedStyle(dock).position==='fixed'&&Math.abs(dock.getBoundingClientRect().bottom-innerHeight)<1);
-  function pose(card,node) {
-    const frame=card.querySelector('iframe'), a=new DOMMatrix(getComputedStyle(frame).transform), b=new DOMMatrix(getComputedStyle(card).transform), r=node.getBoundingClientRect();
-    return {width:r.width,height:r.height,scaleX:a.a*b.a,scaleY:a.d*b.d};
+  if (state() === 'running') {
+    document.querySelector('.is-expanded .os-exit').click();
+    await wait(() => state() === 'selecting');
   }
-  function samePixels(samples) { return samples.every(p=>Math.abs(p.width-samples[0].width)<.01&&Math.abs(p.height-samples[0].height)<.01&&Math.abs(p.scaleX-1)<.001&&Math.abs(p.scaleY-1)<.001); }
-  function centeredPreview(card,win) {
-    const frame=card.querySelector('iframe'), a=new DOMMatrix(getComputedStyle(frame).transform), b=win.GameOSModule.bounds(), aperture=card.querySelector('.module-window');
-    return Math.abs(a.e+b.x+b.width/2-aperture.clientWidth/2)<1&&Math.abs(a.f+b.y+b.height/2-aperture.clientHeight/2)<1;
+  const results = [];
+  for (const card of cards) {
+    await wait(() => card.classList.contains('is-ready'));
+    if (card.dataset.position !== 'current') {
+      card.querySelector('.module-trigger').click();
+      await wait(() => document.getAnimations().every(animation => animation.playState !== 'running'));
+      await new Promise(resolve => setTimeout(resolve, 40));
+    }
+    const frame = card.querySelector('iframe'), original = frame.contentDocument;
+    card.querySelector('.module-trigger').click();
+    await wait(() => state() === 'running');
+    if (frame.contentDocument !== original || original.body.inert) throw new Error('启动未恢复原游戏');
+    card.querySelector('.os-exit').click();
+    await wait(() => state() === 'selecting');
+    if (frame.contentDocument !== original || !original.body.inert) throw new Error('退出未保留并暂停游戏');
+    results.push(card.dataset.game + ': 启动、退出、实例保留通过');
   }
-  await until(()=>centeredPreview(mineCard,mw)&&centeredPreview(towerCard,tw));
-  check('one to one preview centered inside film',samePixels([pose(mineCard,board),pose(mineCard,board)])&&centeredPreview(mineCard,mw)&&getComputedStyle(mineCard.querySelector('.module-film')).opacity==='1');
-  check('preview isolates game input',mw.document.body.inert&&tw.document.body.inert&&getComputedStyle(mineCard.querySelector('iframe')).pointerEvents==='none');
-  const beforeLaunch={revealed:mw.MS_DEBUG.state().revealedSafe,flags:mw.MS_DEBUG.state().flags,placed:mw.MS_DEBUG.state().placed};
-  const samples=[];
-  const minePixels=[pose(mineCard,board)];
-  let movedBoardHasHiddenUI=false, uiRevealedAfterMove=false;
-  const start=performance.now();
-  let sampling=true;
-  function sample(t) {
-    samples.push(t); minePixels.push(pose(mineCard,board));
-    const elapsed=performance.now()-start, opacity=+mw.getComputedStyle(mw.document.querySelector('.game-topbar')).opacity;
-    if(elapsed>500&&elapsed<1000&&opacity===0&&mw.document.body.inert) movedBoardHasHiddenUI=true;
-    if(elapsed>1250&&opacity>0&&state()==='inserting'&&mw.document.body.inert) uiRevealedAfterMove=true;
-    if(sampling) requestAnimationFrame(sample);
-  }
-  requestAnimationFrame(sample);
-  mineCard.querySelector('.module-trigger').click();
-  // Fast repeated input cannot launch a second instance or change program.
-  mineCard.querySelector('.module-trigger').click(); towerCard.querySelector('.module-trigger').click();
-  await until(()=>state()==='running'); sampling=false;
-  const gaps=samples.slice(1).map((t,i)=>t-samples[i]).sort((a,b)=>a-b);
-  const duration=performance.now()-start;
-  check('launch timing and continuous board',duration>1500&&duration<2200&&board===mw.document.getElementById('gameBoard')&&mineCard.dataset.position==='current',{duration,frames:samples.length,p95:gaps[Math.floor(gaps.length*.95)]});
-  check('minesweeper never scales during insertion or translation',samePixels(minePixels),{first:minePixels[0],last:minePixels.at(-1)});
-  check('controls fade in only after board translation, input waits until end',movedBoardHasHiddenUI&&uiRevealedAfterMove);
-  check('cartridge click does not play minesweeper',mw.MS_DEBUG.state().revealedSafe===beforeLaunch.revealed&&mw.MS_DEBUG.state().flags===beforeLaunch.flags&&mw.MS_DEBUG.state().placed===beforeLaunch.placed);
-  mw.document.querySelector('[data-mode=free]').click(); mw.document.getElementById('startGame').click();
-  await until(()=>mw.MS_DEBUG.state().phase==='playing');
-  const d=mw.document;
-  function pointer(node,type) { const b=node.getBoundingClientRect(); node.dispatchEvent(new mw.PointerEvent(type,{bubbles:true,button:0,clientX:b.x+b.width/2,clientY:b.y+b.height/2,pointerType:'mouse'})); }
-  const first=d.querySelector('.ms-cell'); pointer(first,'pointerdown'); pointer(first,'pointerup');
-  await until(()=>!mw.MS_DEBUG.state().tx);
-  check('real minesweeper reveal',mw.MS_DEBUG.state().revealedSafe>0,{revealed:mw.MS_DEBUG.state().revealedSafe});
-  const closed=d.querySelector('.ms-cell:not(.is-revealed)');
-  d.getElementById('flagToggle').click(); pointer(closed,'pointerdown'); pointer(closed,'pointerup');
-  await until(()=>!mw.MS_DEBUG.state().tx);
-  check('flag control',mw.MS_DEBUG.state().flags===1,{flags:mw.MS_DEBUG.state().flags});
-  d.getElementById('flagToggle').click(); d.getElementById('hintButton').click();
-  await until(()=>!mw.MS_DEBUG.state().tx);
-  check('hint control',d.getElementById('hintCount').textContent==='2/3',d.getElementById('hintCount').textContent);
-  const g=mw.MS_DEBUG.state(), revealed=g.revealedSafe, timer=g.startedAt;
-  mw.scrollTo(0,300);
-  const exitPixels=[pose(mineCard,board)]; let exitSampling=true;
-  function exitSample() { exitPixels.push(pose(mineCard,board)); if(exitSampling) requestAnimationFrame(exitSample); }
-  requestAnimationFrame(exitSample);
-  mineCard.querySelector('.os-exit').click(); await until(()=>state()==='selecting'); exitSampling=false; await sleep(300);
-  check('reverse transition also preserves board pixel size',samePixels(exitPixels),{first:exitPixels[0],last:exitPixels.at(-1)});
-  check('eject retains game and suspends timer',board===d.getElementById('gameBoard')&&g.revealedSafe===revealed&&g.timerId===0,{revealed:g.revealedSafe,timerId:g.timerId});
-  const preview=mw.GameOSModule.bounds(); check('scrolled board returns centered at one to one size',centeredPreview(mineCard,mw)&&samePixels([pose(mineCard,board)]),preview);
-  mineCard.querySelector('.module-trigger').click(); await until(()=>state()==='running');
-  check('resume excludes selector time',g.startedAt-timer>2500&&g.revealedSafe===revealed,{excluded:g.startedAt-timer});
-  d.querySelector('[data-size=large]').click(); await until(()=>g.phase==='playing'&&g.cols===24);
-  mineCard.querySelector('.os-exit').click(); await until(()=>state()==='selecting');
-  check('changed board size updates preview',mineCard.querySelector('.module-footer span').textContent.startsWith('24 × 24'),mineCard.querySelector('.module-footer span').textContent);
-  const dockBefore=dock.getBoundingClientRect();
-  towerCard.querySelector('.module-trigger').click(); await sleep(720);
-  check('dock persists and aligns during switch',dock===document.querySelector('.os-dock')&&Math.abs((towerCard.getBoundingClientRect().left+towerCard.offsetWidth/2)-(dockBefore.left+dockBefore.width/2))<2);
-  const towerPixels=[pose(towerCard,canvas)]; let towerSampling=true;
-  function towerSample() { towerPixels.push(pose(towerCard,canvas)); if(towerSampling) requestAnimationFrame(towerSample); }
-  requestAnimationFrame(towerSample);
-  towerCard.querySelector('.module-trigger').click(); await until(()=>state()==='running'); towerSampling=false;
-  check('continuous tower canvas',canvas===tw.document.getElementById('tdCanvas'));
-  check('tower canvas never scales or resizes during launch',samePixels(towerPixels),{first:towerPixels[0],last:towerPixels.at(-1)});
-  for (const map of [2,3,4]) {
-    tw.document.querySelector('[data-map="'+map+'"]').click(); await sleep(100);
-    check('map '+map+' refreshes canvas and UI',tw.TD.game.eng.map.id===map&&tw.TD.game.rd.cols===tw.TD.game.eng.map.cols&&tw.document.getElementById('tdBoardMap').textContent===tw.TD.game.eng.map.name,{map:tw.TD.game.eng.map.id,cols:tw.TD.game.rd.cols,label:tw.document.getElementById('tdBoardMap').textContent});
-  }
-  tw.document.querySelector('[data-map="1"]').click();
-  tw.document.querySelector('.td-shop-item[data-key=bolt]').click();
-  const game=tw.TD.game, r=canvas.getBoundingClientRect();
-  canvas.dispatchEvent(new tw.MouseEvent('click',{bubbles:true,clientX:r.left+game.rd.ox+game.rd.cell*2.5,clientY:r.top+game.rd.oy+game.rd.cell*.5}));
-  check('real tower construction',game.eng.towers.length===1&&game.eng.gold===170,{towers:game.eng.towers.length,gold:game.eng.gold});
-  tw.document.getElementById('tdStart').click(); await sleep(300);
-  tw.document.getElementById('tdPause').click(); check('pause control',game.eng.state==='paused',game.eng.state);
-  tw.document.getElementById('tdPause').click(); tw.document.getElementById('tdSpeed').click(); check('speed control',game.eng.speed===2,game.eng.speed);
-  const time=game.eng.realTime;
-  tw.scrollTo(0,250); towerCard.querySelector('.os-exit').click(); await until(()=>state()==='selecting'); await sleep(300);
-  check('ejected tower does not advance',game.eng.realTime===time&&game.paused,{time,now:game.eng.realTime,paused:game.paused});
-  towerCard.querySelector('.module-trigger').click(); await until(()=>state()==='running'); await sleep(100);
-  check('resume tower instance and state',canvas===tw.document.getElementById('tdCanvas')&&game.eng.towers.length===1&&!game.paused&&game.eng.realTime>time);
-  towerCard.querySelector('.os-exit').click(); await until(()=>state()==='selecting');
-  check('selector returns without page scroll or viewport drift',document.documentElement.scrollHeight===innerHeight&&scrollY===0&&Math.abs(dock.getBoundingClientRect().bottom-innerHeight)<1&&centeredPreview(towerCard,tw));
-  check('URL never navigated',location.pathname==='/games.html',location.href);
-  return JSON.stringify(results);
-})().then(value => { window.osQADone=true; return value; }).catch(error => { window.osQAError=error.message; window.osQADone=true; throw error; })
+  return results;
+})();

@@ -1,7 +1,6 @@
-/* A one-screen program selector. Board pixels never scale during launch. */
 html:has(body.games-page) { height:100%; overflow:hidden; }
 body.games-page {
-  --os-purple:#7060a8; --os-paper:#f2f0ec; --text:var(--tk-ink); --muted:#686767;
+  --os-purple:var(--tk-program); --os-paper:#f2f0ec; --text:var(--tk-ink); --muted:#686767;
   --glass-border:var(--tk-line); --glass:rgba(250,249,246,.7);
   --module-width:min(52vw,1040px); --module-top:clamp(102px,12svh,140px);
   --dock-height:clamp(112px,16svh,164px); --module-bottom:calc(var(--dock-height) * .644 + 12px);
@@ -10,10 +9,8 @@ body.games-page {
   margin:0; height:100svh; overflow:hidden; background:var(--os-paper); color:var(--tk-ink);
   font-family:var(--tk-sans); -webkit-font-smoothing:antialiased;
 }
-.games-page .brand-mark { background:var(--os-purple); box-shadow:none; }
 .games-page .site-header { z-index:40; }
 .games-page a { color:inherit; text-decoration:none; }
-.games-page .nav-link.is-current { background:rgba(112,96,168,.08); border-color:rgba(112,96,168,.25); }
 .games-page :is(button,a):focus-visible { outline:2px solid var(--os-purple); outline-offset:5px; }
 .os-stage { position:fixed; inset:0; overflow:hidden; }
 .os-heading { position:absolute; top:calc(var(--module-top) + 8px); left:5.7vw; right:5.7vw; display:flex; justify-content:space-between; align-items:flex-start; }
@@ -138,5 +135,10 @@ body[data-os-state="ejecting"] .os-dock { z-index:35; }
   .os-details { top:57%; }
   .os-instructions { margin-top:8px; }
 }
-/* Cartridge movement is the GAME OS interaction, and remains animated even
-   when the system reduces decorative motion. */
+@media (max-width:480px) {
+  body.games-page { --module-top:174px; }
+  .os-heading { top:112px; }
+  .os-heading p { display:none; }
+  .os-heading h1 { margin-top:0; font-size:30px; }
+  .os-readout { gap:5px; padding-top:0; }
+}
