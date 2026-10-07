@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="assets/css/tokens.css?v=5">
   <link rel="stylesheet" href="assets/css/style.css?v=19">
   <link rel="stylesheet" href="assets/css/home.css?v=3">
+  <link rel="stylesheet" href="assets/css/home-access.css?v=1">
 </head>
 <body class="home-page" data-theme="light">
   <div class="bg" id="bg"></div>
@@ -80,6 +81,29 @@
         </div>
         <audio id="musicAudio" preload="metadata"></audio>
       </article>
+    </section>
+
+    <section class="access-terminals" aria-label="接入终端">
+      <a class="access-terminal" data-world="archives" href="projects.html" aria-label="进入项目档案">
+        <div class="access-label"><h2>项目档案</h2><span class="access-id"><i></i>ARCHIVE OS</span></div>
+        <div class="access-window" aria-hidden="true">
+          <div class="access-world"><div class="archive-room"></div><div class="archive-array"></div></div>
+          <span class="access-coordinate">个人项目 / 创作与实验</span><span class="access-corner"></span>
+        </div>
+        <div class="access-footer"><p>收进档案里的那些想法</p><span class="access-enter">进入档案 <b aria-hidden="true">↗</b></span></div>
+        <span class="access-vents" aria-hidden="true"></span>
+      </a>
+      <a class="access-terminal" data-world="games" href="games.html" aria-label="进入游戏程序">
+        <div class="access-label"><h2>游戏程序</h2><span class="access-id"><i></i>GAME OS</span></div>
+        <div class="access-window" aria-hidden="true">
+          <div class="access-world"><div class="program-room"></div><div class="program-slot"></div>
+            <div class="program-cartridge"><div class="program-label"><span>G-001 / SKILL MINESWEEPER</span><span>⚑</span></div><div class="preview-board"></div><span class="program-hit"></span><span class="program-contact"></span></div>
+          </div>
+          <span class="access-coordinate">技能扫雷 / 网格塔防</span><span class="access-corner"></span>
+        </div>
+        <div class="access-footer"><p>把程序插入，玩一会儿</p><span class="access-enter">进入游戏 <b aria-hidden="true">↗</b></span></div>
+        <span class="access-vents" aria-hidden="true"></span>
+      </a>
     </section>
 
     <section class="recent-games" id="recentGames" hidden>
@@ -171,5 +195,6 @@
   </div>
 
   <script src="assets/js/main.js?v=14"></script>
+  <script src="assets/js/home-access.js?v=1"></script>
 </body>
 </html>
