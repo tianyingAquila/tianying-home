@@ -1217,12 +1217,24 @@ body[data-theme="light"] .carousel-dot {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-height: 40px;
+  /* 每页都保留主题按钮的位置，导航不随按钮有无而移动。 */
+  padding-right: 50px;
+}
+
+.site-header .theme-toggle {
+  position: absolute;
+  top: 50%;
+  right: 24px;
+  margin-top: -20px;
 }
 
 .site-nav-links {
   display: flex;
   align-items: center;
   gap: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  flex-shrink: 0;
 }
 
 .nav-link {
@@ -1264,5 +1276,33 @@ body[data-theme="light"] .carousel-dot {
   .site-nav-links {
     gap: 2px;
   }
+
+  .site-header .theme-toggle {
+    right: 14px;
+  }
 }
 
+@media (max-width: 480px) {
+  /* 窄屏将导航放在独立一行，给站名和主题按钮留足空间。 */
+  .site-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    row-gap: 6px;
+  }
+
+  .site-header .site-brand {
+    min-height: 40px;
+  }
+
+  .header-actions {
+    grid-column: 1 / -1;
+    justify-content: center;
+    min-height: 34px;
+    padding-right: 0;
+  }
+
+  .site-header .theme-toggle {
+    top: 10px;
+    margin-top: 0;
+  }
+}

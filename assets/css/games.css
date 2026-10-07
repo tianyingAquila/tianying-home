@@ -1,5 +1,5 @@
 /* A one-screen program selector. Board pixels never scale during launch. */
-html:has(body.games-page) { height:100%; overflow:hidden; scrollbar-gutter:auto; }
+html:has(body.games-page) { height:100%; overflow:hidden; }
 body.games-page {
   --os-purple:#7060a8; --os-paper:#f2f0ec; --text:var(--tk-ink); --muted:#686767;
   --glass-border:var(--tk-line); --glass:rgba(250,249,246,.7);

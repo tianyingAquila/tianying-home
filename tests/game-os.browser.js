@@ -14,7 +14,7 @@
   const board=mw.document.getElementById('gameBoard');
   const canvas=tw.document.getElementById('tdCanvas');
   const dock=document.querySelector('.os-dock');
-  check('selector occupies exactly one viewport',document.documentElement.scrollHeight===innerHeight&&document.documentElement.scrollWidth===innerWidth,{height:document.documentElement.scrollHeight,width:document.documentElement.scrollWidth,innerHeight,innerWidth});
+  check('selector stays within one viewport with the shared scrollbar gutter',document.documentElement.scrollHeight===innerHeight&&document.documentElement.scrollWidth===document.body.clientWidth&&document.documentElement.scrollWidth<=innerWidth&&getComputedStyle(document.documentElement).overflow==='hidden',{height:document.documentElement.scrollHeight,width:document.documentElement.scrollWidth,bodyWidth:document.body.clientWidth,innerHeight,innerWidth});
   check('large cartridge and cropped next program',mineCard.offsetWidth>innerWidth*.48&&towerCard.getBoundingClientRect().left<innerWidth&&towerCard.getBoundingClientRect().right>innerWidth);
   check('console fixed to viewport bottom',getComputedStyle(dock).position==='fixed'&&Math.abs(dock.getBoundingClientRect().bottom-innerHeight)<1);
   function pose(card,node) {
