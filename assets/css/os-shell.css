@@ -68,6 +68,37 @@ html[data-os-boot="running"] .site-footer { animation: os-panel-on .35s var(--tk
   contain: layout paint;
 }
 .os-portal-scene { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.os-portal-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  visibility: hidden;
+  color: #fff;
+  background: radial-gradient(ellipse at center, rgba(25,22,18,.22), transparent 65%);
+  font: 600 clamp(42px,6vw,84px)/1.1 var(--tk-sans);
+  letter-spacing: -.025em;
+  text-shadow: 0 2px 18px rgba(20,22,26,.38), 0 1px 3px rgba(20,22,26,.45);
+}
+.os-portal.is-loading .os-portal-loading { visibility: visible; }
+.os-portal-loading span {
+  position: relative;
+  color: rgba(255,255,255,.65);
+}
+.os-portal-loading span::after {
+  content: attr(data-label);
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  text-shadow: none;
+  background: linear-gradient(90deg, transparent 35%, #fff 48%, transparent 61%);
+  background-size: 250% 100%;
+  background-position: 100% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+.os-portal.is-loading .os-portal-loading span::after { animation: os-loading-sweep 1.25s linear infinite; }
+@keyframes os-loading-sweep { to { background-position: 0% 0; } }
 .os-portal .access-world { opacity: 1; }
 .os-portal.is-dark .preview-covered .preview-cell { background: linear-gradient(135deg,#d2c9bc,#b7ad9e); border-color: #e7dfd2 #948a7c #948a7c #e7dfd2; }
 .os-portal.is-dark .preview-reveal .preview-cell { background: #d4cbbc; }

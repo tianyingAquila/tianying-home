@@ -28,7 +28,13 @@
     scene.style.width = data.width + 'px';
     scene.style.height = data.height + 'px';
     scene.innerHTML = data.html;
-    layer.append(scene);
+    const loading = document.createElement('div');
+    loading.className = 'os-portal-loading';
+    const text = document.createElement('span');
+    text.textContent = 'Loading...';
+    text.dataset.label = text.textContent;
+    loading.append(text);
+    layer.append(scene, loading);
     root.append(layer);
     return layer;
   }
@@ -41,6 +47,7 @@
     portal = createPortal(arrival);
     Object.assign(portal.style, { left: '0px', top: '0px', width: '100vw', height: '100vh', borderRadius: '0px' });
     portal.firstElementChild.style.transform = fullscreenScene(arrival.width, arrival.height);
+    portal.classList.add('is-loading');
     arrivalTimer = setTimeout(reveal, 3500);
   }
 
@@ -106,6 +113,7 @@
         ]);
       } catch {}
       if (!leaving || portal !== layer) return;
+      layer.classList.add('is-loading');
       storage.set(portalKey, JSON.stringify(data));
       location.assign(link.href);
     });
