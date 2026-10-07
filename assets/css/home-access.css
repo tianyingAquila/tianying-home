@@ -11,7 +11,7 @@ body[data-theme="dark"] .access-terminals { --shell:#aaa399; --window:#92897c; b
 .access-window { position:relative; height:242px; overflow:hidden; border:1px solid; border-color:#aaa192 #f6f2e9 #faf7f0 #b6ad9f; border-radius:8px; background:var(--window); box-shadow:inset 0 4px 7px rgba(39,31,21,.16),0 0 0 4px rgba(72,62,47,.04); }
 .access-window::after { content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit; border:3px solid rgba(247,243,231,.18); box-shadow:inset 0 3px 8px rgba(37,30,22,.12),inset 0 -2px 1px rgba(255,253,246,.24); }
 .access-world { position:absolute; inset:0; transition:opacity .25s; }
-.access-coordinate { position:absolute; left:14px; bottom:11px; z-index:3; font:9px var(--tk-mono); color:#6b6359; letter-spacing:.06em; pointer-events:none; }
+.access-hint { position:absolute; left:12px; bottom:10px; z-index:3; padding:6px 9px; border:1px solid rgba(255,255,255,.14); border-radius:4px; background:rgba(43,38,33,.72); box-shadow:0 2px 8px rgba(41,31,21,.12); color:#fff; font:600 12px/1.2 var(--tk-sans); letter-spacing:.02em; pointer-events:none; }
 .access-corner { position:absolute; right:14px; top:13px; width:14px; height:14px; border-top:1px solid rgba(56,48,37,.25); border-right:1px solid rgba(56,48,37,.25); pointer-events:none; }
 .access-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:16px; }
 .access-footer p { margin:0; font-size:12px; color:#5c554c; }
