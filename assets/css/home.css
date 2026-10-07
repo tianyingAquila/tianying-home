@@ -1,13 +1,13 @@
-/* 首页沿用档案终端的暖白、墨色与语义色，原有功能和壁纸保留。 */
+/* 首页日间玻璃、夜间暖灰实体；共用档案终端的墨色与语义色。 */
 body.home-page {
   --home-wallpaper: #e9e4e1; /* 与项目页 WebGL 场景底色一致。 */
   --bg-0: var(--home-wallpaper);
-  --glass: var(--tk-bone);
-  --glass-strong: var(--tk-file);
-  --glass-border: var(--tk-line);
+  --glass: rgba(255, 253, 246, 0.08);
+  --glass-strong: rgba(255, 253, 246, 0.40);
+  --glass-border: rgba(255, 253, 246, 0.65);
   --text: var(--tk-ink);
-  --muted: #656462;
-  --muted-2: #777570;
+  --muted: #433d36;
+  --muted-2: #514a41;
   --accent: var(--tk-accent);
   --accent-2: var(--tk-accent);
   --accent-soft: var(--tk-accent-soft);
@@ -20,18 +20,18 @@ body.home-page {
 
 body.home-page[data-theme="dark"] {
   --home-wallpaper: #242321;
-  --glass: #302e2b;
-  --glass-strong: #383530;
-  --glass-border: rgba(246, 245, 243, 0.2);
-  --text: #f6f5f3;
-  --muted: #cbc5bd;
-  --muted-2: #aaa297;
-  --accent: #cda47f;
-  --accent-2: #cda47f;
+  --glass: #aaa399;
+  --glass-strong: #bbb4aa;
+  --glass-border: rgba(238, 228, 212, 0.40);
+  --text: #27241f;
+  --muted: #454039;
+  --muted-2: #565047;
+  --accent: #754826;
+  --accent-2: #754826;
   --accent-soft: rgba(205, 164, 127, 0.15);
   --online: #9aac89;
-  --chip: #3c3934;
-  --track: rgba(246, 245, 243, 0.18);
+  --chip: #b5aca0;
+  --track: rgba(39, 36, 31, 0.25);
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
@@ -53,7 +53,7 @@ body.home-page .bg.has-image::after {
   position: absolute;
   inset: 0;
   background: var(--home-wallpaper);
-  opacity: 0.38;
+  opacity: 0.12;
 }
 
 body.home-page[data-theme="dark"] .bg.has-image {
@@ -62,17 +62,44 @@ body.home-page[data-theme="dark"] .bg.has-image {
 }
 
 body.home-page[data-theme="dark"] .bg.has-image::after {
-  opacity: 0.76;
+  opacity: 0.44;
 }
 
-/* 实体面板，避免壁纸透过模糊玻璃影响文字和边框。 */
-body.home-page :is(.site-header, .site-footer, .card, .quote-block,
-  .recent-games, .message-item, .message-form, .carousel-viewport,
-  .community-grid > .content-section) {
-  background: var(--glass);
+/* 内容玻璃保留背景的颜色，以模糊、边缘反光和浅投影形成厚度。 */
+body.home-page :is(.card, .quote-block, .recent-games, .content-section) {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 48%), var(--glass);
   border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
+  backdrop-filter: blur(14px) saturate(115%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -1px 0 rgba(68, 53, 38, 0.08), 0 8px 24px rgba(38, 30, 22, 0.10);
+}
+
+/* 顶部与底部保留实体，避免导航随壁纸明暗变化。 */
+body.home-page :is(.site-header, .site-footer) {
+  background: var(--tk-bone);
+  border-color: var(--tk-line);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+body.home-page[data-theme="dark"] :is(.site-header, .site-footer, .card,
+  .quote-block, .recent-games, .content-section) {
+  background: var(--glass);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: inset 0 1px 0 rgba(255, 246, 230, 0.20), var(--shadow);
+}
+
+body.home-page :is(.message-item, .message-form) {
+  background: rgba(255, 253, 246, 0.18);
+  border-color: rgba(74, 63, 48, 0.16);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+body.home-page[data-theme="dark"] :is(.message-item, .message-form) {
+  background: var(--chip);
+  border-color: rgba(39, 36, 31, 0.16);
 }
 
 body.home-page .card::after {
@@ -157,6 +184,14 @@ body.home-page .music-source {
   color: var(--muted);
 }
 
+body.home-page[data-theme="light"] .social-link {
+  background: rgba(255, 253, 246, 0.28);
+}
+
+body.home-page[data-theme="light"] :is(.intro, .sub-intro, .contact-line, .music-meta p, .music-progress) {
+  text-shadow: 0 1px 1px rgba(255, 253, 246, 0.55);
+}
+
 body.home-page .help-button {
   color: var(--text);
   border-color: var(--glass-border);
@@ -221,7 +256,7 @@ body.home-page .lightbox {
   margin-top: 38px;
 }
 
-.community-grid > .content-section {
+.community-grid .content-section {
   min-width: 0;
   margin-top: 0;
   padding: 24px;
@@ -246,7 +281,6 @@ body.home-page .lightbox {
 
 .community-grid .message-form {
   padding: 14px;
-  background: var(--chip);
 }
 
 .community-grid .form-row {
@@ -257,18 +291,42 @@ body.home-page .lightbox {
   aspect-ratio: 16 / 10;
 }
 
+.gallery-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.gallery-column .quote-block {
+  flex: 1;
+  min-height: 160px;
+  margin: 0;
+  padding: 28px 24px;
+  border-radius: var(--radius-lg);
+}
+
 @media (max-width: 900px) {
   .community-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .gallery-column .quote-block {
+    flex: none;
+  }
 }
 
 @media (max-width: 620px) {
-  .community-grid > .content-section {
+  .community-grid .content-section {
     padding: 20px;
   }
 
   .community-grid .form-row {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+body.home-page[data-theme="dark"] :is(.round-button.play-button, .primary-button, .message-avatar) {
+  background: #d0aa7b;
+  color: var(--text);
 }
