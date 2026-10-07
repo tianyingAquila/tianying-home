@@ -2,7 +2,7 @@
 body.home-page {
   --home-wallpaper: #e9e4e1; /* 与项目页 WebGL 场景底色一致。 */
   --bg-0: var(--home-wallpaper);
-  --glass: rgba(255, 253, 246, 0.08);
+  --glass: rgba(255, 253, 246, 0.04);
   --glass-strong: rgba(255, 253, 246, 0.40);
   --glass-border: rgba(255, 253, 246, 0.65);
   --text: var(--tk-ink);
@@ -67,11 +67,10 @@ body.home-page[data-theme="dark"] .bg.has-image::after {
 
 /* 内容玻璃保留背景的颜色，以模糊、边缘反光和浅投影形成厚度。 */
 body.home-page :is(.card, .quote-block, .recent-games, .content-section) {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 48%), var(--glass);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 48%), var(--glass);
   border-color: var(--glass-border);
-  -webkit-backdrop-filter: blur(14px) saturate(115%);
-  backdrop-filter: blur(14px) saturate(115%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -1px 0 rgba(68, 53, 38, 0.08), 0 8px 24px rgba(38, 30, 22, 0.10);
+  -webkit-backdrop-filter: blur(7px) saturate(110%);
+  backdrop-filter: blur(7px) saturate(110%);
 }
 
 /* 顶部与底部保留实体，避免导航随壁纸明暗变化。 */
@@ -329,4 +328,23 @@ body.home-page .lightbox {
 body.home-page[data-theme="dark"] :is(.round-button.play-button, .primary-button, .message-avatar) {
   background: #d0aa7b;
   color: var(--text);
+}
+
+/* 细相框：外沿加厚，内侧浅凹槽承托玻璃，不叠加斜向高光带。 */
+body.home-page :is(.site-header, .site-footer, .card, .quote-block, .recent-games, .content-section) {
+  border-width: 2px;
+  border-color: rgba(250, 247, 238, 0.60) rgba(77, 67, 54, 0.22) rgba(77, 67, 54, 0.27) rgba(250, 247, 238, 0.48);
+  box-shadow: inset 0 3px 4px rgba(44, 37, 29, 0.12), inset 3px 0 3px rgba(44, 37, 29, 0.05), inset 0 -3px 2px rgba(255, 252, 244, 0.28), inset -3px 0 2px rgba(255, 252, 244, 0.16), 0 8px 24px rgba(38, 30, 22, 0.10);
+}
+
+body.home-page[data-theme="dark"] :is(.site-header, .site-footer, .card, .quote-block, .recent-games, .content-section) {
+  border-color: rgba(230, 219, 201, 0.42) rgba(55, 47, 36, 0.30) rgba(55, 47, 36, 0.34) rgba(230, 219, 201, 0.28);
+  box-shadow: inset 0 3px 4px rgba(44, 37, 29, 0.14), inset 3px 0 3px rgba(44, 37, 29, 0.06), inset 0 -3px 2px rgba(239, 225, 201, 0.18), var(--shadow);
+}
+
+@media (min-width: 901px) {
+  body.home-page .motto {
+    font-size: clamp(30px, 2.8vw, 38px);
+    line-height: 1.5;
+  }
 }
