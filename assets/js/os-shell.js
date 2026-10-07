@@ -110,7 +110,12 @@
       location.assign(link.href);
     });
   });
-  addEventListener('pageswap', event => { if (leaving) event.viewTransition?.skipTransition(); });
+  addEventListener('pageswap', event => {
+    if (leaving && event.viewTransition) {
+      event.viewTransition.ready.catch(() => {});
+      event.viewTransition.skipTransition();
+    }
+  });
   function reset() {
     clearTimeout(arrivalTimer); clearTimeout(bootTimer);
     portal?.remove(); portal = null; arrival = null; leaving = false;
