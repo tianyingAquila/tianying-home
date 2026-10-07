@@ -1,0 +1,274 @@
+/* 首页沿用档案终端的暖白、墨色与语义色，原有功能和壁纸保留。 */
+body.home-page {
+  --home-wallpaper: #e9e4e1; /* 与项目页 WebGL 场景底色一致。 */
+  --bg-0: var(--home-wallpaper);
+  --glass: var(--tk-bone);
+  --glass-strong: var(--tk-file);
+  --glass-border: var(--tk-line);
+  --text: var(--tk-ink);
+  --muted: #656462;
+  --muted-2: #777570;
+  --accent: var(--tk-accent);
+  --accent-2: var(--tk-accent);
+  --accent-soft: var(--tk-accent-soft);
+  --danger: var(--tk-alert);
+  --online: var(--tk-gain);
+  --chip: var(--tk-bone-warm);
+  --track: var(--tk-line);
+  --shadow: 0 8px 24px rgba(20, 22, 26, 0.06);
+}
+
+body.home-page[data-theme="dark"] {
+  --home-wallpaper: #242321;
+  --glass: #302e2b;
+  --glass-strong: #383530;
+  --glass-border: rgba(246, 245, 243, 0.2);
+  --text: #f6f5f3;
+  --muted: #cbc5bd;
+  --muted-2: #aaa297;
+  --accent: #cda47f;
+  --accent-2: #cda47f;
+  --accent-soft: rgba(205, 164, 127, 0.15);
+  --online: #9aac89;
+  --chip: #3c3934;
+  --track: rgba(246, 245, 243, 0.18);
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+body.home-page .bg {
+  background: var(--home-wallpaper);
+  isolation: isolate;
+}
+
+body.home-page .bg.has-image {
+  background-color: var(--home-wallpaper);
+  background-image: var(--bg-image);
+  background-blend-mode: multiply;
+  background-size: cover;
+  background-position: center;
+}
+
+body.home-page .bg.has-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--home-wallpaper);
+  opacity: 0.38;
+}
+
+body.home-page[data-theme="dark"] .bg.has-image {
+  background-image: var(--bg-image);
+  background-blend-mode: normal;
+}
+
+body.home-page[data-theme="dark"] .bg.has-image::after {
+  opacity: 0.76;
+}
+
+/* 实体面板，避免壁纸透过模糊玻璃影响文字和边框。 */
+body.home-page :is(.site-header, .site-footer, .card, .quote-block,
+  .recent-games, .message-item, .message-form, .carousel-viewport,
+  .community-grid > .content-section) {
+  background: var(--glass);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+body.home-page .card::after {
+  background: none;
+}
+
+body.home-page .brand-mark {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+body.home-page .avatar {
+  border-color: var(--glass-border);
+  box-shadow: none;
+}
+
+body.home-page .record-wrap {
+  background: var(--chip);
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+}
+
+body.home-page .music-cover {
+  border-color: var(--glass-border);
+}
+
+body.home-page :is(.round-button.play-button, .primary-button, .message-avatar) {
+  background: var(--accent);
+  color: var(--tk-ink);
+  box-shadow: none;
+}
+
+body.home-page :is(.motto, .section-heading h2, .section-note,
+  .profile-content h1, .music-meta h2) {
+  text-shadow: none;
+}
+
+body.home-page .particle {
+  background: var(--accent-soft);
+  box-shadow: none;
+}
+
+body.home-page .petal {
+  background: linear-gradient(135deg, #fff9ee, #edddc8 55%, #d7c1a5);
+  box-shadow: none;
+}
+
+body.home-page :is(a, button, input):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+body.home-page .progress::-webkit-slider-thumb {
+  border-color: var(--glass-strong);
+  box-shadow: 0 1px 4px rgba(20, 22, 26, 0.15);
+}
+
+body.home-page :is(.icon-button, .round-button, .lightbox-close):hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+body.home-page .round-button.play-button:hover {
+  background: var(--accent);
+}
+
+body.home-page .nav-link.is-current {
+  color: var(--text);
+  border-color: var(--glass-border);
+  background: var(--chip);
+}
+
+body.home-page .nav-link:hover {
+  background: var(--chip);
+}
+
+body.home-page :is(.eyebrow, .recent-game-time) {
+  color: var(--accent);
+  text-shadow: none;
+}
+
+body.home-page .music-source {
+  color: var(--muted);
+}
+
+body.home-page .help-button {
+  color: var(--text);
+  border-color: var(--glass-border);
+  background: var(--glass-strong);
+}
+
+body.home-page .form-row input {
+  border-color: var(--glass-border);
+  background: var(--glass-strong);
+}
+
+body.home-page .form-row input::placeholder {
+  color: var(--muted-2);
+}
+
+body.home-page .form-row input:focus {
+  border-color: var(--accent);
+  background: var(--glass-strong);
+}
+
+body.home-page .primary-button:hover {
+  box-shadow: 0 4px 12px rgba(20, 22, 26, 0.12);
+}
+
+body.home-page .carousel-arrow {
+  color: var(--text);
+  border-color: var(--glass-border);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 2px 8px rgba(20, 22, 26, 0.12);
+}
+
+body.home-page .carousel-arrow:hover {
+  background: var(--chip);
+}
+
+body.home-page .carousel-dot {
+  background: var(--glass-border);
+}
+
+body.home-page .carousel-dot.active {
+  background: var(--accent);
+}
+
+body.home-page .status-dot {
+  background: var(--online);
+  box-shadow: none;
+}
+
+body.home-page .lightbox {
+  background: rgba(20, 22, 26, 0.94);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 下排沿用上排的两列比例：留言板在左，图片集在右。 */
+.community-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 22px;
+  margin-top: 38px;
+}
+
+.community-grid > .content-section {
+  min-width: 0;
+  margin-top: 0;
+  padding: 24px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.community-grid .guestbook-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.community-grid .message-list {
+  flex: 1;
+  align-content: start;
+}
+
+.community-grid .empty-hint {
+  padding: 28px 16px;
+}
+
+.community-grid .message-form {
+  padding: 14px;
+  background: var(--chip);
+}
+
+.community-grid .form-row {
+  grid-template-columns: minmax(90px, 0.65fr) minmax(0, 1.35fr) auto;
+}
+
+.community-grid .gallery-slide {
+  aspect-ratio: 16 / 10;
+}
+
+@media (max-width: 900px) {
+  .community-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .community-grid > .content-section {
+    padding: 20px;
+  }
+
+  .community-grid .form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
