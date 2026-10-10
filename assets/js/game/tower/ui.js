@@ -365,7 +365,7 @@
 
     this.el.deploymentReplay.addEventListener("click", function () {
       if (!self.deploymentReplayId) { return; }
-      window.location.href = "replay.html?id=" + encodeURIComponent(self.deploymentReplayId);
+      window.open("replay.html?id=" + encodeURIComponent(self.deploymentReplayId), "_blank", "noopener");
     });
 
     this.el.deployment.addEventListener("click", function (ev) {

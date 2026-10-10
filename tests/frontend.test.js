@@ -80,3 +80,34 @@ test("tower map switch completes UI refresh in srcdoc and preserves standalone s
     if (!embedded) assert.equal(historyCalls[0][2], "/tower.html?map=4");
   }
 });
+
+test("tower replay opens separately and preserves the embedded game", () => {
+  for (const href of ["about:srcdoc", "https://example.test/tower.html?map=3"]) {
+    const opened = [], nodes = {};
+    const ctx = { console, location: { href }, TD: { config: {} },
+      document: { getElementById() { return null; }, querySelectorAll() { return []; }, addEventListener() {} },
+      addEventListener() {}, open(...args) { opened.push(args); } };
+    ctx.window = ctx;
+    vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync(path.join(base, "game/tower/ui.js"), "utf8").replace('  /* 入口 */', '  window.__test = TowerGame;\n  /* 入口 */'), ctx);
+    const game = Object.create(ctx.__test.prototype);
+    game.el = new Proxy(nodes, { get(target, key) {
+      if (!target[key]) {
+        const node = element();
+        node.addEventListener = (type, fn) => { node[type] = fn; };
+        target[key] = node;
+      }
+      return target[key];
+    } });
+    game.canvas = element();
+    game.eng = { state: "running" };
+    game.bind();
+    nodes.deploymentReplay.click();
+    assert.equal(opened.length, 0);
+    game.deploymentReplayId = "record/id";
+    nodes.deploymentReplay.click();
+    assert.deepEqual(opened, [["replay.html?id=record%2Fid", "_blank", "noopener"]]);
+    assert.equal(ctx.location.href, href);
+    assert.equal(game.eng.state, "running");
+  }
+});
