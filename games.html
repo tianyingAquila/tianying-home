@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>GAME OS · Tianying的巢</title>
-  <meta name="description" content="Tianying GAME OS：选择游戏模块，插入系统，展开技能扫雷与网格塔防。">
+  <meta name="description" content="Tianying GAME OS：技能扫雷、网格塔防与混乱牌战。">
   <link rel="stylesheet" href="assets/css/tokens.css?v=6">
   <link rel="stylesheet" href="assets/css/style.css?v=20">
-  <link rel="stylesheet" href="assets/css/games.css?v=9">
+  <link rel="stylesheet" href="assets/css/games.css?v=10">
   <link rel="stylesheet" href="assets/css/home-access.css?v=5">
   <link rel="stylesheet" href="assets/css/os-shell.css?v=3">
   <script src="assets/js/os-shell.js?v=3"></script>
@@ -25,7 +25,7 @@
   <main class="os-stage">
     <header class="os-heading">
       <div><p>TIANYING GAMES</p><h1>GAME OS</h1></div>
-      <div class="os-readout"><span id="termClock" class="term-clock system-clock">--:--:--</span><span>02 PROGRAMS / ONLINE</span></div>
+      <div class="os-readout"><span id="termClock" class="term-clock system-clock">--:--:--</span><span>03 PROGRAMS / ONLINE</span></div>
     </header>
     <section class="os-selector" aria-label="游戏程序选择器">
       <div class="os-axis" aria-hidden="true"></div>
@@ -46,6 +46,14 @@
         <button class="module-trigger" type="button" aria-label="选择网格塔防"></button>
         <button class="os-exit" type="button" aria-label="退出网格塔防，返回选择器">退出 / EJECT</button>
       </article>
+      <article class="os-module" data-game="chaos-cards" data-position="hidden">
+        <div class="module-label"><span>G-003</span><span class="module-type">CARDS <i class="module-light" aria-hidden="true"></i></span></div>
+        <h2 class="module-title">混乱牌战<span>CHAOS CARDS</span></h2>
+        <div class="module-window"><span class="module-loading">正在读取程序…</span><iframe class="module-frame" data-src="chaos-cards.html?gameos=1" data-gameos="1" title="混乱牌战游戏" tabindex="-1" aria-hidden="true"></iframe><div class="module-film" aria-hidden="true"></div></div>
+        <div class="module-footer"><span>100 CARDS / THEME POOLS</span><i class="module-contact" aria-hidden="true"></i></div>
+        <button class="module-trigger" type="button" aria-label="选择混乱牌战"></button>
+        <button class="os-exit" type="button" aria-label="退出混乱牌战，返回选择器">退出 / EJECT</button>
+      </article>
       <div class="os-dock" aria-label="程序插槽">
         <div class="dock-machine">
           <svg class="dock-shell" viewBox="0 0 1440 160" preserveAspectRatio="none" aria-hidden="true"><path d="M 1 160 V 25 Q 1 7 20 7 H 275 Q 294 7 294 26 V 49 Q 294 57 304 57 H 1136 Q 1146 57 1146 49 V 26 Q 1146 7 1165 7 H 1420 Q 1439 7 1439 25 V 160"/></svg>
@@ -55,14 +63,14 @@
         <div class="dock-label"><span>SLOT 01 / <span id="dockProgram">G-001</span></span><span id="dockPrompt">INSERT / EXECUTE</span></div>
       </div>
     </section>
-    <section class="os-details" aria-label="当前游戏说明"><span class="os-index" id="osIndex">G-001 / 02</span><div>
+    <section class="os-details" aria-label="当前游戏说明"><span class="os-index" id="osIndex">G-001 / 03</span><div>
       <p class="os-description" id="osDescription">三档棋盘，27 个正负面效果随机上身。连锁结算、三次提示、成绩上榜。</p>
       <p class="os-instructions">点击中央卡带启动 · 点击右侧卡带切换</p>
     </div></section>
     <footer class="os-footer"><span class="os-system-status" id="osStatus" role="status" aria-live="polite">系统就绪 / 选择程序模块</span><span>POWERED BY TIANYING ARCHIVE</span></footer>
-    <noscript><p class="os-no-script">启用 JavaScript 以使用选择器，或直接进入 <a href="minesweeper.html">技能扫雷</a> / <a href="tower.html">网格塔防</a>。</p></noscript>
+    <noscript><p class="os-no-script">启用 JavaScript 以使用选择器，或直接进入 <a href="minesweeper.html">技能扫雷</a> / <a href="tower.html">网格塔防</a> / <a href="chaos-cards.html">混乱牌战</a>。</p></noscript>
   </main>
   <script src="assets/js/clock.js?v=2"></script>
-  <script src="assets/js/game-os.js?v=5"></script>
+  <script src="assets/js/game-os.js?v=6"></script>
 </body>
 </html>

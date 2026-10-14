@@ -25,6 +25,9 @@
     card.querySelector('.module-trigger').click();
     await wait(() => state() === 'running');
     if (frame.contentDocument !== original || original.body.inert) throw new Error('启动未恢复原游戏');
+    if (card.dataset.game === 'chaos-cards') {
+      await wait(() => original.querySelector('.cc-online.connected'));
+    }
     card.querySelector('.os-exit').click();
     await wait(() => state() === 'selecting');
     if (frame.contentDocument !== original || !original.body.inert) throw new Error('退出未保留并暂停游戏');

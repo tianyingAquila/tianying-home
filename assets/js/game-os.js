@@ -4,10 +4,11 @@
   const cards = [...document.querySelectorAll('.os-module')];
   const progress = document.querySelector('.dock-progress');
   const status = document.getElementById('osStatus');
-  const names = ['技能扫雷', '网格塔防'];
+  const names = ['技能扫雷', '网格塔防', '混乱牌战'];
   const descriptions = [
     '三档棋盘，27 个正负面效果随机上身。连锁结算、三次提示、成绩上榜。',
-    '四张地图：回廊、交错、汇流、螺旋。防御塔三级强化，末段波次逐步强化。'
+    '四张地图：回廊、交错、汇流、螺旋。防御塔三级强化，末段波次逐步强化。',
+    '100 张经典随从，九类主题卡池。自由构筑或随机三选一，与朋友或电脑对战。'
   ];
   let current = 0;
   let busy = false;
@@ -70,10 +71,14 @@
   function metadata() {
     const id = 'G-00' + (current + 1);
     document.getElementById('dockProgram').textContent = id;
-    document.getElementById('osIndex').textContent = id + ' / 02';
+    document.getElementById('osIndex').textContent = id + ' / ' + String(modules.length).padStart(2,'0');
     document.getElementById('osDescription').textContent = descriptions[current];
     modules.forEach((m, i) => m.trigger.setAttribute('aria-label', (i === current ? '插入并启动' : '选择') + names[i]));
     status.textContent = names[current] + ' / 点击卡带启动';
+  }
+
+  function positionModules() {
+    cards.forEach((card,i)=>{ card.dataset.position = i===current?'current':i===(current+1)%cards.length?'next':'hidden'; });
   }
 
   async function select(index) {
@@ -87,6 +92,7 @@
     metadata();
     await delay(660);
     old.classList.remove('is-departing');
+    positionModules();
     busy = false;
     await refreshIfNeeded();
   }
@@ -251,12 +257,13 @@
   let resizeTimer;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize,100); });
   window.addEventListener('keydown', event => {
-    if (event.target.closest('a,input,textarea')) return;
+    if (event.target.closest?.('a,input,textarea,select')) return;
     if (body.dataset.osState === 'selecting' && ['ArrowLeft','ArrowRight'].includes(event.key)) {
-      event.preventDefault(); select(1-current);
+      event.preventDefault(); select((current+(event.key==='ArrowRight'?1:cards.length-1))%cards.length);
     }
     if (event.key === 'Escape' && body.dataset.osState === 'running') eject();
   });
   metadata();
+  positionModules();
   shapeDock();
 })();

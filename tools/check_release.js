@@ -25,3 +25,8 @@ for (const file of engineFiles) {
   if (!html.includes('src="assets/js/game/tower/' + current + '/' + file + '"')) throw new Error("HTML version mismatch: " + file);
 }
 console.log("Release validated: " + version);
+if (!fs.existsSync(path.join(root, 'chaos-cards.html'))) throw new Error('Chaos Cards page missing');
+import(require('node:url').pathToFileURL(path.join(root,'assets/js/game/chaos-cards/cards.mjs')).href).then(({POOL,LIST})=>{
+  if(POOL.length!==100||LIST.length!==113||POOL.some(c=>!c.themes.length))throw new Error('Chaos Cards catalog incomplete');
+  console.log('Chaos Cards release validated: 100 cards / 13 templates');
+}).catch(e=>{console.error(e);process.exitCode=1;});
