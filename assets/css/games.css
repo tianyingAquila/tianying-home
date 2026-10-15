@@ -36,8 +36,9 @@ body.games-page {
 .os-module[data-position="next"] { z-index:2; transform:translate(var(--next-offset),34px); opacity:.72; }
 .os-module[data-position="next"]:hover { opacity:1; border-color:rgba(112,96,168,.5); }
 .os-module[data-position="hidden"] { visibility:hidden; pointer-events:none; transform:translate(calc(var(--next-offset) * 2),34px); opacity:0; }
-.os-module.is-departing { animation:module-depart 650ms var(--tk-ease); }
-@keyframes module-depart { 0% { transform:translate(0,0); opacity:1; } 38% { transform:translate(-120px,12px); opacity:0; } 39% { transform:translate(calc(var(--next-offset) + 120px),34px); opacity:0; } 100% { transform:translate(var(--next-offset),34px); opacity:.72; } }
+.os-module.is-departing { --depart-x:calc(var(--next-offset) * 2); --depart-opacity:0; visibility:visible; pointer-events:none; animation:module-depart 650ms var(--tk-ease); }
+.os-module.is-departing[data-position="next"] { --depart-x:var(--next-offset); --depart-opacity:.72; }
+@keyframes module-depart { 0% { transform:translate(0,0); opacity:1; } 38% { transform:translate(-120px,12px); opacity:0; } 39% { transform:translate(calc(var(--depart-x) + 120px),34px); opacity:0; } 100% { transform:translate(var(--depart-x),34px); opacity:var(--depart-opacity); } }
 .module-label { position:absolute; top:27px; left:32px; right:32px; display:flex; justify-content:space-between; font:11px var(--tk-mono); letter-spacing:.1em; color:#737073; transition:opacity 250ms; }
 .module-type { display:flex; align-items:center; gap:10px; }
 .module-light { width:5px; height:5px; border-radius:50%; background:#b9b4c1; }

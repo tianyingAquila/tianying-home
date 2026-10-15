@@ -14,6 +14,19 @@
     await wait(() => state() === 'selecting');
   }
   const results = [];
+  await wait(() => cards.every(card => card.classList.contains('is-ready')));
+  for (let i = 0; i < cards.length; i++) {
+    const target = cards.find(card => card.dataset.position === 'next');
+    const incoming = cards[(cards.indexOf(target) + 1) % cards.length];
+    const before = incoming.getBoundingClientRect().left;
+    target.querySelector('.module-trigger').click();
+    if (target.dataset.position !== 'current' || incoming.dataset.position !== 'next') throw new Error('轮换没有同时更新全部卡带');
+    await new Promise(resolve => setTimeout(resolve, 300));
+    if (incoming.getBoundingClientRect().left >= before || Number(getComputedStyle(incoming).opacity) <= .05) throw new Error('右侧卡带没有随本轮动画进入');
+    await wait(() => !document.querySelector('.is-departing'));
+    if (cards.some(card => card.getAnimations().some(animation => animation.playState === 'running'))) throw new Error('轮换结束后又启动第二段位移动画');
+  }
+  results.push('三游戏完整轮换：右侧同步进入、没有延迟补位通过');
   for (const card of cards) {
     await wait(() => card.classList.contains('is-ready'));
     if (card.dataset.position !== 'current') {

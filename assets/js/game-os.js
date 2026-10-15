@@ -86,13 +86,13 @@
     busy = true;
     const old = cards[current];
     old.classList.add('is-departing');
-    old.dataset.position = 'next';
-    cards[index].dataset.position = 'current';
     current = index;
+    // Move the whole ring together, including the hidden cartridge entering
+    // the right-hand slot. Delaying this creates a second, interrupted slide.
+    positionModules();
     metadata();
     await delay(660);
     old.classList.remove('is-departing');
-    positionModules();
     busy = false;
     await refreshIfNeeded();
   }
