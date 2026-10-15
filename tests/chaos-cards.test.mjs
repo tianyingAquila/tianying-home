@@ -3,10 +3,30 @@ import assert from 'node:assert/strict';
 import { POOL, CARDS } from '../assets/js/game/chaos-cards/cards.mjs';
 import { Game, createGame, act, validateDeck, legalActions, timeout, view } from '../assets/js/game/chaos-cards/engine.mjs';
 import { basicDeck, chooseAction } from '../assets/js/game/chaos-cards/ai.mjs';
+import {boardEffects,combatHints} from '../assets/js/game/chaos-cards/presentation.mjs';
 const path='../assets/js/game/chaos-cards/';
 function rig(){const s=createGame([basicDeck(),basicDeck()],123,0);s.phase='playing';s.active=0;s.turn=10;s.deadline=1e9;for(const p of s.players){p.hand=[];p.board=[];p.deck=basicDeck();p.mana=10;p.maxMana=10;p.mulligan=true;}return new Game(s);}
 const play=(g,id,target,choice=0)=>{const c={id,uid:'e'+g.s.next++};g.p(0).hand.push(c);return act(g.s,0,{type:'play',card:c.uid,position:0,target,choice},1);};
 test('catalog and global copy limit',()=>{assert.equal(POOL.length,100);assert.equal(Object.keys(CARDS).length,113);assert.ok(POOL.every(c=>c.themes.length));assert.throws(()=>validateDeck(Array(30).fill('CS2_120')),/两张/);assert.equal(validateDeck(basicDeck()),true);});
+test('attack hints follow the current legal attackers and taunt targets',()=>{
+ const g=rig(),awake=g.summon(0,'CS2_120'),sleeping=g.summon(0,'EX1_556'),taunt=g.summon(1,'CS2_125'),other=g.summon(1,'CS2_200');awake.born=0;
+ let hints=combatHints(view(g.s,0).options);assert.deepEqual([...hints.attackers],[awake.uid]);assert.deepEqual([...hints.targets],[taunt.uid]);assert.ok(!hints.attackers.has(sleeping.uid));
+ g.silence(taunt.uid);hints=combatHints(view(g.s,0).options);assert.ok(hints.targets.has(other.uid));assert.ok(hints.targets.has(g.p(1).uid));
+ awake.frozen=10;assert.equal(combatHints(view(g.s,0).options).targets.size,0);awake.frozen=0;
+ assert.equal(combatHints(view(g.s,1).options).attackers.size,0);assert.equal(combatHints(view(g.s,0).options,{playingCard:true}).targets.size,0);
+});
+test('live effect display keeps deathrattles, triggers and actual modifiers, and removes lost abilities',()=>{
+ const g=rig(),wolf=g.summon(0,'DS1_175'),beast=g.summon(0,'CS2_120'),death=g.summon(0,'EX1_556'),shield=g.summon(0,'EX1_008'),water=g.summon(1,'CS2_033');g.q=[];
+ const current=m=>g.publicPlayers().flatMap(p=>p.board).find(p=>p.uid===m.uid),effects=m=>boardEffects(m.id,current(m));
+ assert.ok(effects(wolf).some(e=>e.label==='光环'));assert.ok(effects(beast).some(e=>e.label==='光环 +1/0'));assert.ok(effects(death).some(e=>e.label==='亡语'));assert.ok(effects(water).some(e=>e.label==='伤害触发'));
+ g.buff(beast.uid,2,0,[],true);assert.ok(effects(beast).some(e=>e.label==='本回合 +2/0'));assert.ok(!effects(beast).some(e=>e.label.startsWith('属性')));
+ g.damage([[shield.uid,1]]);assert.ok(!effects(shield).some(e=>e.label==='圣盾'));
+ g.silence(death.uid);assert.ok(!effects(death).some(e=>e.label==='亡语'));assert.ok(effects(death).some(e=>e.label==='已沉默'));
+ g.silence(wolf.uid);assert.ok(!effects(wolf).some(e=>e.label==='光环'));assert.ok(!effects(beast).some(e=>e.type==='aura'));
+ g.end(1);assert.ok(!effects(beast).some(e=>e.label.startsWith('本回合')));
+ for(const c of Object.values(CARDS))assert.doesNotThrow(()=>boardEffects(c.id,{keys:c.keywords,health:c.health,maxHealth:c.health}));
+ assert.ok(!boardEffects('CS2_189',{keys:[]}).some(e=>e.label==='战吼'));
+});
 test('rejected actions are atomic and deterministic',()=>{const g=rig();const before=structuredClone(g.s);assert.throws(()=>act(g.s,0,{type:'play',card:'missing',position:0},1));assert.deepEqual(g.s,before);assert.deepEqual(createGame([basicDeck(),basicDeck()],42,0),createGame([basicDeck(),basicDeck()],42,0));});
 test('combat is simultaneous; shield and poison need actual damage',()=>{const g=rig(),a=g.summon(0,'CS2_172'),b=g.summon(1,'CS2_172');g.q=[];a.born=0;const n=act(g.s,0,{type:'attack',from:a.uid,target:b.uid},1);assert.equal(n.players[0].board.length,0);assert.equal(n.players[1].board.length,0);
  const h=rig(),snake=h.summon(0,'EX1_170'),shield=h.summon(1,'EX1_020');h.q=[];snake.born=0;const z=act(h.s,0,{type:'attack',from:snake.uid,target:shield.uid},1);assert.equal(z.players[1].board.length,1);assert.ok(!z.players[1].board[0].keys.includes('shield'));});

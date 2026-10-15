@@ -25,7 +25,7 @@ export class Game {
   card(m) { return CARDS[m.id]; }
   log(text) { this.s.events.push(text); if(this.s.events.length>30)this.s.events.shift(); }
   withSource(m,fn) { const previous=this.source;this.source=m?.uid;try{return fn();}finally{this.source=previous;} }
-  publicPlayers() { return this.s.players.map(p=>({uid:p.uid,hp:p.hp,mana:p.mana,maxMana:p.maxMana,fatigue:p.fatigue,deckCount:p.deck.length,handCount:p.hand.length,board:p.board.map(m=>({uid:m.uid,id:m.id,attack:this.attack(m),health:this.health(m),maxHealth:this.max(m),keys:[...m.keys,...(this.has(m,'windfury')&&!m.keys.includes('windfury')?['windfury']:[])],frozen:!!m.frozen,silenced:m.silenced,ready:this.s.active===m.owner&&this.ready(m)}))})); }
+  publicPlayers() { return this.s.players.map(p=>({uid:p.uid,hp:p.hp,mana:p.mana,maxMana:p.maxMana,fatigue:p.fatigue,deckCount:p.deck.length,handCount:p.hand.length,board:p.board.map(m=>({uid:m.uid,id:m.id,attack:this.attack(m),health:this.health(m),maxHealth:this.max(m),keys:[...m.keys,...(this.has(m,'windfury')&&!m.keys.includes('windfury')?['windfury']:[])],frozen:!!m.frozen,silenced:m.silenced,ready:this.s.active===m.owner&&this.ready(m),aura:{attack:m.auraA,health:m.auraH},buff:{attack:m.buffA,health:m.buffH},temporary:{attack:m.temps.reduce((n,t)=>n+t.a,0),health:m.temps.reduce((n,t)=>n+t.h,0)}}))})); }
   visual(type,data={}) { this.s.visual??=[];if(this.s.visual.length<96)this.s.visual.push({type,from:this.source||null,...data,players:this.publicPlayers()}); }
   health(m) { return m.hero ? m.hp : this.max(m)-m.damage; }
   max(m) { return m.hero ? 30 : Math.max(0,m.baseH+m.buffH+m.auraH); }
