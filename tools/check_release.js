@@ -28,5 +28,11 @@ console.log("Release validated: " + version);
 if (!fs.existsSync(path.join(root, 'chaos-cards.html'))) throw new Error('Chaos Cards page missing');
 import(require('node:url').pathToFileURL(path.join(root,'assets/js/game/chaos-cards/cards.mjs')).href).then(({POOL,LIST})=>{
   if(POOL.length!==100||LIST.length!==113||POOL.some(c=>!c.themes.length))throw new Error('Chaos Cards catalog incomplete');
+  for(const card of LIST){
+    const file=path.join(root,'assets/img/chaos-cards/cards-v1',card.id+'.webp');
+    const bytes=fs.readFileSync(file);
+    if(bytes.toString('ascii',0,4)!=='RIFF'||bytes.toString('ascii',8,12)!=='WEBP')throw new Error('Card art is not WebP: '+card.id);
+  }
   console.log('Chaos Cards release validated: 100 cards / 13 templates');
+  console.log('Chaos Cards artwork validated: 113 WebP illustrations');
 }).catch(e=>{console.error(e);process.exitCode=1;});
