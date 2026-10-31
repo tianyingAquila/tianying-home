@@ -1,6 +1,6 @@
-import {CARDS} from './cards.mjs';
-import {esc,cardText} from './ui.mjs';
-import {glossary} from './presentation.mjs';
+import {CARDS} from './cards.mjs?v=20261025-fixes';
+import {esc,cardText} from './ui.mjs?v=20261025-fixes';
+import {glossary} from './presentation.mjs?v=20261025-fixes';
 export function installInteractions(root,{canDrag,canAttack,beginDrag,beginAttack,dropCard,chooseTarget,aim,cancel}){
   const tip=document.createElement('aside');tip.id='ccKeywordTip';tip.className='cc-keyword-tip';tip.setAttribute('role','tooltip');tip.hidden=true;document.body.append(tip);
   const arrow=document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -40,6 +40,14 @@ export function installInteractions(root,{canDrag,canAttack,beginDrag,beginAttac
   root.addEventListener('pointerout',e=>{if(hovered&&!hovered.contains(e.relatedTarget))hide();});
   root.addEventListener('focusin',e=>{const el=e.target.closest('.cc-card');if(el){hide();hovered=el;timer=setTimeout(()=>show(el),500);}});
   root.addEventListener('focusout',hide);addEventListener('scroll',hide,true);addEventListener('resize',hide);document.addEventListener('visibilitychange',hide);
+  root.addEventListener('wheel',e=>{
+    const hand=e.target.closest('.cc-hand');
+    if(!hand||e.ctrlKey||drag?.active||hand.scrollWidth<=hand.clientWidth)return;
+    const delta=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+    if(!delta)return;
+    const scale=e.deltaMode===1?32:e.deltaMode===2?hand.clientWidth:1;
+    e.preventDefault();hide();hand.scrollLeft+=delta*scale;
+  },{passive:false});
   root.addEventListener('pointerdown',e=>{
     pointer={x:e.clientX,y:e.clientY};
     if(e.button!==0)return;

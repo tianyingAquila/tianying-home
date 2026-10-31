@@ -1,4 +1,4 @@
-import {CARDS} from './cards.mjs';
+import {CARDS} from './cards.mjs?v=20261025-fixes';
 
 export const keys={taunt:'嘲讽',charge:'冲锋',shield:'圣盾',stealth:'潜行',windfury:'风怒',poison:'剧毒',cantAttack:'无法攻击'};
 export const glossary={战吼:'随从从手牌放入己方场地时生效的效果。',亡语:'随从死亡时生效的效果。',光环:'随从在场且能力有效时持续生效；来源离场、被沉默或站位改变时重新计算。',嘲讽:'敌方随从必须先攻击具有嘲讽的随从。',冲锋:'随从上场的这个回合就可以攻击。',圣盾:'抵挡下一次受到的伤害，随后失去圣盾。',潜行:'不能被敌方攻击或指定为目标；主动攻击后失去潜行。',风怒:'每回合可以攻击两次。',剧毒:'对随从造成实际伤害后，消灭该随从。',冻结:'暂时无法攻击；在可攻击的己方回合结束时解冻。',沉默:'移除随从的卡牌效果、关键词和附加增益。',抉择:'使用时从列出的两种效果中选择一种。',激怒:'受伤时获得卡牌说明中的额外能力。',无法攻击:'不能主动发动攻击，但受攻击时仍会反击。',鱼人:'随从种族，可与写明“鱼人”的效果配合。',野兽:'随从种族，可与写明“野兽”的效果配合。',恶魔:'随从种族，可与写明“恶魔”的效果配合。',龙:'随从种族，可与写明“龙”的效果配合。'};
@@ -12,7 +12,7 @@ export function boardEffects(id,stats){
   for(const key of stats.keys||[])if(keys[key])add(keys[key],glossary[keys[key]],key==='shield'||key==='taunt'?'defense':'keyword');
   if(!stats.silenced){
     if(c.text.includes('光环：'))add('光环',c.text,'aura');
-    for(const tag of ['亡语','回合开始','回合结束','治疗触发','召唤触发','死亡触发','受伤触发','出牌触发','伤害触发','激怒','动态属性']){
+    for(const tag of ['亡语','回合开始','回合结束','治疗触发','召唤触发','死亡触发','受伤触发','出牌触发','伤害触发','破盾触发','攻击触发','激怒','动态属性']){
       if(!c.features.includes(tag))continue;
       const description=tag==='亡语'?(c.text.split(/[；;]/).find(t=>t.trim().startsWith('亡语：'))||c.text):c.text;
       add(tag==='激怒'&&stats.health<stats.maxHealth?'激怒·生效':tag,description,tag==='亡语'?'deathrattle':'ability');

@@ -1,5 +1,5 @@
-import { Game, legalActions } from './engine.mjs';
-import { CARDS } from './cards.mjs';
+import { Game, legalActions } from './engine.mjs?v=20261025-fixes';
+import { CARDS } from './cards.mjs?v=20261025-fixes';
 export function basicDeck(offset=0) {
   const ids=['CS2_065','EX1_008','CS2_120','CS2_172','EX1_015','EX1_096','EX1_506','CS2_125','EX1_019','EX1_556','CS2_179','CS2_182','CS2_151','CS2_200','CS2_222'];
   return ids.flatMap(id=>[id,id]);
@@ -24,8 +24,8 @@ export function chooseAction(s,o,difficulty='normal',now=Date.now()){
       x=g.cost(o,c)*1.1+d.attack*.4+d.health*.3+2;
       const friendly=['CS2_188','EX1_019','EX1_362','DS1_070','EX1_587','EX1_059'];
       if(t){if(friendly.includes(c.id))x+=t.owner===o?4:-15;
-        if(['CS2_189','CS2_042','CS2_203','EX1_048','EX1_005','EX1_283'].includes(c.id))x+=t.owner!==o?3:-15;
-        if(['EX1_011','NEW1_008'].includes(c.id))x+=t.owner===o?Math.min(5,g.max(t)-g.health(t)):-12;
+        if(['CS2_189','CS2_042','CS2_203','EX1_048','EX1_005','EX1_283','TY_031'].includes(c.id))x+=t.owner!==o?3:-15;
+        if(['EX1_011','NEW1_008','TY_001'].includes(c.id))x+=t.owner===o?Math.min(5,g.max(t)-g.health(t)):-12;
         if(c.id==='EX1_564')x+=g.attack(t)+g.health(t);
         if(c.id==='EX1_561')x+=t.owner===o?15-t.hp:t.hp-15;
       }

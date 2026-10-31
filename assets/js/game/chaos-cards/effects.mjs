@@ -1,7 +1,9 @@
+import { expansionBattle, expansionDeath, expansionEvent, expansionPhase } from './expansion-effects.mjs?v=20261025-fixes';
 // Card-specific effects use the same atomic operations and event queue.
 const board=(g,o)=>g.p(o).board;
 const uid=x=>x?.uid;
 export function battle(g,m,target,choice=0) {
+  if(m.id.startsWith('TY_'))return expansionBattle(g,m,target);
   const o=m.owner,enemy=1-o,id=m.id,t=g.find(target),adj=()=>{const b=board(g,o),i=b.indexOf(m);return [b[i-1],b[i+1]].filter(Boolean);};
   switch(id){
     case 'CS2_188':g.buff(target,2,0,[],true);break;
@@ -23,7 +25,7 @@ export function battle(g,m,target,choice=0) {
     case 'EX1_083':{const x=g.pick(g.all().filter(x=>x.uid!==m.uid));if(x)g.transform(x.uid,g.random(2)?'EX1_tk28':'EX1_tk29');break;}
     case 'EX1_085':if(board(g,enemy).length>=4)g.steal(uid(g.pick(board(g,enemy))),o);break;
     case 'EX1_103':for(const x of g.all())if(x.uid!==m.uid&&g.card(x).tribe==='MURLOC')g.buff(x.uid,0,2);break;
-    case 'EX1_590':{let n=0;for(const x of g.all())if(g.has(x,'shield')){n++;x.keys=x.keys.filter(k=>k!=='shield');}g.buff(m.uid,n*3,n*3);break;}
+    case 'EX1_590':{let n=0;for(const x of g.all())if(g.removeShield(x))n++;g.buff(m.uid,n*3,n*3);break;}
     case 'DS1_070':g.buff(target,2,2,['taunt']);break;
     case 'EX1_025':g.summon(o,'EX1_025t',board(g,o).indexOf(m)+1);break;
     case 'EX1_043':g.buff(m.uid,0,g.p(o).hand.length);break;
@@ -42,11 +44,12 @@ export function battle(g,m,target,choice=0) {
     case 'CS2_088':g.heal('h'+o,6);break;
     case 'NEW1_008':if(choice===0)g.draw(o,2);else g.heal(target,5);break;
     case 'EX1_561':if(t?.hero)t.hp=15;break;
-    case 'EX1_562':while(board(g,o).length<7)g.summon(o,'EX1_116t');break;
+    case 'EX1_562':while(board(g,o).length<g.rules().boardLimit)g.summon(o,'EX1_116t');break;
     case 'NEW1_030':for(const x of g.all())if(x.uid!==m.uid)g.kill(x.uid);g.p(o).hand=[];break;
   }
 }
 export function death(g,m){
+  if(m.id.startsWith('TY_'))return expansionDeath(g,m);
   const o=m.owner,slot=g.deathSlot(m);
   switch(m.id){
     case 'EX1_029':g.damage([['h'+(1-o),2]],m);break;
@@ -59,6 +62,7 @@ export function death(g,m){
   }
 }
 export function onEvent(g,m,event,d){
+  if(m.id.startsWith('TY_'))return expansionEvent(g,m,event,d);
   const live=g.find(m.uid),o=m.owner;
   // Source snapshots allow lethal damage triggers to resolve, but buffs to departed entities fizzle.
   if(event==='damage'){
@@ -83,6 +87,7 @@ export function onEvent(g,m,event,d){
 }
 export function phaseEffect(g,m,phase){
   const live=g.find(m.uid);if(!live||live.silenced)return;
+  if(m.id.startsWith('TY_'))return expansionPhase(g,m,phase);
   const o=m.owner;
   if(phase==='start')switch(m.id){
     case 'EX1_341':g.heal(uid(g.pick([...board(g,o),g.p(o)].filter(x=>g.health(x)<g.max(x)))),3);break;

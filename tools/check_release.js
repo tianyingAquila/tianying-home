@@ -27,12 +27,17 @@ for (const file of engineFiles) {
 console.log("Release validated: " + version);
 if (!fs.existsSync(path.join(root, 'chaos-cards.html'))) throw new Error('Chaos Cards page missing');
 import(require('node:url').pathToFileURL(path.join(root,'assets/js/game/chaos-cards/cards.mjs')).href).then(({POOL,LIST})=>{
-  if(POOL.length!==100||LIST.length!==113||POOL.some(c=>!c.themes.length))throw new Error('Chaos Cards catalog incomplete');
+  if(POOL.length!==197||LIST.length!==222||POOL.some(c=>!c.themes.length))throw new Error('Chaos Cards catalog incomplete');
+  const art=JSON.parse(fs.readFileSync(path.join(root,'assets/data/chaos-cards-art.json'),'utf8'));
+  const entries=new Map(art.cards.map(c=>[c.id,c]));
+  if(art.cards.length!==LIST.length||entries.size!==LIST.length||art.size[0]!==384||art.size[1]!==384)throw new Error('Card artwork manifest incomplete');
   for(const card of LIST){
     const file=path.join(root,'assets/img/chaos-cards/cards-v1',card.id+'.webp');
     const bytes=fs.readFileSync(file);
+    const entry=entries.get(card.id);
+    if(!entry||entry.bytes!==bytes.length||entry.sha256!==crypto.createHash('sha256').update(bytes).digest('hex'))throw new Error('Card artwork manifest mismatch: '+card.id);
     if(bytes.toString('ascii',0,4)!=='RIFF'||bytes.toString('ascii',8,12)!=='WEBP')throw new Error('Card art is not WebP: '+card.id);
   }
-  console.log('Chaos Cards release validated: 100 cards / 13 templates');
-  console.log('Chaos Cards artwork validated: 113 WebP illustrations');
+  console.log('Chaos Cards release validated: 197 cards / 25 templates');
+  console.log('Chaos Cards artwork validated: 222 WebP illustrations');
 }).catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,6 +1,6 @@
-import {CARDS} from './cards.mjs';import {art} from './art.mjs';
-import {keys,boardEffects} from './presentation.mjs';
-export {keys} from './presentation.mjs';
+import {CARDS} from './cards.mjs?v=20261025-fixes';import {art} from './art.mjs?v=20261025-fixes';
+import {keys,boardEffects} from './presentation.mjs?v=20261025-fixes';
+export {keys} from './presentation.mjs?v=20261025-fixes';
 export const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const button=(text,act,data='',disabled=false,cls='')=>`<button class="cc-button ${cls}" data-act="${act}" ${data} ${disabled?'disabled':''}>${esc(text)}</button>`;
 const emphasis={战吼:'battlecry',亡语:'deathrattle',光环:'aura',鱼人:'murloc',野兽:'beast',恶魔:'demon',龙:'dragon',嘲讽:'defense',圣盾:'defense',冲锋:'attack',风怒:'attack',剧毒:'attack',潜行:'stealth',冻结:'control',沉默:'control',抉择:'choice',激怒:'attack',无法攻击:'control'};
@@ -14,5 +14,5 @@ export function card(id,{count=null,action='',label='',disabled=false,selected=f
   ${board?`<div class="cc-effects" aria-label="当前效果">${effects.map(e=>`<span class="cc-effect cc-effect-${e.type}" data-effect-description="${esc(e.description.startsWith(e.label+'：')?e.description:e.label+'：'+e.description)}" title="${esc(e.description)}">${esc(e.label)}</span>`).join('')}</div>`:stats?`<div class="cc-keywords">${cardText([...(stats.keys||[]).map(k=>keys[k]),stats.frozen?'冻结':'',stats.silenced?'沉默':''].filter(Boolean).join(' '))}</div>`:''}
   ${action?button(label||'选择',action,`data-id="${id}" ${data}`,disabled,'cc-card-action'):''}${count!==null?`<span class="cc-count">${count}/2</span>`:''}</article>`;
 }
-export function showInfo(id,stats=null){const c=CARDS[id];document.getElementById('dialogRoot').innerHTML=`<dialog open class="cc-dialog"><button data-act="close-info" class="cc-close" aria-label="关闭卡牌详情">×</button>${card(id,{stats,board:!!stats})}${stats?'<p class="cc-detail-note">上方文字为原始卡文；标签和攻血显示当前状态。</p>':''}<p class="cc-detail-themes">${esc(c.themes.join(' / '))}</p></dialog><div class="cc-scrim" data-act="close-info"></div>`;}
+export function showInfo(id,stats=null){const c=CARDS[id];document.getElementById('dialogRoot').innerHTML=`<dialog open class="cc-dialog"><button data-act="close-info" class="cc-close" aria-label="关闭卡牌详情">×</button>${card(id,{stats,board:!!stats})}${stats?'<p class="cc-detail-note">上方文字为原始卡文；标签和攻血显示当前状态。</p>':''}<p class="cc-detail-themes">${c.number?'新卡 '+c.number+' · ':''}${esc(c.themes.join(' / '))}</p></dialog><div class="cc-scrim" data-act="close-info"></div>`;}
 export function closeInfo(){document.getElementById('dialogRoot').innerHTML='';}
