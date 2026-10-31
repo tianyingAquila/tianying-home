@@ -63,7 +63,7 @@
         return data;
       })
       .catch(() =>
-        fetch("assets/data/archives.json?v=2", { credentials: "same-origin" }).then((res) =>
+        fetch("assets/data/archives.json?v=3", { credentials: "same-origin" }).then((res) =>
           res.ok ? res.json() : Promise.reject(new Error("HTTP " + res.status)),
         ),
       );

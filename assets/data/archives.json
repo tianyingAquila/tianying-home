@@ -68,6 +68,33 @@
           "repo": "https://github.com/tianyingAquila/tianying-home"
         },
         {
+          "id": "P-003",
+          "title": "Minecraft 原生 MCP",
+          "en": "MINECRAFT NATIVE MCP",
+          "type": "AI 游戏接口",
+          "status": "未归档 · 可读取",
+          "abstract": "让 AI 通过 MCP 操控真正的 Minecraft Java 客户端：保留原生第一视角、血条和物品栏，配合空间感知和有边界的连续动作，用于自主生存、AI 实验和游戏直播。可作为 DSH 插件一键准备游戏，另有可选的直播扩展（游戏内小鲸鱼与进度气泡）。",
+          "commits": [
+            {
+              "date": "2026-10-31",
+              "message": "Document isolated package testing for development installs"
+            },
+            {
+              "date": "2026-10-31",
+              "message": "Prepare playable DSH environment and separate optional streaming extension"
+            },
+            {
+              "date": "2026-10-31",
+              "message": "Run dashboard child in Node mode under the DSH Electron host"
+            },
+            {
+              "date": "2026-10-31",
+              "message": "Publish native Minecraft MCP core, DSH launcher plugin and optional livestream integration"
+            }
+          ],
+          "repo": "https://github.com/tianyingAquila/minecraft-native-mcp"
+        },
+        {
           "id": "X-001",
           "title": "莱茵生命",
           "en": "RHINE LAB, LLC.",
