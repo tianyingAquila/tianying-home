@@ -17,11 +17,11 @@
 
 ```sh
 node tools/check_release.js
-node --test tests/tower.test.js tests/frontend.test.js tests/chaos-cards.test.mjs
+node --test tests/smoke.test.mjs
 ```
 
 游戏终端保留同一iframe实例，退出可回到原局，刷新不保证续玩。牌战回合由服务器计时，收起页面不暂停；鼠标停在手牌区时，滚轮可左右浏览手牌，选牌与对局更新保留浏览位置。塔防回放在新标签页打开。
 
-样式与脚本修改需更新对应页面的缓存参数；旧塔防versions和patches是历史成绩的运行依赖，保持冻结。`tests/game-os.browser.js` 用于实际浏览器验证三款游戏的轮换、启退和实例保留。
+样式与脚本修改需更新对应页面的缓存参数；旧塔防versions和patches是历史成绩的运行依赖，保持冻结。`tests/smoke.test.mjs` 只做冒烟：牌战能打完一局、塔防新旧版本回放一致。
 
 本仓库包含页面、assets、tests和tools，不包含整个网站的服务端及运行数据。项目档案参考RhineLabUI，许可见 `assets/data/RHINELABUI-LICENSE.txt`。
