@@ -14,7 +14,7 @@
       "停车坐爱枫林晚",
     ],
     avatar: "assets/img/avatar.webp",
-    background: "/assets/img/background.webp",
+    background: "/assets/img/background.webp?v=20261102",
     github: "https://github.com/tianyingAquila",
     steam: {
       id: "76561199375770516",
@@ -137,7 +137,10 @@
 
   function renderBackground() {
     const bg = $("bg");
-    const image = state.config.background;
+    // Refresh the bundled wallpaper even when the saved config keeps its original URL.
+    const image = /^(\/)?assets\/img\/background\.webp$/.test(state.config.background)
+      ? DEFAULT_CONFIG.background
+      : state.config.background;
     if (image) {
       bg.style.setProperty("--bg-image", `url("${CSS.escape(image)}")`);
       bg.classList.add("has-image");
